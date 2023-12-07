@@ -1,0 +1,9 @@
+.{
+    .name = "saber",
+    .version = "0.0.2",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
