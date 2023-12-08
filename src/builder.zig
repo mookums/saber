@@ -51,6 +51,9 @@ pub fn addSaberExecutable(b: *std.Build.Builder, comptime options: SaberExecutab
     // Comptime CPU Module.
     const cpu = b.addModule("cpu", .{
         .source_file = .{ .path = cpu_path ++ "cpu.zig" },
+        .dependencies = &.{
+            .{ .name = "mmio", .module = saberMMIO },
+        },
     });
 
     // Comptime Chip Module.
@@ -97,14 +100,16 @@ pub fn addSaberExecutable(b: *std.Build.Builder, comptime options: SaberExecutab
     main.addModule("saber", sm);
     elf.addObject(main);
 
-    // Add vector table
-    const vectors = b.addObject(.{
-        .name = "vectors",
-        .root_source_file = .{ .path = cpu_path ++ "vectors.zig" },
+    // Add Chip Vectors
+    const chip_vectors = b.addObject(.{
+        .name = "chip_vectors",
+        .root_source_file = .{ .path = chip_path ++ "vectors.zig" },
         .target = target,
         .optimize = optimize,
     });
-    elf.addObject(vectors);
+    chip_vectors.addModule("cpu", cpu);
+    chip_vectors.addModule("mmio", saberMMIO);
+    elf.addObject(chip_vectors);
 
     // Source Base Linker Script
     //

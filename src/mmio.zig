@@ -1,6 +1,8 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
+pub const VectorEntry = ?*const fn () callconv(.C) void;
+
 pub fn MMIO(comptime R: type) type {
     return MMIORW(R, R);
 }

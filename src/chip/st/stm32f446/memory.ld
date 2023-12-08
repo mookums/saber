@@ -19,10 +19,13 @@ PROVIDE(saberUsageFaultHandler = blockingHandler);
 PROVIDE(saberSvCallHandler = nullHandler);
 PROVIDE(saberDebugMonitorHandler = nullHandler);
 PROVIDE(saberPendSVHandler = nullHandler);
-
 /* Weak Handler for main and premain */
 PROVIDE(premain = nullHandler);
 PROVIDE(main = blockingHandler);
+
+/* Will auto match any unmatched handlers with nullHandler. */
+/* This allows for things to be a lot more flexible... */
+PROVIDE(* = nullHandler);
 
 SECTIONS {
     .text : {

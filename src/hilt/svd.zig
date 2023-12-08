@@ -63,7 +63,19 @@ pub const Device = struct {
         self.interrupts.deinit();
     }
 
+    const InterruptQueueEntry = struct {
+        name: []const u8,
+        value: usize,
+    };
+
+    fn interruptCompare(_: void, a: InterruptQueueEntry, b: InterruptQueueEntry) std.math.Order {
+        return std.math.order(a.value, b.value);
+    }
+
     pub fn format(self: Self, comptime _: []const u8, _: std.fmt.FormatOptions, out_stream: anytype) !void {
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
         const name = if (self.name.items.len == 0) "unknown" else self.name.items;
         const version = if (self.version.items.len == 0) "unknown" else self.version.items;
         const description = if (self.description.items.len == 0) "unknown" else self.description.items;
@@ -81,34 +93,78 @@ pub const Device = struct {
         for (self.peripherals.items) |peripheral| {
             try out_stream.print("{}\n", .{peripheral});
         }
+
         // now print interrupt table
-        //
-        const interrupt_struct =
+        const interrupt_header =
+            \\// Provide these handlers here.
             \\
-            \\pub const Interrupt = struct {
-            \\  name:[]const u8,
-            \\  value:usize,
-            \\};
+            \\pub export fn blockingHandler() callconv(.C) void {
+            \\  while(true) {}
+            \\}
+            \\
+            \\pub export fn nullHandler() callconv(.C) void {}
+            \\
             \\
         ;
 
-        try out_stream.print("{s}", .{interrupt_struct});
+        try out_stream.print("{s}\n", .{interrupt_header});
 
-        // Use a ComptimeStringMap here.
-        //
-        // This will allow us to find values just by using the Interrupt Name :p
-        try out_stream.writeAll("pub const interrupts = [_]Interrupt {\n");
-        var iter = self.interrupts.iterator();
-        while (iter.next()) |entry| {
+        // Sort all of the interrupts...
+        var interruptQueue = std.PriorityQueue(InterruptQueueEntry, void, interruptCompare).init(allocator, {});
+        var interruptIter = self.interrupts.iterator();
+
+        while (interruptIter.next()) |entry| {
             const interrupt = entry.value_ptr.*;
-            if (interrupt.value) |int_value| {
-                try out_stream.print(
-                    "   .{{ .name = \"{s}\", .value = {} }},\n",
-                    .{ interrupt.name.items, int_value },
-                );
+            if (interrupt.value) |value| {
+                interruptQueue.add(.{ .name = interrupt.name.items, .value = value }) catch @panic("OOM!");
             }
         }
-        try out_stream.writeAll("};");
+
+        // Write all of the extern functions
+        try out_stream.writeAll("// Extern Interrupt Handlers\n");
+        var tempList = std.ArrayList(InterruptQueueEntry).init(allocator);
+        while (interruptQueue.removeOrNull()) |irq| {
+            try out_stream.print(
+                "extern fn saber{s}Handler() void; \n",
+                .{irq.name},
+            );
+
+            tempList.append(irq) catch @panic("OOM!");
+        }
+        try out_stream.writeAll("\n");
+        interruptQueue.addSlice(tempList.items) catch @panic("OOM!");
+        tempList.clearAndFree();
+
+        // Create chip_vector_table extern struct.
+        //
+        // It is important that empty areas are filled in...
+        // with null handlers.
+        try out_stream.writeAll("pub const chip_vector_struct = extern struct {\n");
+
+        var lastIrq = InterruptQueueEntry{ .name = "placeholder", .value = 0 };
+        while (interruptQueue.removeOrNull()) |irq| {
+            // pads empty spaces with nullHandler
+            if (lastIrq.value + 1 < irq.value) {
+                for (lastIrq.value..irq.value - 1) |i| {
+                    try out_stream.print(
+                        "   reserved{}:VectorEntry = nullHandler,\n",
+                        .{i},
+                    );
+                }
+            }
+
+            // points each vector entry to its handler
+            try out_stream.print(
+                "   {s}:VectorEntry = saber{s}Handler,\n",
+                .{ irq.name, irq.name },
+            );
+
+            lastIrq = irq;
+
+            tempList.append(irq) catch @panic("OOM!");
+        }
+        try out_stream.writeAll("};\n");
+        try out_stream.writeAll("pub const chip_vectors = chip_vector_struct{};");
         return;
     }
 };

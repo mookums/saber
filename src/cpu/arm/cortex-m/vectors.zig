@@ -1,11 +1,9 @@
-export fn blockingHandler() void {
-    while (true) {}
-}
+const VectorEntry = @import("mmio").VectorEntry;
 
-export fn nullHandler() void {}
+extern fn blockingHandler() void;
+extern fn nullHandler() void;
 
 extern fn stackEnd() void;
-
 extern fn saberResetHandler() void;
 extern fn saberNmiHandler() void;
 extern fn saberHardFaultHandler() void;
@@ -24,9 +22,8 @@ extern fn saberSysTickHandler() void;
 //
 // MAYBE, we have a vector table list that we just append to or can put into based on index
 // then we just export the items version of it.
-const VectorEntry = ?*const fn () callconv(.C) void;
 
-const vectors = extern struct {
+pub const vector_struct = extern struct {
     sp: VectorEntry = stackEnd,
     reset: VectorEntry = saberResetHandler, // Reset
     nmi: VectorEntry = saberNmiHandler, // NMI
@@ -49,10 +46,5 @@ const vectors = extern struct {
 // then add on additional interrupt handlers from the chip.
 //
 // this way, the behavior is mostly predetermined!
-const vector_table = vectors{};
 
-const vectors2 = extern struct {
-    v: vectors = vector_table,
-};
-
-export const vector2_table linksection(".vector_table") = vectors2{};
+pub const vectors = vector_struct{};

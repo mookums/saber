@@ -9,9 +9,10 @@ const svd = @import("svd.zig");
 var line_buffer: [1024 * 1024]u8 = undefined;
 
 const register_def =
-    \\//Generated for Saber using the Hilt Parser!
+    \\// Generated for Saber using the Hilt Parser!
     \\
     \\const MMIO = @import("mmio").MMIO;
+    \\const VectorEntry = @import("mmio").VectorEntry;
     \\
 ;
 
