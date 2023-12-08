@@ -41,6 +41,8 @@ pub fn addSaberExecutable(b: *std.Build.Builder, comptime options: SaberExecutab
     const cpu_path = options.saber_path.path ++ chipConfig.cpu_path;
     const chip_path = options.saber_path.path ++ chipConfig.chip_path;
 
+    // we use the saber path but that doesn't lead us to where we need to go...
+
     const saberUtil = b.addModule("saberUtil", .{
         .source_file = .{ .path = options.saber_path.path ++ "/src/util.zig" },
     });
