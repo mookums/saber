@@ -1,67 +1,10 @@
-pub fn Register(comptime R: type) type {
-    return RegisterRW(R, R);
-}
+//Generated for Saber using the Hilt Parser!
 
-pub fn RegisterRW(comptime Read: type, comptime Write: type) type {
-    return struct {
-        raw_ptr: *volatile u32,
+const MMIO = @import("mmio").MMIO;
 
-        const Self = @This();
-
-        pub fn init(address: usize) Self {
-            return Self{ .raw_ptr = @ptrFromInt(address) };
-        }
-
-        pub fn initRange(address: usize, comptime dim_increment: usize, comptime num_registers: usize) [num_registers]Self {
-            var registers: [num_registers]Self = undefined;
-            var i: usize = 0;
-            while (i < num_registers) : (i += 1) {
-                registers[i] = Self.init(address + (i * dim_increment));
-            }
-            return registers;
-        }
-
-        pub fn read(self: Self) Read {
-            return @bitCast(self.raw_ptr.*);
-        }
-
-        pub fn write(self: Self, value: Write) void {
-            self.raw_ptr.* = @bitCast(value);
-        }
-
-        pub fn modify(self: Self, new_value: anytype) void {
-            if (Read != Write) {
-                @compileError("Can't modify because read and write types for this register aren't the same.");
-            }
-            var old_value = self.read();
-            const info = @typeInfo(@TypeOf(new_value));
-            inline for (info.Struct.fields) |field| {
-                @field(old_value, field.name) = @field(new_value, field.name);
-            }
-            self.write(old_value);
-        }
-
-        pub fn read_raw(self: Self) u32 {
-            return self.raw_ptr.*;
-        }
-
-        pub fn write_raw(self: Self, value: u32) void {
-            self.raw_ptr.* = value;
-        }
-
-        pub fn default_read_value(_: Self) Read {
-            return Read{};
-        }
-
-        pub fn default_write_value(_: Self) Write {
-            return Write{};
-        }
-    };
-}
-
-pub const device_name = "STM32F407";
-pub const device_revision = "1.2";
-pub const device_description = "STM32F407";
+pub const device_name = "STM32F446";
+pub const device_revision = "1.1";
+pub const device_description = "STM32F446";
 
 pub const cpu = struct {
     pub const name = "CM4";
@@ -71,66 +14,6 @@ pub const cpu = struct {
     pub const fpu_present = false;
     pub const vendor_systick_config = false;
     pub const nvic_prio_bits = 3;
-};
-
-/// Random number generator
-pub const RNG = struct {
-    const base_address = 0x50060800;
-    /// CR
-    const CR_val = packed struct {
-        /// unused [0:1]
-        _unused0: u2 = 0,
-        /// RNGEN [2:2]
-        /// Random number generator
-        RNGEN: u1 = 0,
-        /// IE [3:3]
-        /// Interrupt enable
-        IE: u1 = 0,
-        /// unused [4:31]
-        _unused4: u4 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register
-    pub const CR = Register(CR_val).init(base_address + 0x0);
-
-    /// SR
-    const SR_val = packed struct {
-        /// DRDY [0:0]
-        /// Data ready
-        DRDY: u1 = 0,
-        /// CECS [1:1]
-        /// Clock error current status
-        CECS: u1 = 0,
-        /// SECS [2:2]
-        /// Seed error current status
-        SECS: u1 = 0,
-        /// unused [3:4]
-        _unused3: u2 = 0,
-        /// CEIS [5:5]
-        /// Clock error interrupt
-        CEIS: u1 = 0,
-        /// SEIS [6:6]
-        /// Seed error interrupt
-        SEIS: u1 = 0,
-        /// unused [7:31]
-        _unused7: u1 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x4);
-
-    /// DR
-    const DR_val = packed struct {
-        /// RNDATA [0:31]
-        /// Random data
-        RNDATA: u32 = 0,
-    };
-    /// data register
-    pub const DR = Register(DR_val).init(base_address + 0x8);
 };
 
 /// Digital camera interface
@@ -173,13 +56,26 @@ pub const DCMI = struct {
         /// ENABLE [14:14]
         /// DCMI enable
         ENABLE: u1 = 0,
-        /// unused [15:31]
+        /// unused [15:15]
         _unused15: u1 = 0,
-        _unused16: u8 = 0,
+        /// BSM [16:17]
+        /// Byte Select mode
+        BSM: u2 = 0,
+        /// OEBS [18:18]
+        /// Odd/Even Byte Select
+        OEBS: u1 = 0,
+        /// LSM [19:19]
+        /// Line Select mode
+        LSM: u1 = 0,
+        /// OELS [20:20]
+        /// Odd/Even Line Select
+        OELS: u1 = 0,
+        /// unused [21:31]
+        _unused21: u3 = 0,
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR = Register(CR_val).init(base_address + 0x0);
+    pub const CR = MMIO(CR_val).init(base_address + 0x0);
 
     /// SR
     const SR_val = packed struct {
@@ -199,7 +95,7 @@ pub const DCMI = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x4);
+    pub const SR = MMIO(SR_val).init(base_address + 0x4);
 
     /// RIS
     const RIS_val = packed struct {
@@ -225,7 +121,7 @@ pub const DCMI = struct {
         _unused24: u8 = 0,
     };
     /// raw interrupt status register
-    pub const RIS = Register(RIS_val).init(base_address + 0x8);
+    pub const RIS = MMIO(RIS_val).init(base_address + 0x8);
 
     /// IER
     const IER_val = packed struct {
@@ -251,7 +147,7 @@ pub const DCMI = struct {
         _unused24: u8 = 0,
     };
     /// interrupt enable register
-    pub const IER = Register(IER_val).init(base_address + 0xc);
+    pub const IER = MMIO(IER_val).init(base_address + 0xc);
 
     /// MIS
     const MIS_val = packed struct {
@@ -277,7 +173,7 @@ pub const DCMI = struct {
         _unused24: u8 = 0,
     };
     /// masked interrupt status
-    pub const MIS = Register(MIS_val).init(base_address + 0x10);
+    pub const MIS = MMIO(MIS_val).init(base_address + 0x10);
 
     /// ICR
     const ICR_val = packed struct {
@@ -303,7 +199,7 @@ pub const DCMI = struct {
         _unused24: u8 = 0,
     };
     /// interrupt clear register
-    pub const ICR = Register(ICR_val).init(base_address + 0x14);
+    pub const ICR = MMIO(ICR_val).init(base_address + 0x14);
 
     /// ESCR
     const ESCR_val = packed struct {
@@ -321,7 +217,7 @@ pub const DCMI = struct {
         FEC: u8 = 0,
     };
     /// embedded synchronization code
-    pub const ESCR = Register(ESCR_val).init(base_address + 0x18);
+    pub const ESCR = MMIO(ESCR_val).init(base_address + 0x18);
 
     /// ESUR
     const ESUR_val = packed struct {
@@ -339,7 +235,7 @@ pub const DCMI = struct {
         FEU: u8 = 0,
     };
     /// embedded synchronization unmask
-    pub const ESUR = Register(ESUR_val).init(base_address + 0x1c);
+    pub const ESUR = MMIO(ESUR_val).init(base_address + 0x1c);
 
     /// CWSTRT
     const CWSTRT_val = packed struct {
@@ -355,7 +251,7 @@ pub const DCMI = struct {
         _unused29: u3 = 0,
     };
     /// crop window start
-    pub const CWSTRT = Register(CWSTRT_val).init(base_address + 0x20);
+    pub const CWSTRT = MMIO(CWSTRT_val).init(base_address + 0x20);
 
     /// CWSIZE
     const CWSIZE_val = packed struct {
@@ -371,7 +267,7 @@ pub const DCMI = struct {
         _unused30: u2 = 0,
     };
     /// crop window size
-    pub const CWSIZE = Register(CWSIZE_val).init(base_address + 0x24);
+    pub const CWSIZE = MMIO(CWSIZE_val).init(base_address + 0x24);
 
     /// DR
     const DR_val = packed struct {
@@ -389,11 +285,11 @@ pub const DCMI = struct {
         Byte3: u8 = 0,
     };
     /// data register
-    pub const DR = Register(DR_val).init(base_address + 0x28);
+    pub const DR = MMIO(DR_val).init(base_address + 0x28);
 };
 
-/// Flexible static memory controller
-pub const FSMC = struct {
+/// Flexible memory controller
+pub const FMC = struct {
     const base_address = 0xa0000000;
     /// BCR1
     const BCR1_val = packed struct {
@@ -442,12 +338,15 @@ pub const FSMC = struct {
         /// CBURSTRW [19:19]
         /// CBURSTRW
         CBURSTRW: u1 = 0,
-        /// unused [20:31]
-        _unused20: u4 = 0,
+        /// CCLKEN [20:20]
+        /// CCLKEN
+        CCLKEN: u1 = 0,
+        /// unused [21:31]
+        _unused21: u3 = 0,
         _unused24: u8 = 0,
     };
     /// SRAM/NOR-Flash chip-select control register
-    pub const BCR1 = Register(BCR1_val).init(base_address + 0x0);
+    pub const BCR1 = MMIO(BCR1_val).init(base_address + 0x0);
 
     /// BTR1
     const BTR1_val = packed struct {
@@ -476,7 +375,7 @@ pub const FSMC = struct {
         _unused30: u2 = 3,
     };
     /// SRAM/NOR-Flash chip-select timing register
-    pub const BTR1 = Register(BTR1_val).init(base_address + 0x4);
+    pub const BTR1 = MMIO(BTR1_val).init(base_address + 0x4);
 
     /// BCR2
     const BCR2_val = packed struct {
@@ -531,7 +430,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// SRAM/NOR-Flash chip-select control register
-    pub const BCR2 = Register(BCR2_val).init(base_address + 0x8);
+    pub const BCR2 = MMIO(BCR2_val).init(base_address + 0x8);
 
     /// BTR2
     const BTR2_val = packed struct {
@@ -560,7 +459,7 @@ pub const FSMC = struct {
         _unused30: u2 = 3,
     };
     /// SRAM/NOR-Flash chip-select timing register
-    pub const BTR2 = Register(BTR2_val).init(base_address + 0xc);
+    pub const BTR2 = MMIO(BTR2_val).init(base_address + 0xc);
 
     /// BCR3
     const BCR3_val = packed struct {
@@ -615,7 +514,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// SRAM/NOR-Flash chip-select control register
-    pub const BCR3 = Register(BCR3_val).init(base_address + 0x10);
+    pub const BCR3 = MMIO(BCR3_val).init(base_address + 0x10);
 
     /// BTR3
     const BTR3_val = packed struct {
@@ -644,7 +543,7 @@ pub const FSMC = struct {
         _unused30: u2 = 3,
     };
     /// SRAM/NOR-Flash chip-select timing register
-    pub const BTR3 = Register(BTR3_val).init(base_address + 0x14);
+    pub const BTR3 = MMIO(BTR3_val).init(base_address + 0x14);
 
     /// BCR4
     const BCR4_val = packed struct {
@@ -699,7 +598,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// SRAM/NOR-Flash chip-select control register
-    pub const BCR4 = Register(BCR4_val).init(base_address + 0x18);
+    pub const BCR4 = MMIO(BCR4_val).init(base_address + 0x18);
 
     /// BTR4
     const BTR4_val = packed struct {
@@ -728,7 +627,7 @@ pub const FSMC = struct {
         _unused30: u2 = 3,
     };
     /// SRAM/NOR-Flash chip-select timing register
-    pub const BTR4 = Register(BTR4_val).init(base_address + 0x1c);
+    pub const BTR4 = MMIO(BTR4_val).init(base_address + 0x1c);
 
     /// PCR2
     const PCR2_val = packed struct {
@@ -766,7 +665,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// PC Card/NAND Flash control register
-    pub const PCR2 = Register(PCR2_val).init(base_address + 0x60);
+    pub const PCR2 = MMIO(PCR2_val).init(base_address + 0x60);
 
     /// SR2
     const SR2_val = packed struct {
@@ -798,7 +697,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// FIFO status and interrupt register
-    pub const SR2 = Register(SR2_val).init(base_address + 0x64);
+    pub const SR2 = MMIO(SR2_val).init(base_address + 0x64);
 
     /// PMEM2
     const PMEM2_val = packed struct {
@@ -816,7 +715,7 @@ pub const FSMC = struct {
         MEMHIZx: u8 = 252,
     };
     /// Common memory space timing register
-    pub const PMEM2 = Register(PMEM2_val).init(base_address + 0x68);
+    pub const PMEM2 = MMIO(PMEM2_val).init(base_address + 0x68);
 
     /// PATT2
     const PATT2_val = packed struct {
@@ -834,7 +733,7 @@ pub const FSMC = struct {
         ATTHIZx: u8 = 252,
     };
     /// Attribute memory space timing register
-    pub const PATT2 = Register(PATT2_val).init(base_address + 0x6c);
+    pub const PATT2 = MMIO(PATT2_val).init(base_address + 0x6c);
 
     /// ECCR2
     const ECCR2_val = packed struct {
@@ -843,7 +742,7 @@ pub const FSMC = struct {
         ECCx: u32 = 0,
     };
     /// ECC result register 2
-    pub const ECCR2 = Register(ECCR2_val).init(base_address + 0x74);
+    pub const ECCR2 = MMIO(ECCR2_val).init(base_address + 0x74);
 
     /// PCR3
     const PCR3_val = packed struct {
@@ -881,7 +780,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// PC Card/NAND Flash control register
-    pub const PCR3 = Register(PCR3_val).init(base_address + 0x80);
+    pub const PCR3 = MMIO(PCR3_val).init(base_address + 0x80);
 
     /// SR3
     const SR3_val = packed struct {
@@ -913,7 +812,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// FIFO status and interrupt register
-    pub const SR3 = Register(SR3_val).init(base_address + 0x84);
+    pub const SR3 = MMIO(SR3_val).init(base_address + 0x84);
 
     /// PMEM3
     const PMEM3_val = packed struct {
@@ -931,7 +830,7 @@ pub const FSMC = struct {
         MEMHIZx: u8 = 252,
     };
     /// Common memory space timing register
-    pub const PMEM3 = Register(PMEM3_val).init(base_address + 0x88);
+    pub const PMEM3 = MMIO(PMEM3_val).init(base_address + 0x88);
 
     /// PATT3
     const PATT3_val = packed struct {
@@ -949,7 +848,7 @@ pub const FSMC = struct {
         ATTHIZx: u8 = 252,
     };
     /// Attribute memory space timing register
-    pub const PATT3 = Register(PATT3_val).init(base_address + 0x8c);
+    pub const PATT3 = MMIO(PATT3_val).init(base_address + 0x8c);
 
     /// ECCR3
     const ECCR3_val = packed struct {
@@ -958,7 +857,7 @@ pub const FSMC = struct {
         ECCx: u32 = 0,
     };
     /// ECC result register 3
-    pub const ECCR3 = Register(ECCR3_val).init(base_address + 0x94);
+    pub const ECCR3 = MMIO(ECCR3_val).init(base_address + 0x94);
 
     /// PCR4
     const PCR4_val = packed struct {
@@ -996,7 +895,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// PC Card/NAND Flash control register
-    pub const PCR4 = Register(PCR4_val).init(base_address + 0xa0);
+    pub const PCR4 = MMIO(PCR4_val).init(base_address + 0xa0);
 
     /// SR4
     const SR4_val = packed struct {
@@ -1028,7 +927,7 @@ pub const FSMC = struct {
         _unused24: u8 = 0,
     };
     /// FIFO status and interrupt register
-    pub const SR4 = Register(SR4_val).init(base_address + 0xa4);
+    pub const SR4 = MMIO(SR4_val).init(base_address + 0xa4);
 
     /// PMEM4
     const PMEM4_val = packed struct {
@@ -1046,7 +945,7 @@ pub const FSMC = struct {
         MEMHIZx: u8 = 252,
     };
     /// Common memory space timing register
-    pub const PMEM4 = Register(PMEM4_val).init(base_address + 0xa8);
+    pub const PMEM4 = MMIO(PMEM4_val).init(base_address + 0xa8);
 
     /// PATT4
     const PATT4_val = packed struct {
@@ -1064,7 +963,7 @@ pub const FSMC = struct {
         ATTHIZx: u8 = 252,
     };
     /// Attribute memory space timing register
-    pub const PATT4 = Register(PATT4_val).init(base_address + 0xac);
+    pub const PATT4 = MMIO(PATT4_val).init(base_address + 0xac);
 
     /// PIO4
     const PIO4_val = packed struct {
@@ -1082,7 +981,7 @@ pub const FSMC = struct {
         IOHIZx: u8 = 252,
     };
     /// I/O space timing register 4
-    pub const PIO4 = Register(PIO4_val).init(base_address + 0xb0);
+    pub const PIO4 = MMIO(PIO4_val).init(base_address + 0xb0);
 
     /// BWTR1
     const BWTR1_val = packed struct {
@@ -1110,7 +1009,7 @@ pub const FSMC = struct {
         _unused30: u2 = 0,
     };
     /// SRAM/NOR-Flash write timing registers
-    pub const BWTR1 = Register(BWTR1_val).init(base_address + 0x104);
+    pub const BWTR1 = MMIO(BWTR1_val).init(base_address + 0x104);
 
     /// BWTR2
     const BWTR2_val = packed struct {
@@ -1138,7 +1037,7 @@ pub const FSMC = struct {
         _unused30: u2 = 0,
     };
     /// SRAM/NOR-Flash write timing registers
-    pub const BWTR2 = Register(BWTR2_val).init(base_address + 0x10c);
+    pub const BWTR2 = MMIO(BWTR2_val).init(base_address + 0x10c);
 
     /// BWTR3
     const BWTR3_val = packed struct {
@@ -1166,7 +1065,7 @@ pub const FSMC = struct {
         _unused30: u2 = 0,
     };
     /// SRAM/NOR-Flash write timing registers
-    pub const BWTR3 = Register(BWTR3_val).init(base_address + 0x114);
+    pub const BWTR3 = MMIO(BWTR3_val).init(base_address + 0x114);
 
     /// BWTR4
     const BWTR4_val = packed struct {
@@ -1194,7 +1093,205 @@ pub const FSMC = struct {
         _unused30: u2 = 0,
     };
     /// SRAM/NOR-Flash write timing registers
-    pub const BWTR4 = Register(BWTR4_val).init(base_address + 0x11c);
+    pub const BWTR4 = MMIO(BWTR4_val).init(base_address + 0x11c);
+
+    /// SDCR1
+    const SDCR1_val = packed struct {
+        /// NC [0:1]
+        /// Number of column address
+        NC: u2 = 0,
+        /// NR [2:3]
+        /// Number of row address bits
+        NR: u2 = 0,
+        /// MWID [4:5]
+        /// Memory data bus width
+        MWID: u2 = 1,
+        /// NB [6:6]
+        /// Number of internal banks
+        NB: u1 = 1,
+        /// CAS [7:8]
+        /// CAS latency
+        CAS: u2 = 1,
+        /// WP [9:9]
+        /// Write protection
+        WP: u1 = 1,
+        /// SDCLK [10:11]
+        /// SDRAM clock configuration
+        SDCLK: u2 = 0,
+        /// RBURST [12:12]
+        /// Burst read
+        RBURST: u1 = 0,
+        /// RPIPE [13:14]
+        /// Read pipe
+        RPIPE: u2 = 0,
+        /// unused [15:31]
+        _unused15: u1 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// SDRAM Control Register 1
+    pub const SDCR1 = MMIO(SDCR1_val).init(base_address + 0x140);
+
+    /// SDCR2
+    const SDCR2_val = packed struct {
+        /// NC [0:1]
+        /// Number of column address
+        NC: u2 = 0,
+        /// NR [2:3]
+        /// Number of row address bits
+        NR: u2 = 0,
+        /// MWID [4:5]
+        /// Memory data bus width
+        MWID: u2 = 1,
+        /// NB [6:6]
+        /// Number of internal banks
+        NB: u1 = 1,
+        /// CAS [7:8]
+        /// CAS latency
+        CAS: u2 = 1,
+        /// WP [9:9]
+        /// Write protection
+        WP: u1 = 1,
+        /// SDCLK [10:11]
+        /// SDRAM clock configuration
+        SDCLK: u2 = 0,
+        /// RBURST [12:12]
+        /// Burst read
+        RBURST: u1 = 0,
+        /// RPIPE [13:14]
+        /// Read pipe
+        RPIPE: u2 = 0,
+        /// unused [15:31]
+        _unused15: u1 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// SDRAM Control Register 2
+    pub const SDCR2 = MMIO(SDCR2_val).init(base_address + 0x144);
+
+    /// SDTR1
+    const SDTR1_val = packed struct {
+        /// TMRD [0:3]
+        /// Load Mode Register to
+        TMRD: u4 = 15,
+        /// TXSR [4:7]
+        /// Exit self-refresh delay
+        TXSR: u4 = 15,
+        /// TRAS [8:11]
+        /// Self refresh time
+        TRAS: u4 = 15,
+        /// TRC [12:15]
+        /// Row cycle delay
+        TRC: u4 = 15,
+        /// TWR [16:19]
+        /// Recovery delay
+        TWR: u4 = 15,
+        /// TRP [20:23]
+        /// Row precharge delay
+        TRP: u4 = 15,
+        /// TRCD [24:27]
+        /// Row to column delay
+        TRCD: u4 = 15,
+        /// unused [28:31]
+        _unused28: u4 = 0,
+    };
+    /// SDRAM Timing register 1
+    pub const SDTR1 = MMIO(SDTR1_val).init(base_address + 0x148);
+
+    /// SDTR2
+    const SDTR2_val = packed struct {
+        /// TMRD [0:3]
+        /// Load Mode Register to
+        TMRD: u4 = 15,
+        /// TXSR [4:7]
+        /// Exit self-refresh delay
+        TXSR: u4 = 15,
+        /// TRAS [8:11]
+        /// Self refresh time
+        TRAS: u4 = 15,
+        /// TRC [12:15]
+        /// Row cycle delay
+        TRC: u4 = 15,
+        /// TWR [16:19]
+        /// Recovery delay
+        TWR: u4 = 15,
+        /// TRP [20:23]
+        /// Row precharge delay
+        TRP: u4 = 15,
+        /// TRCD [24:27]
+        /// Row to column delay
+        TRCD: u4 = 15,
+        /// unused [28:31]
+        _unused28: u4 = 0,
+    };
+    /// SDRAM Timing register 2
+    pub const SDTR2 = MMIO(SDTR2_val).init(base_address + 0x14c);
+
+    /// SDCMR
+    const SDCMR_val = packed struct {
+        /// MODE [0:2]
+        /// Command mode
+        MODE: u3 = 0,
+        /// CTB2 [3:3]
+        /// Command target bank 2
+        CTB2: u1 = 0,
+        /// CTB1 [4:4]
+        /// Command target bank 1
+        CTB1: u1 = 0,
+        /// NRFS [5:8]
+        /// Number of Auto-refresh
+        NRFS: u4 = 0,
+        /// MRD [9:21]
+        /// Mode Register definition
+        MRD: u13 = 0,
+        /// unused [22:31]
+        _unused22: u2 = 0,
+        _unused24: u8 = 0,
+    };
+    /// SDRAM Command Mode register
+    pub const SDCMR = MMIO(SDCMR_val).init(base_address + 0x150);
+
+    /// SDRTR
+    const SDRTR_val = packed struct {
+        /// CRE [0:0]
+        /// Clear Refresh error flag
+        CRE: u1 = 0,
+        /// COUNT [1:13]
+        /// Refresh Timer Count
+        COUNT: u13 = 0,
+        /// REIE [14:14]
+        /// RES Interrupt Enable
+        REIE: u1 = 0,
+        /// unused [15:31]
+        _unused15: u1 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// SDRAM Refresh Timer register
+    pub const SDRTR = MMIO(SDRTR_val).init(base_address + 0x154);
+
+    /// SDSR
+    const SDSR_val = packed struct {
+        /// RE [0:0]
+        /// Refresh error flag
+        RE: u1 = 0,
+        /// MODES1 [1:2]
+        /// Status Mode for Bank 1
+        MODES1: u2 = 0,
+        /// MODES2 [3:4]
+        /// Status Mode for Bank 2
+        MODES2: u2 = 0,
+        /// BUSY [5:5]
+        /// Busy status
+        BUSY: u1 = 0,
+        /// unused [6:31]
+        _unused6: u2 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// SDRAM Status register
+    pub const SDSR = MMIO(SDSR_val).init(base_address + 0x158);
 };
 
 /// Debug support
@@ -1212,7 +1309,7 @@ pub const DBG = struct {
         REV_ID: u16 = 4096,
     };
     /// IDCODE
-    pub const DBGMCU_IDCODE = Register(DBGMCU_IDCODE_val).init(base_address + 0x0);
+    pub const DBGMCU_IDCODE = MMIO(DBGMCU_IDCODE_val).init(base_address + 0x0);
 
     /// DBGMCU_CR
     const DBGMCU_CR_val = packed struct {
@@ -1233,29 +1330,13 @@ pub const DBG = struct {
         /// TRACE_MODE [6:7]
         /// TRACE_MODE
         TRACE_MODE: u2 = 0,
-        /// unused [8:15]
+        /// unused [8:31]
         _unused8: u8 = 0,
-        /// DBG_I2C2_SMBUS_TIMEOUT [16:16]
-        /// DBG_I2C2_SMBUS_TIMEOUT
-        DBG_I2C2_SMBUS_TIMEOUT: u1 = 0,
-        /// DBG_TIM8_STOP [17:17]
-        /// DBG_TIM8_STOP
-        DBG_TIM8_STOP: u1 = 0,
-        /// DBG_TIM5_STOP [18:18]
-        /// DBG_TIM5_STOP
-        DBG_TIM5_STOP: u1 = 0,
-        /// DBG_TIM6_STOP [19:19]
-        /// DBG_TIM6_STOP
-        DBG_TIM6_STOP: u1 = 0,
-        /// DBG_TIM7_STOP [20:20]
-        /// DBG_TIM7_STOP
-        DBG_TIM7_STOP: u1 = 0,
-        /// unused [21:31]
-        _unused21: u3 = 0,
+        _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
     /// Control Register
-    pub const DBGMCU_CR = Register(DBGMCU_CR_val).init(base_address + 0x4);
+    pub const DBGMCU_CR = MMIO(DBGMCU_CR_val).init(base_address + 0x4);
 
     /// DBGMCU_APB1_FZ
     const DBGMCU_APB1_FZ_val = packed struct {
@@ -1286,8 +1367,11 @@ pub const DBG = struct {
         /// DBG_TIM14_STOP [8:8]
         /// DBG_TIM14_STOP
         DBG_TIM14_STOP: u1 = 0,
-        /// unused [9:10]
-        _unused9: u2 = 0,
+        /// unused [9:9]
+        _unused9: u1 = 0,
+        /// DBG_RTC_STOP [10:10]
+        /// RTC stopped when Core is
+        DBG_RTC_STOP: u1 = 0,
         /// DBG_WWDG_STOP [11:11]
         /// DBG_WWDG_STOP
         DBG_WWDG_STOP: u1 = 0,
@@ -1306,8 +1390,9 @@ pub const DBG = struct {
         /// DBG_J2C3SMBUS_TIMEOUT [23:23]
         /// DBG_J2C3SMBUS_TIMEOUT
         DBG_J2C3SMBUS_TIMEOUT: u1 = 0,
-        /// unused [24:24]
-        _unused24: u1 = 0,
+        /// DBG_I2CFMP_SMBUS_TIMEOUT [24:24]
+        /// SMBUS timeout mode stopped when Core is
+        DBG_I2CFMP_SMBUS_TIMEOUT: u1 = 0,
         /// DBG_CAN1_STOP [25:25]
         /// DBG_CAN1_STOP
         DBG_CAN1_STOP: u1 = 0,
@@ -1318,7 +1403,7 @@ pub const DBG = struct {
         _unused27: u5 = 0,
     };
     /// Debug MCU APB1 Freeze registe
-    pub const DBGMCU_APB1_FZ = Register(DBGMCU_APB1_FZ_val).init(base_address + 0x8);
+    pub const DBGMCU_APB1_FZ = MMIO(DBGMCU_APB1_FZ_val).init(base_address + 0x8);
 
     /// DBGMCU_APB2_FZ
     const DBGMCU_APB2_FZ_val = packed struct {
@@ -1345,7 +1430,7 @@ pub const DBG = struct {
         _unused24: u8 = 0,
     };
     /// Debug MCU APB2 Freeze registe
-    pub const DBGMCU_APB2_FZ = Register(DBGMCU_APB2_FZ_val).init(base_address + 0xc);
+    pub const DBGMCU_APB2_FZ = MMIO(DBGMCU_APB2_FZ_val).init(base_address + 0xc);
 };
 
 /// DMA controller
@@ -1427,7 +1512,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// low interrupt status register
-    pub const LISR = Register(LISR_val).init(base_address + 0x0);
+    pub const LISR = MMIO(LISR_val).init(base_address + 0x0);
 
     /// HISR
     const HISR_val = packed struct {
@@ -1505,7 +1590,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// high interrupt status register
-    pub const HISR = Register(HISR_val).init(base_address + 0x4);
+    pub const HISR = MMIO(HISR_val).init(base_address + 0x4);
 
     /// LIFCR
     const LIFCR_val = packed struct {
@@ -1583,7 +1668,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// low interrupt flag clear
-    pub const LIFCR = Register(LIFCR_val).init(base_address + 0x8);
+    pub const LIFCR = MMIO(LIFCR_val).init(base_address + 0x8);
 
     /// HIFCR
     const HIFCR_val = packed struct {
@@ -1661,7 +1746,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// high interrupt flag clear
-    pub const HIFCR = Register(HIFCR_val).init(base_address + 0xc);
+    pub const HIFCR = MMIO(HIFCR_val).init(base_address + 0xc);
 
     /// S0CR
     const S0CR_val = packed struct {
@@ -1728,7 +1813,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S0CR = Register(S0CR_val).init(base_address + 0x10);
+    pub const S0CR = MMIO(S0CR_val).init(base_address + 0x10);
 
     /// S0NDTR
     const S0NDTR_val = packed struct {
@@ -1740,7 +1825,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S0NDTR = Register(S0NDTR_val).init(base_address + 0x14);
+    pub const S0NDTR = MMIO(S0NDTR_val).init(base_address + 0x14);
 
     /// S0PAR
     const S0PAR_val = packed struct {
@@ -1749,7 +1834,7 @@ pub const DMA2 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S0PAR = Register(S0PAR_val).init(base_address + 0x18);
+    pub const S0PAR = MMIO(S0PAR_val).init(base_address + 0x18);
 
     /// S0M0AR
     const S0M0AR_val = packed struct {
@@ -1758,7 +1843,7 @@ pub const DMA2 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S0M0AR = Register(S0M0AR_val).init(base_address + 0x1c);
+    pub const S0M0AR = MMIO(S0M0AR_val).init(base_address + 0x1c);
 
     /// S0M1AR
     const S0M1AR_val = packed struct {
@@ -1767,7 +1852,7 @@ pub const DMA2 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S0M1AR = Register(S0M1AR_val).init(base_address + 0x20);
+    pub const S0M1AR = MMIO(S0M1AR_val).init(base_address + 0x20);
 
     /// S0FCR
     const S0FCR_val = packed struct {
@@ -1791,7 +1876,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S0FCR = Register(S0FCR_val).init(base_address + 0x24);
+    pub const S0FCR = MMIO(S0FCR_val).init(base_address + 0x24);
 
     /// S1CR
     const S1CR_val = packed struct {
@@ -1859,7 +1944,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S1CR = Register(S1CR_val).init(base_address + 0x28);
+    pub const S1CR = MMIO(S1CR_val).init(base_address + 0x28);
 
     /// S1NDTR
     const S1NDTR_val = packed struct {
@@ -1871,7 +1956,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S1NDTR = Register(S1NDTR_val).init(base_address + 0x2c);
+    pub const S1NDTR = MMIO(S1NDTR_val).init(base_address + 0x2c);
 
     /// S1PAR
     const S1PAR_val = packed struct {
@@ -1880,7 +1965,7 @@ pub const DMA2 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S1PAR = Register(S1PAR_val).init(base_address + 0x30);
+    pub const S1PAR = MMIO(S1PAR_val).init(base_address + 0x30);
 
     /// S1M0AR
     const S1M0AR_val = packed struct {
@@ -1889,7 +1974,7 @@ pub const DMA2 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S1M0AR = Register(S1M0AR_val).init(base_address + 0x34);
+    pub const S1M0AR = MMIO(S1M0AR_val).init(base_address + 0x34);
 
     /// S1M1AR
     const S1M1AR_val = packed struct {
@@ -1898,7 +1983,7 @@ pub const DMA2 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S1M1AR = Register(S1M1AR_val).init(base_address + 0x38);
+    pub const S1M1AR = MMIO(S1M1AR_val).init(base_address + 0x38);
 
     /// S1FCR
     const S1FCR_val = packed struct {
@@ -1922,7 +2007,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S1FCR = Register(S1FCR_val).init(base_address + 0x3c);
+    pub const S1FCR = MMIO(S1FCR_val).init(base_address + 0x3c);
 
     /// S2CR
     const S2CR_val = packed struct {
@@ -1990,7 +2075,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S2CR = Register(S2CR_val).init(base_address + 0x40);
+    pub const S2CR = MMIO(S2CR_val).init(base_address + 0x40);
 
     /// S2NDTR
     const S2NDTR_val = packed struct {
@@ -2002,7 +2087,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S2NDTR = Register(S2NDTR_val).init(base_address + 0x44);
+    pub const S2NDTR = MMIO(S2NDTR_val).init(base_address + 0x44);
 
     /// S2PAR
     const S2PAR_val = packed struct {
@@ -2011,7 +2096,7 @@ pub const DMA2 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S2PAR = Register(S2PAR_val).init(base_address + 0x48);
+    pub const S2PAR = MMIO(S2PAR_val).init(base_address + 0x48);
 
     /// S2M0AR
     const S2M0AR_val = packed struct {
@@ -2020,7 +2105,7 @@ pub const DMA2 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S2M0AR = Register(S2M0AR_val).init(base_address + 0x4c);
+    pub const S2M0AR = MMIO(S2M0AR_val).init(base_address + 0x4c);
 
     /// S2M1AR
     const S2M1AR_val = packed struct {
@@ -2029,7 +2114,7 @@ pub const DMA2 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S2M1AR = Register(S2M1AR_val).init(base_address + 0x50);
+    pub const S2M1AR = MMIO(S2M1AR_val).init(base_address + 0x50);
 
     /// S2FCR
     const S2FCR_val = packed struct {
@@ -2053,7 +2138,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S2FCR = Register(S2FCR_val).init(base_address + 0x54);
+    pub const S2FCR = MMIO(S2FCR_val).init(base_address + 0x54);
 
     /// S3CR
     const S3CR_val = packed struct {
@@ -2121,7 +2206,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S3CR = Register(S3CR_val).init(base_address + 0x58);
+    pub const S3CR = MMIO(S3CR_val).init(base_address + 0x58);
 
     /// S3NDTR
     const S3NDTR_val = packed struct {
@@ -2133,7 +2218,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S3NDTR = Register(S3NDTR_val).init(base_address + 0x5c);
+    pub const S3NDTR = MMIO(S3NDTR_val).init(base_address + 0x5c);
 
     /// S3PAR
     const S3PAR_val = packed struct {
@@ -2142,7 +2227,7 @@ pub const DMA2 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S3PAR = Register(S3PAR_val).init(base_address + 0x60);
+    pub const S3PAR = MMIO(S3PAR_val).init(base_address + 0x60);
 
     /// S3M0AR
     const S3M0AR_val = packed struct {
@@ -2151,7 +2236,7 @@ pub const DMA2 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S3M0AR = Register(S3M0AR_val).init(base_address + 0x64);
+    pub const S3M0AR = MMIO(S3M0AR_val).init(base_address + 0x64);
 
     /// S3M1AR
     const S3M1AR_val = packed struct {
@@ -2160,7 +2245,7 @@ pub const DMA2 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S3M1AR = Register(S3M1AR_val).init(base_address + 0x68);
+    pub const S3M1AR = MMIO(S3M1AR_val).init(base_address + 0x68);
 
     /// S3FCR
     const S3FCR_val = packed struct {
@@ -2184,7 +2269,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S3FCR = Register(S3FCR_val).init(base_address + 0x6c);
+    pub const S3FCR = MMIO(S3FCR_val).init(base_address + 0x6c);
 
     /// S4CR
     const S4CR_val = packed struct {
@@ -2252,7 +2337,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S4CR = Register(S4CR_val).init(base_address + 0x70);
+    pub const S4CR = MMIO(S4CR_val).init(base_address + 0x70);
 
     /// S4NDTR
     const S4NDTR_val = packed struct {
@@ -2264,7 +2349,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S4NDTR = Register(S4NDTR_val).init(base_address + 0x74);
+    pub const S4NDTR = MMIO(S4NDTR_val).init(base_address + 0x74);
 
     /// S4PAR
     const S4PAR_val = packed struct {
@@ -2273,7 +2358,7 @@ pub const DMA2 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S4PAR = Register(S4PAR_val).init(base_address + 0x78);
+    pub const S4PAR = MMIO(S4PAR_val).init(base_address + 0x78);
 
     /// S4M0AR
     const S4M0AR_val = packed struct {
@@ -2282,7 +2367,7 @@ pub const DMA2 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S4M0AR = Register(S4M0AR_val).init(base_address + 0x7c);
+    pub const S4M0AR = MMIO(S4M0AR_val).init(base_address + 0x7c);
 
     /// S4M1AR
     const S4M1AR_val = packed struct {
@@ -2291,7 +2376,7 @@ pub const DMA2 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S4M1AR = Register(S4M1AR_val).init(base_address + 0x80);
+    pub const S4M1AR = MMIO(S4M1AR_val).init(base_address + 0x80);
 
     /// S4FCR
     const S4FCR_val = packed struct {
@@ -2315,7 +2400,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S4FCR = Register(S4FCR_val).init(base_address + 0x84);
+    pub const S4FCR = MMIO(S4FCR_val).init(base_address + 0x84);
 
     /// S5CR
     const S5CR_val = packed struct {
@@ -2383,7 +2468,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S5CR = Register(S5CR_val).init(base_address + 0x88);
+    pub const S5CR = MMIO(S5CR_val).init(base_address + 0x88);
 
     /// S5NDTR
     const S5NDTR_val = packed struct {
@@ -2395,7 +2480,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S5NDTR = Register(S5NDTR_val).init(base_address + 0x8c);
+    pub const S5NDTR = MMIO(S5NDTR_val).init(base_address + 0x8c);
 
     /// S5PAR
     const S5PAR_val = packed struct {
@@ -2404,7 +2489,7 @@ pub const DMA2 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S5PAR = Register(S5PAR_val).init(base_address + 0x90);
+    pub const S5PAR = MMIO(S5PAR_val).init(base_address + 0x90);
 
     /// S5M0AR
     const S5M0AR_val = packed struct {
@@ -2413,7 +2498,7 @@ pub const DMA2 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S5M0AR = Register(S5M0AR_val).init(base_address + 0x94);
+    pub const S5M0AR = MMIO(S5M0AR_val).init(base_address + 0x94);
 
     /// S5M1AR
     const S5M1AR_val = packed struct {
@@ -2422,7 +2507,7 @@ pub const DMA2 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S5M1AR = Register(S5M1AR_val).init(base_address + 0x98);
+    pub const S5M1AR = MMIO(S5M1AR_val).init(base_address + 0x98);
 
     /// S5FCR
     const S5FCR_val = packed struct {
@@ -2446,7 +2531,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S5FCR = Register(S5FCR_val).init(base_address + 0x9c);
+    pub const S5FCR = MMIO(S5FCR_val).init(base_address + 0x9c);
 
     /// S6CR
     const S6CR_val = packed struct {
@@ -2514,7 +2599,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S6CR = Register(S6CR_val).init(base_address + 0xa0);
+    pub const S6CR = MMIO(S6CR_val).init(base_address + 0xa0);
 
     /// S6NDTR
     const S6NDTR_val = packed struct {
@@ -2526,7 +2611,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S6NDTR = Register(S6NDTR_val).init(base_address + 0xa4);
+    pub const S6NDTR = MMIO(S6NDTR_val).init(base_address + 0xa4);
 
     /// S6PAR
     const S6PAR_val = packed struct {
@@ -2535,7 +2620,7 @@ pub const DMA2 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S6PAR = Register(S6PAR_val).init(base_address + 0xa8);
+    pub const S6PAR = MMIO(S6PAR_val).init(base_address + 0xa8);
 
     /// S6M0AR
     const S6M0AR_val = packed struct {
@@ -2544,7 +2629,7 @@ pub const DMA2 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S6M0AR = Register(S6M0AR_val).init(base_address + 0xac);
+    pub const S6M0AR = MMIO(S6M0AR_val).init(base_address + 0xac);
 
     /// S6M1AR
     const S6M1AR_val = packed struct {
@@ -2553,7 +2638,7 @@ pub const DMA2 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S6M1AR = Register(S6M1AR_val).init(base_address + 0xb0);
+    pub const S6M1AR = MMIO(S6M1AR_val).init(base_address + 0xb0);
 
     /// S6FCR
     const S6FCR_val = packed struct {
@@ -2577,7 +2662,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S6FCR = Register(S6FCR_val).init(base_address + 0xb4);
+    pub const S6FCR = MMIO(S6FCR_val).init(base_address + 0xb4);
 
     /// S7CR
     const S7CR_val = packed struct {
@@ -2645,7 +2730,7 @@ pub const DMA2 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S7CR = Register(S7CR_val).init(base_address + 0xb8);
+    pub const S7CR = MMIO(S7CR_val).init(base_address + 0xb8);
 
     /// S7NDTR
     const S7NDTR_val = packed struct {
@@ -2657,7 +2742,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S7NDTR = Register(S7NDTR_val).init(base_address + 0xbc);
+    pub const S7NDTR = MMIO(S7NDTR_val).init(base_address + 0xbc);
 
     /// S7PAR
     const S7PAR_val = packed struct {
@@ -2666,7 +2751,7 @@ pub const DMA2 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S7PAR = Register(S7PAR_val).init(base_address + 0xc0);
+    pub const S7PAR = MMIO(S7PAR_val).init(base_address + 0xc0);
 
     /// S7M0AR
     const S7M0AR_val = packed struct {
@@ -2675,7 +2760,7 @@ pub const DMA2 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S7M0AR = Register(S7M0AR_val).init(base_address + 0xc4);
+    pub const S7M0AR = MMIO(S7M0AR_val).init(base_address + 0xc4);
 
     /// S7M1AR
     const S7M1AR_val = packed struct {
@@ -2684,7 +2769,7 @@ pub const DMA2 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S7M1AR = Register(S7M1AR_val).init(base_address + 0xc8);
+    pub const S7M1AR = MMIO(S7M1AR_val).init(base_address + 0xc8);
 
     /// S7FCR
     const S7FCR_val = packed struct {
@@ -2708,7 +2793,7 @@ pub const DMA2 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S7FCR = Register(S7FCR_val).init(base_address + 0xcc);
+    pub const S7FCR = MMIO(S7FCR_val).init(base_address + 0xcc);
 };
 
 /// DMA controller
@@ -2790,7 +2875,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// low interrupt status register
-    pub const LISR = Register(LISR_val).init(base_address + 0x0);
+    pub const LISR = MMIO(LISR_val).init(base_address + 0x0);
 
     /// HISR
     const HISR_val = packed struct {
@@ -2868,7 +2953,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// high interrupt status register
-    pub const HISR = Register(HISR_val).init(base_address + 0x4);
+    pub const HISR = MMIO(HISR_val).init(base_address + 0x4);
 
     /// LIFCR
     const LIFCR_val = packed struct {
@@ -2946,7 +3031,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// low interrupt flag clear
-    pub const LIFCR = Register(LIFCR_val).init(base_address + 0x8);
+    pub const LIFCR = MMIO(LIFCR_val).init(base_address + 0x8);
 
     /// HIFCR
     const HIFCR_val = packed struct {
@@ -3024,7 +3109,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// high interrupt flag clear
-    pub const HIFCR = Register(HIFCR_val).init(base_address + 0xc);
+    pub const HIFCR = MMIO(HIFCR_val).init(base_address + 0xc);
 
     /// S0CR
     const S0CR_val = packed struct {
@@ -3091,7 +3176,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S0CR = Register(S0CR_val).init(base_address + 0x10);
+    pub const S0CR = MMIO(S0CR_val).init(base_address + 0x10);
 
     /// S0NDTR
     const S0NDTR_val = packed struct {
@@ -3103,7 +3188,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S0NDTR = Register(S0NDTR_val).init(base_address + 0x14);
+    pub const S0NDTR = MMIO(S0NDTR_val).init(base_address + 0x14);
 
     /// S0PAR
     const S0PAR_val = packed struct {
@@ -3112,7 +3197,7 @@ pub const DMA1 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S0PAR = Register(S0PAR_val).init(base_address + 0x18);
+    pub const S0PAR = MMIO(S0PAR_val).init(base_address + 0x18);
 
     /// S0M0AR
     const S0M0AR_val = packed struct {
@@ -3121,7 +3206,7 @@ pub const DMA1 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S0M0AR = Register(S0M0AR_val).init(base_address + 0x1c);
+    pub const S0M0AR = MMIO(S0M0AR_val).init(base_address + 0x1c);
 
     /// S0M1AR
     const S0M1AR_val = packed struct {
@@ -3130,7 +3215,7 @@ pub const DMA1 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S0M1AR = Register(S0M1AR_val).init(base_address + 0x20);
+    pub const S0M1AR = MMIO(S0M1AR_val).init(base_address + 0x20);
 
     /// S0FCR
     const S0FCR_val = packed struct {
@@ -3154,7 +3239,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S0FCR = Register(S0FCR_val).init(base_address + 0x24);
+    pub const S0FCR = MMIO(S0FCR_val).init(base_address + 0x24);
 
     /// S1CR
     const S1CR_val = packed struct {
@@ -3222,7 +3307,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S1CR = Register(S1CR_val).init(base_address + 0x28);
+    pub const S1CR = MMIO(S1CR_val).init(base_address + 0x28);
 
     /// S1NDTR
     const S1NDTR_val = packed struct {
@@ -3234,7 +3319,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S1NDTR = Register(S1NDTR_val).init(base_address + 0x2c);
+    pub const S1NDTR = MMIO(S1NDTR_val).init(base_address + 0x2c);
 
     /// S1PAR
     const S1PAR_val = packed struct {
@@ -3243,7 +3328,7 @@ pub const DMA1 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S1PAR = Register(S1PAR_val).init(base_address + 0x30);
+    pub const S1PAR = MMIO(S1PAR_val).init(base_address + 0x30);
 
     /// S1M0AR
     const S1M0AR_val = packed struct {
@@ -3252,7 +3337,7 @@ pub const DMA1 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S1M0AR = Register(S1M0AR_val).init(base_address + 0x34);
+    pub const S1M0AR = MMIO(S1M0AR_val).init(base_address + 0x34);
 
     /// S1M1AR
     const S1M1AR_val = packed struct {
@@ -3261,7 +3346,7 @@ pub const DMA1 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S1M1AR = Register(S1M1AR_val).init(base_address + 0x38);
+    pub const S1M1AR = MMIO(S1M1AR_val).init(base_address + 0x38);
 
     /// S1FCR
     const S1FCR_val = packed struct {
@@ -3285,7 +3370,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S1FCR = Register(S1FCR_val).init(base_address + 0x3c);
+    pub const S1FCR = MMIO(S1FCR_val).init(base_address + 0x3c);
 
     /// S2CR
     const S2CR_val = packed struct {
@@ -3353,7 +3438,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S2CR = Register(S2CR_val).init(base_address + 0x40);
+    pub const S2CR = MMIO(S2CR_val).init(base_address + 0x40);
 
     /// S2NDTR
     const S2NDTR_val = packed struct {
@@ -3365,7 +3450,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S2NDTR = Register(S2NDTR_val).init(base_address + 0x44);
+    pub const S2NDTR = MMIO(S2NDTR_val).init(base_address + 0x44);
 
     /// S2PAR
     const S2PAR_val = packed struct {
@@ -3374,7 +3459,7 @@ pub const DMA1 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S2PAR = Register(S2PAR_val).init(base_address + 0x48);
+    pub const S2PAR = MMIO(S2PAR_val).init(base_address + 0x48);
 
     /// S2M0AR
     const S2M0AR_val = packed struct {
@@ -3383,7 +3468,7 @@ pub const DMA1 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S2M0AR = Register(S2M0AR_val).init(base_address + 0x4c);
+    pub const S2M0AR = MMIO(S2M0AR_val).init(base_address + 0x4c);
 
     /// S2M1AR
     const S2M1AR_val = packed struct {
@@ -3392,7 +3477,7 @@ pub const DMA1 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S2M1AR = Register(S2M1AR_val).init(base_address + 0x50);
+    pub const S2M1AR = MMIO(S2M1AR_val).init(base_address + 0x50);
 
     /// S2FCR
     const S2FCR_val = packed struct {
@@ -3416,7 +3501,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S2FCR = Register(S2FCR_val).init(base_address + 0x54);
+    pub const S2FCR = MMIO(S2FCR_val).init(base_address + 0x54);
 
     /// S3CR
     const S3CR_val = packed struct {
@@ -3484,7 +3569,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S3CR = Register(S3CR_val).init(base_address + 0x58);
+    pub const S3CR = MMIO(S3CR_val).init(base_address + 0x58);
 
     /// S3NDTR
     const S3NDTR_val = packed struct {
@@ -3496,7 +3581,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S3NDTR = Register(S3NDTR_val).init(base_address + 0x5c);
+    pub const S3NDTR = MMIO(S3NDTR_val).init(base_address + 0x5c);
 
     /// S3PAR
     const S3PAR_val = packed struct {
@@ -3505,7 +3590,7 @@ pub const DMA1 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S3PAR = Register(S3PAR_val).init(base_address + 0x60);
+    pub const S3PAR = MMIO(S3PAR_val).init(base_address + 0x60);
 
     /// S3M0AR
     const S3M0AR_val = packed struct {
@@ -3514,7 +3599,7 @@ pub const DMA1 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S3M0AR = Register(S3M0AR_val).init(base_address + 0x64);
+    pub const S3M0AR = MMIO(S3M0AR_val).init(base_address + 0x64);
 
     /// S3M1AR
     const S3M1AR_val = packed struct {
@@ -3523,7 +3608,7 @@ pub const DMA1 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S3M1AR = Register(S3M1AR_val).init(base_address + 0x68);
+    pub const S3M1AR = MMIO(S3M1AR_val).init(base_address + 0x68);
 
     /// S3FCR
     const S3FCR_val = packed struct {
@@ -3547,7 +3632,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S3FCR = Register(S3FCR_val).init(base_address + 0x6c);
+    pub const S3FCR = MMIO(S3FCR_val).init(base_address + 0x6c);
 
     /// S4CR
     const S4CR_val = packed struct {
@@ -3615,7 +3700,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S4CR = Register(S4CR_val).init(base_address + 0x70);
+    pub const S4CR = MMIO(S4CR_val).init(base_address + 0x70);
 
     /// S4NDTR
     const S4NDTR_val = packed struct {
@@ -3627,7 +3712,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S4NDTR = Register(S4NDTR_val).init(base_address + 0x74);
+    pub const S4NDTR = MMIO(S4NDTR_val).init(base_address + 0x74);
 
     /// S4PAR
     const S4PAR_val = packed struct {
@@ -3636,7 +3721,7 @@ pub const DMA1 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S4PAR = Register(S4PAR_val).init(base_address + 0x78);
+    pub const S4PAR = MMIO(S4PAR_val).init(base_address + 0x78);
 
     /// S4M0AR
     const S4M0AR_val = packed struct {
@@ -3645,7 +3730,7 @@ pub const DMA1 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S4M0AR = Register(S4M0AR_val).init(base_address + 0x7c);
+    pub const S4M0AR = MMIO(S4M0AR_val).init(base_address + 0x7c);
 
     /// S4M1AR
     const S4M1AR_val = packed struct {
@@ -3654,7 +3739,7 @@ pub const DMA1 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S4M1AR = Register(S4M1AR_val).init(base_address + 0x80);
+    pub const S4M1AR = MMIO(S4M1AR_val).init(base_address + 0x80);
 
     /// S4FCR
     const S4FCR_val = packed struct {
@@ -3678,7 +3763,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S4FCR = Register(S4FCR_val).init(base_address + 0x84);
+    pub const S4FCR = MMIO(S4FCR_val).init(base_address + 0x84);
 
     /// S5CR
     const S5CR_val = packed struct {
@@ -3746,7 +3831,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S5CR = Register(S5CR_val).init(base_address + 0x88);
+    pub const S5CR = MMIO(S5CR_val).init(base_address + 0x88);
 
     /// S5NDTR
     const S5NDTR_val = packed struct {
@@ -3758,7 +3843,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S5NDTR = Register(S5NDTR_val).init(base_address + 0x8c);
+    pub const S5NDTR = MMIO(S5NDTR_val).init(base_address + 0x8c);
 
     /// S5PAR
     const S5PAR_val = packed struct {
@@ -3767,7 +3852,7 @@ pub const DMA1 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S5PAR = Register(S5PAR_val).init(base_address + 0x90);
+    pub const S5PAR = MMIO(S5PAR_val).init(base_address + 0x90);
 
     /// S5M0AR
     const S5M0AR_val = packed struct {
@@ -3776,7 +3861,7 @@ pub const DMA1 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S5M0AR = Register(S5M0AR_val).init(base_address + 0x94);
+    pub const S5M0AR = MMIO(S5M0AR_val).init(base_address + 0x94);
 
     /// S5M1AR
     const S5M1AR_val = packed struct {
@@ -3785,7 +3870,7 @@ pub const DMA1 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S5M1AR = Register(S5M1AR_val).init(base_address + 0x98);
+    pub const S5M1AR = MMIO(S5M1AR_val).init(base_address + 0x98);
 
     /// S5FCR
     const S5FCR_val = packed struct {
@@ -3809,7 +3894,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S5FCR = Register(S5FCR_val).init(base_address + 0x9c);
+    pub const S5FCR = MMIO(S5FCR_val).init(base_address + 0x9c);
 
     /// S6CR
     const S6CR_val = packed struct {
@@ -3877,7 +3962,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S6CR = Register(S6CR_val).init(base_address + 0xa0);
+    pub const S6CR = MMIO(S6CR_val).init(base_address + 0xa0);
 
     /// S6NDTR
     const S6NDTR_val = packed struct {
@@ -3889,7 +3974,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S6NDTR = Register(S6NDTR_val).init(base_address + 0xa4);
+    pub const S6NDTR = MMIO(S6NDTR_val).init(base_address + 0xa4);
 
     /// S6PAR
     const S6PAR_val = packed struct {
@@ -3898,7 +3983,7 @@ pub const DMA1 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S6PAR = Register(S6PAR_val).init(base_address + 0xa8);
+    pub const S6PAR = MMIO(S6PAR_val).init(base_address + 0xa8);
 
     /// S6M0AR
     const S6M0AR_val = packed struct {
@@ -3907,7 +3992,7 @@ pub const DMA1 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S6M0AR = Register(S6M0AR_val).init(base_address + 0xac);
+    pub const S6M0AR = MMIO(S6M0AR_val).init(base_address + 0xac);
 
     /// S6M1AR
     const S6M1AR_val = packed struct {
@@ -3916,7 +4001,7 @@ pub const DMA1 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S6M1AR = Register(S6M1AR_val).init(base_address + 0xb0);
+    pub const S6M1AR = MMIO(S6M1AR_val).init(base_address + 0xb0);
 
     /// S6FCR
     const S6FCR_val = packed struct {
@@ -3940,7 +4025,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S6FCR = Register(S6FCR_val).init(base_address + 0xb4);
+    pub const S6FCR = MMIO(S6FCR_val).init(base_address + 0xb4);
 
     /// S7CR
     const S7CR_val = packed struct {
@@ -4008,7 +4093,7 @@ pub const DMA1 = struct {
         _unused28: u4 = 0,
     };
     /// stream x configuration
-    pub const S7CR = Register(S7CR_val).init(base_address + 0xb8);
+    pub const S7CR = MMIO(S7CR_val).init(base_address + 0xb8);
 
     /// S7NDTR
     const S7NDTR_val = packed struct {
@@ -4020,7 +4105,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x number of data
-    pub const S7NDTR = Register(S7NDTR_val).init(base_address + 0xbc);
+    pub const S7NDTR = MMIO(S7NDTR_val).init(base_address + 0xbc);
 
     /// S7PAR
     const S7PAR_val = packed struct {
@@ -4029,7 +4114,7 @@ pub const DMA1 = struct {
         PA: u32 = 0,
     };
     /// stream x peripheral address
-    pub const S7PAR = Register(S7PAR_val).init(base_address + 0xc0);
+    pub const S7PAR = MMIO(S7PAR_val).init(base_address + 0xc0);
 
     /// S7M0AR
     const S7M0AR_val = packed struct {
@@ -4038,7 +4123,7 @@ pub const DMA1 = struct {
         M0A: u32 = 0,
     };
     /// stream x memory 0 address
-    pub const S7M0AR = Register(S7M0AR_val).init(base_address + 0xc4);
+    pub const S7M0AR = MMIO(S7M0AR_val).init(base_address + 0xc4);
 
     /// S7M1AR
     const S7M1AR_val = packed struct {
@@ -4047,7 +4132,7 @@ pub const DMA1 = struct {
         M1A: u32 = 0,
     };
     /// stream x memory 1 address
-    pub const S7M1AR = Register(S7M1AR_val).init(base_address + 0xc8);
+    pub const S7M1AR = MMIO(S7M1AR_val).init(base_address + 0xc8);
 
     /// S7FCR
     const S7FCR_val = packed struct {
@@ -4071,7 +4156,7 @@ pub const DMA1 = struct {
         _unused24: u8 = 0,
     };
     /// stream x FIFO control register
-    pub const S7FCR = Register(S7FCR_val).init(base_address + 0xcc);
+    pub const S7FCR = MMIO(S7FCR_val).init(base_address + 0xcc);
 };
 
 /// Reset and clock control
@@ -4123,7 +4208,7 @@ pub const RCC = struct {
         _unused28: u4 = 0,
     };
     /// clock control register
-    pub const CR = Register(CR_val).init(base_address + 0x0);
+    pub const CR = MMIO(CR_val).init(base_address + 0x0);
 
     /// PLLCFGR
     const PLLCFGR_val = packed struct {
@@ -4203,7 +4288,7 @@ pub const RCC = struct {
         _unused28: u4 = 2,
     };
     /// PLL configuration register
-    pub const PLLCFGR = Register(PLLCFGR_val).init(base_address + 0x4);
+    pub const PLLCFGR = MMIO(PLLCFGR_val).init(base_address + 0x4);
 
     /// CFGR
     const CFGR_val = packed struct {
@@ -4250,7 +4335,7 @@ pub const RCC = struct {
         MCO2: u2 = 0,
     };
     /// clock configuration register
-    pub const CFGR = Register(CFGR_val).init(base_address + 0x8);
+    pub const CFGR = MMIO(CFGR_val).init(base_address + 0x8);
 
     /// CIR
     const CIR_val = packed struct {
@@ -4272,8 +4357,9 @@ pub const RCC = struct {
         /// PLLI2SRDYF [5:5]
         /// PLLI2S ready interrupt
         PLLI2SRDYF: u1 = 0,
-        /// unused [6:6]
-        _unused6: u1 = 0,
+        /// PLLSAIRDYF [6:6]
+        /// PLLSAI ready interrupt
+        PLLSAIRDYF: u1 = 0,
         /// CSSF [7:7]
         /// Clock security system interrupt
         CSSF: u1 = 0,
@@ -4295,8 +4381,11 @@ pub const RCC = struct {
         /// PLLI2SRDYIE [13:13]
         /// PLLI2S ready interrupt
         PLLI2SRDYIE: u1 = 0,
-        /// unused [14:15]
-        _unused14: u2 = 0,
+        /// PLLSAIRDYIE [14:14]
+        /// PLLSAI Ready Interrupt
+        PLLSAIRDYIE: u1 = 0,
+        /// unused [15:15]
+        _unused15: u1 = 0,
         /// LSIRDYC [16:16]
         /// LSI ready interrupt clear
         LSIRDYC: u1 = 0,
@@ -4315,8 +4404,9 @@ pub const RCC = struct {
         /// PLLI2SRDYC [21:21]
         /// PLLI2S ready interrupt
         PLLI2SRDYC: u1 = 0,
-        /// unused [22:22]
-        _unused22: u1 = 0,
+        /// PLLSAIRDYC [22:22]
+        /// PLLSAI Ready Interrupt
+        PLLSAIRDYC: u1 = 0,
         /// CSSC [23:23]
         /// Clock security system interrupt
         CSSC: u1 = 0,
@@ -4324,7 +4414,7 @@ pub const RCC = struct {
         _unused24: u8 = 0,
     };
     /// clock interrupt register
-    pub const CIR = Register(CIR_val).init(base_address + 0xc);
+    pub const CIR = MMIO(CIR_val).init(base_address + 0xc);
 
     /// AHB1RSTR
     const AHB1RSTR_val = packed struct {
@@ -4352,11 +4442,8 @@ pub const RCC = struct {
         /// GPIOHRST [7:7]
         /// IO port H reset
         GPIOHRST: u1 = 0,
-        /// GPIOIRST [8:8]
-        /// IO port I reset
-        GPIOIRST: u1 = 0,
-        /// unused [9:11]
-        _unused9: u3 = 0,
+        /// unused [8:11]
+        _unused8: u4 = 0,
         /// CRCRST [12:12]
         /// CRC reset
         CRCRST: u1 = 0,
@@ -4369,14 +4456,9 @@ pub const RCC = struct {
         /// DMA2RST [22:22]
         /// DMA2 reset
         DMA2RST: u1 = 0,
-        /// unused [23:24]
+        /// unused [23:28]
         _unused23: u1 = 0,
-        _unused24: u1 = 0,
-        /// ETHMACRST [25:25]
-        /// Ethernet MAC reset
-        ETHMACRST: u1 = 0,
-        /// unused [26:28]
-        _unused26: u3 = 0,
+        _unused24: u5 = 0,
         /// OTGHSRST [29:29]
         /// USB OTG HS module reset
         OTGHSRST: u1 = 0,
@@ -4384,18 +4466,15 @@ pub const RCC = struct {
         _unused30: u2 = 0,
     };
     /// AHB1 peripheral reset register
-    pub const AHB1RSTR = Register(AHB1RSTR_val).init(base_address + 0x10);
+    pub const AHB1RSTR = MMIO(AHB1RSTR_val).init(base_address + 0x10);
 
     /// AHB2RSTR
     const AHB2RSTR_val = packed struct {
         /// DCMIRST [0:0]
         /// Camera interface reset
         DCMIRST: u1 = 0,
-        /// unused [1:5]
-        _unused1: u5 = 0,
-        /// RNGRST [6:6]
-        /// Random number generator module
-        RNGRST: u1 = 0,
+        /// unused [1:6]
+        _unused1: u6 = 0,
         /// OTGFSRST [7:7]
         /// USB OTG FS module reset
         OTGFSRST: u1 = 0,
@@ -4405,21 +4484,24 @@ pub const RCC = struct {
         _unused24: u8 = 0,
     };
     /// AHB2 peripheral reset register
-    pub const AHB2RSTR = Register(AHB2RSTR_val).init(base_address + 0x14);
+    pub const AHB2RSTR = MMIO(AHB2RSTR_val).init(base_address + 0x14);
 
     /// AHB3RSTR
     const AHB3RSTR_val = packed struct {
-        /// FSMCRST [0:0]
-        /// Flexible static memory controller module
-        FSMCRST: u1 = 0,
-        /// unused [1:31]
-        _unused1: u7 = 0,
+        /// FMCRST [0:0]
+        /// Flexible memory controller module
+        FMCRST: u1 = 0,
+        /// QSPIRST [1:1]
+        /// QUADSPI module reset
+        QSPIRST: u1 = 0,
+        /// unused [2:31]
+        _unused2: u6 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
     /// AHB3 peripheral reset register
-    pub const AHB3RSTR = Register(AHB3RSTR_val).init(base_address + 0x18);
+    pub const AHB3RSTR = MMIO(AHB3RSTR_val).init(base_address + 0x18);
 
     /// APB1RSTR
     const APB1RSTR_val = packed struct {
@@ -4463,8 +4545,9 @@ pub const RCC = struct {
         /// SPI3RST [15:15]
         /// SPI 3 reset
         SPI3RST: u1 = 0,
-        /// unused [16:16]
-        _unused16: u1 = 0,
+        /// SPDIFRST [16:16]
+        /// SPDIF-IN reset
+        SPDIFRST: u1 = 0,
         /// UART2RST [17:17]
         /// USART 2 reset
         UART2RST: u1 = 0,
@@ -4486,8 +4569,9 @@ pub const RCC = struct {
         /// I2C3RST [23:23]
         /// I2C3 reset
         I2C3RST: u1 = 0,
-        /// unused [24:24]
-        _unused24: u1 = 0,
+        /// I2CFMP1RST [24:24]
+        /// I2CFMP1 reset
+        I2CFMP1RST: u1 = 0,
         /// CAN1RST [25:25]
         /// CAN1 reset
         CAN1RST: u1 = 0,
@@ -4506,7 +4590,7 @@ pub const RCC = struct {
         _unused30: u2 = 0,
     };
     /// APB1 peripheral reset register
-    pub const APB1RSTR = Register(APB1RSTR_val).init(base_address + 0x20);
+    pub const APB1RSTR = MMIO(APB1RSTR_val).init(base_address + 0x20);
 
     /// APB2RSTR
     const APB2RSTR_val = packed struct {
@@ -4537,8 +4621,9 @@ pub const RCC = struct {
         /// SPI1RST [12:12]
         /// SPI 1 reset
         SPI1RST: u1 = 0,
-        /// unused [13:13]
-        _unused13: u1 = 0,
+        /// SPI4RST [13:13]
+        /// SPI4 reset
+        SPI4RST: u1 = 0,
         /// SYSCFGRST [14:14]
         /// System configuration controller
         SYSCFGRST: u1 = 0,
@@ -4553,12 +4638,19 @@ pub const RCC = struct {
         /// TIM11RST [18:18]
         /// TIM11 reset
         TIM11RST: u1 = 0,
-        /// unused [19:31]
-        _unused19: u5 = 0,
+        /// unused [19:21]
+        _unused19: u3 = 0,
+        /// SAI1RST [22:22]
+        /// SAI1 reset
+        SAI1RST: u1 = 0,
+        /// SAI2RST [23:23]
+        /// SAI2 reset
+        SAI2RST: u1 = 0,
+        /// unused [24:31]
         _unused24: u8 = 0,
     };
     /// APB2 peripheral reset register
-    pub const APB2RSTR = Register(APB2RSTR_val).init(base_address + 0x24);
+    pub const APB2RSTR = MMIO(APB2RSTR_val).init(base_address + 0x24);
 
     /// AHB1ENR
     const AHB1ENR_val = packed struct {
@@ -4586,11 +4678,8 @@ pub const RCC = struct {
         /// GPIOHEN [7:7]
         /// IO port H clock enable
         GPIOHEN: u1 = 0,
-        /// GPIOIEN [8:8]
-        /// IO port I clock enable
-        GPIOIEN: u1 = 0,
-        /// unused [9:11]
-        _unused9: u3 = 0,
+        /// unused [8:11]
+        _unused8: u4 = 0,
         /// CRCEN [12:12]
         /// CRC clock enable
         CRCEN: u1 = 0,
@@ -4608,21 +4697,9 @@ pub const RCC = struct {
         /// DMA2EN [22:22]
         /// DMA2 clock enable
         DMA2EN: u1 = 0,
-        /// unused [23:24]
+        /// unused [23:28]
         _unused23: u1 = 0,
-        _unused24: u1 = 0,
-        /// ETHMACEN [25:25]
-        /// Ethernet MAC clock enable
-        ETHMACEN: u1 = 0,
-        /// ETHMACTXEN [26:26]
-        /// Ethernet Transmission clock
-        ETHMACTXEN: u1 = 0,
-        /// ETHMACRXEN [27:27]
-        /// Ethernet Reception clock
-        ETHMACRXEN: u1 = 0,
-        /// ETHMACPTPEN [28:28]
-        /// Ethernet PTP clock enable
-        ETHMACPTPEN: u1 = 0,
+        _unused24: u5 = 0,
         /// OTGHSEN [29:29]
         /// USB OTG HS clock enable
         OTGHSEN: u1 = 0,
@@ -4633,18 +4710,15 @@ pub const RCC = struct {
         _unused31: u1 = 0,
     };
     /// AHB1 peripheral clock register
-    pub const AHB1ENR = Register(AHB1ENR_val).init(base_address + 0x30);
+    pub const AHB1ENR = MMIO(AHB1ENR_val).init(base_address + 0x30);
 
     /// AHB2ENR
     const AHB2ENR_val = packed struct {
         /// DCMIEN [0:0]
         /// Camera interface enable
         DCMIEN: u1 = 0,
-        /// unused [1:5]
-        _unused1: u5 = 0,
-        /// RNGEN [6:6]
-        /// Random number generator clock
-        RNGEN: u1 = 0,
+        /// unused [1:6]
+        _unused1: u6 = 0,
         /// OTGFSEN [7:7]
         /// USB OTG FS clock enable
         OTGFSEN: u1 = 0,
@@ -4654,21 +4728,24 @@ pub const RCC = struct {
         _unused24: u8 = 0,
     };
     /// AHB2 peripheral clock enable
-    pub const AHB2ENR = Register(AHB2ENR_val).init(base_address + 0x34);
+    pub const AHB2ENR = MMIO(AHB2ENR_val).init(base_address + 0x34);
 
     /// AHB3ENR
     const AHB3ENR_val = packed struct {
-        /// FSMCEN [0:0]
-        /// Flexible static memory controller module
-        FSMCEN: u1 = 0,
-        /// unused [1:31]
-        _unused1: u7 = 0,
+        /// FMCEN [0:0]
+        /// Flexible memory controller module clock
+        FMCEN: u1 = 0,
+        /// QSPIEN [1:1]
+        /// QUADSPI memory controller module clock
+        QSPIEN: u1 = 0,
+        /// unused [2:31]
+        _unused2: u6 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
     /// AHB3 peripheral clock enable
-    pub const AHB3ENR = Register(AHB3ENR_val).init(base_address + 0x38);
+    pub const AHB3ENR = MMIO(AHB3ENR_val).init(base_address + 0x38);
 
     /// APB1ENR
     const APB1ENR_val = packed struct {
@@ -4712,8 +4789,9 @@ pub const RCC = struct {
         /// SPI3EN [15:15]
         /// SPI3 clock enable
         SPI3EN: u1 = 0,
-        /// unused [16:16]
-        _unused16: u1 = 0,
+        /// SPDIFEN [16:16]
+        /// SPDIF-IN clock enable
+        SPDIFEN: u1 = 0,
         /// USART2EN [17:17]
         /// USART 2 clock enable
         USART2EN: u1 = 0,
@@ -4735,16 +4813,18 @@ pub const RCC = struct {
         /// I2C3EN [23:23]
         /// I2C3 clock enable
         I2C3EN: u1 = 0,
-        /// unused [24:24]
-        _unused24: u1 = 0,
+        /// I2CFMP1EN [24:24]
+        /// I2CFMP1 clock enable
+        I2CFMP1EN: u1 = 0,
         /// CAN1EN [25:25]
         /// CAN 1 clock enable
         CAN1EN: u1 = 0,
         /// CAN2EN [26:26]
         /// CAN 2 clock enable
         CAN2EN: u1 = 0,
-        /// unused [27:27]
-        _unused27: u1 = 0,
+        /// CEC [27:27]
+        /// CEC interface clock enable
+        CEC: u1 = 0,
         /// PWREN [28:28]
         /// Power interface clock
         PWREN: u1 = 0,
@@ -4755,7 +4835,7 @@ pub const RCC = struct {
         _unused30: u2 = 0,
     };
     /// APB1 peripheral clock enable
-    pub const APB1ENR = Register(APB1ENR_val).init(base_address + 0x40);
+    pub const APB1ENR = MMIO(APB1ENR_val).init(base_address + 0x40);
 
     /// APB2ENR
     const APB2ENR_val = packed struct {
@@ -4790,8 +4870,9 @@ pub const RCC = struct {
         /// SPI1EN [12:12]
         /// SPI1 clock enable
         SPI1EN: u1 = 0,
-        /// unused [13:13]
-        _unused13: u1 = 0,
+        /// SPI4ENR [13:13]
+        /// SPI4 clock enable
+        SPI4ENR: u1 = 0,
         /// SYSCFGEN [14:14]
         /// System configuration controller clock
         SYSCFGEN: u1 = 0,
@@ -4806,12 +4887,19 @@ pub const RCC = struct {
         /// TIM11EN [18:18]
         /// TIM11 clock enable
         TIM11EN: u1 = 0,
-        /// unused [19:31]
-        _unused19: u5 = 0,
+        /// unused [19:21]
+        _unused19: u3 = 0,
+        /// SAI1EN [22:22]
+        /// SAI1 clock enable
+        SAI1EN: u1 = 0,
+        /// SAI2EN [23:23]
+        /// SAI2 clock enable
+        SAI2EN: u1 = 0,
+        /// unused [24:31]
         _unused24: u8 = 0,
     };
     /// APB2 peripheral clock enable
-    pub const APB2ENR = Register(APB2ENR_val).init(base_address + 0x44);
+    pub const APB2ENR = MMIO(APB2ENR_val).init(base_address + 0x44);
 
     /// AHB1LPENR
     const AHB1LPENR_val = packed struct {
@@ -4839,11 +4927,8 @@ pub const RCC = struct {
         /// GPIOHLPEN [7:7]
         /// IO port H clock enable during Sleep
         GPIOHLPEN: u1 = 1,
-        /// GPIOILPEN [8:8]
-        /// IO port I clock enable during Sleep
-        GPIOILPEN: u1 = 1,
-        /// unused [9:11]
-        _unused9: u3 = 0,
+        /// unused [8:11]
+        _unused8: u4 = 1,
         /// CRCLPEN [12:12]
         /// CRC clock enable during Sleep
         CRCLPEN: u1 = 1,
@@ -4869,21 +4954,9 @@ pub const RCC = struct {
         /// DMA2LPEN [22:22]
         /// DMA2 clock enable during Sleep
         DMA2LPEN: u1 = 1,
-        /// unused [23:24]
+        /// unused [23:28]
         _unused23: u1 = 0,
-        _unused24: u1 = 0,
-        /// ETHMACLPEN [25:25]
-        /// Ethernet MAC clock enable during Sleep
-        ETHMACLPEN: u1 = 1,
-        /// ETHMACTXLPEN [26:26]
-        /// Ethernet transmission clock enable
-        ETHMACTXLPEN: u1 = 1,
-        /// ETHMACRXLPEN [27:27]
-        /// Ethernet reception clock enable during
-        ETHMACRXLPEN: u1 = 1,
-        /// ETHMACPTPLPEN [28:28]
-        /// Ethernet PTP clock enable during Sleep
-        ETHMACPTPLPEN: u1 = 1,
+        _unused24: u5 = 30,
         /// OTGHSLPEN [29:29]
         /// USB OTG HS clock enable during Sleep
         OTGHSLPEN: u1 = 1,
@@ -4894,18 +4967,15 @@ pub const RCC = struct {
         _unused31: u1 = 0,
     };
     /// AHB1 peripheral clock enable in low power
-    pub const AHB1LPENR = Register(AHB1LPENR_val).init(base_address + 0x50);
+    pub const AHB1LPENR = MMIO(AHB1LPENR_val).init(base_address + 0x50);
 
     /// AHB2LPENR
     const AHB2LPENR_val = packed struct {
         /// DCMILPEN [0:0]
         /// Camera interface enable during Sleep
         DCMILPEN: u1 = 1,
-        /// unused [1:5]
-        _unused1: u5 = 24,
-        /// RNGLPEN [6:6]
-        /// Random number generator clock enable
-        RNGLPEN: u1 = 1,
+        /// unused [1:6]
+        _unused1: u6 = 56,
         /// OTGFSLPEN [7:7]
         /// USB OTG FS clock enable during Sleep
         OTGFSLPEN: u1 = 1,
@@ -4915,21 +4985,24 @@ pub const RCC = struct {
         _unused24: u8 = 0,
     };
     /// AHB2 peripheral clock enable in low power
-    pub const AHB2LPENR = Register(AHB2LPENR_val).init(base_address + 0x54);
+    pub const AHB2LPENR = MMIO(AHB2LPENR_val).init(base_address + 0x54);
 
     /// AHB3LPENR
     const AHB3LPENR_val = packed struct {
-        /// FSMCLPEN [0:0]
-        /// Flexible static memory controller module
-        FSMCLPEN: u1 = 1,
-        /// unused [1:31]
-        _unused1: u7 = 0,
+        /// FMCLPEN [0:0]
+        /// Flexible memory controller module clock
+        FMCLPEN: u1 = 1,
+        /// QSPILPEN [1:1]
+        /// QUADSPI memory controller module clock
+        QSPILPEN: u1 = 0,
+        /// unused [2:31]
+        _unused2: u6 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
     /// AHB3 peripheral clock enable in low power
-    pub const AHB3LPENR = Register(AHB3LPENR_val).init(base_address + 0x58);
+    pub const AHB3LPENR = MMIO(AHB3LPENR_val).init(base_address + 0x58);
 
     /// APB1LPENR
     const APB1LPENR_val = packed struct {
@@ -4973,8 +5046,9 @@ pub const RCC = struct {
         /// SPI3LPEN [15:15]
         /// SPI3 clock enable during Sleep
         SPI3LPEN: u1 = 1,
-        /// unused [16:16]
-        _unused16: u1 = 0,
+        /// SPDIFLPEN [16:16]
+        /// SPDIF clock enable during Sleep
+        SPDIFLPEN: u1 = 0,
         /// USART2LPEN [17:17]
         /// USART2 clock enable during Sleep
         USART2LPEN: u1 = 1,
@@ -4996,16 +5070,18 @@ pub const RCC = struct {
         /// I2C3LPEN [23:23]
         /// I2C3 clock enable during Sleep
         I2C3LPEN: u1 = 1,
-        /// unused [24:24]
-        _unused24: u1 = 0,
+        /// I2CFMP1LPEN [24:24]
+        /// I2CFMP1 clock enable during Sleep
+        I2CFMP1LPEN: u1 = 0,
         /// CAN1LPEN [25:25]
         /// CAN 1 clock enable during Sleep
         CAN1LPEN: u1 = 1,
         /// CAN2LPEN [26:26]
         /// CAN 2 clock enable during Sleep
         CAN2LPEN: u1 = 1,
-        /// unused [27:27]
-        _unused27: u1 = 0,
+        /// CECLPEN [27:27]
+        /// CEC clock enable during Sleep
+        CECLPEN: u1 = 0,
         /// PWRLPEN [28:28]
         /// Power interface clock enable during
         PWRLPEN: u1 = 1,
@@ -5016,7 +5092,7 @@ pub const RCC = struct {
         _unused30: u2 = 0,
     };
     /// APB1 peripheral clock enable in low power
-    pub const APB1LPENR = Register(APB1LPENR_val).init(base_address + 0x60);
+    pub const APB1LPENR = MMIO(APB1LPENR_val).init(base_address + 0x60);
 
     /// APB2LPENR
     const APB2LPENR_val = packed struct {
@@ -5051,8 +5127,9 @@ pub const RCC = struct {
         /// SPI1LPEN [12:12]
         /// SPI 1 clock enable during Sleep
         SPI1LPEN: u1 = 1,
-        /// unused [13:13]
-        _unused13: u1 = 0,
+        /// SPI4LPEN [13:13]
+        /// SPI 4 clock enable during Sleep
+        SPI4LPEN: u1 = 0,
         /// SYSCFGLPEN [14:14]
         /// System configuration controller clock
         SYSCFGLPEN: u1 = 1,
@@ -5067,12 +5144,19 @@ pub const RCC = struct {
         /// TIM11LPEN [18:18]
         /// TIM11 clock enable during Sleep
         TIM11LPEN: u1 = 1,
-        /// unused [19:31]
-        _unused19: u5 = 0,
+        /// unused [19:21]
+        _unused19: u3 = 0,
+        /// SAI1LPEN [22:22]
+        /// SAI1 clock enable
+        SAI1LPEN: u1 = 0,
+        /// SAI2LPEN [23:23]
+        /// SAI2 clock enable
+        SAI2LPEN: u1 = 0,
+        /// unused [24:31]
         _unused24: u8 = 0,
     };
     /// APB2 peripheral clock enabled in low power
-    pub const APB2LPENR = Register(APB2LPENR_val).init(base_address + 0x64);
+    pub const APB2LPENR = MMIO(APB2LPENR_val).init(base_address + 0x64);
 
     /// BDCR
     const BDCR_val = packed struct {
@@ -5085,14 +5169,14 @@ pub const RCC = struct {
         /// LSEBYP [2:2]
         /// External low-speed oscillator
         LSEBYP: u1 = 0,
-        /// unused [3:7]
-        _unused3: u5 = 0,
-        /// RTCSEL0 [8:8]
+        /// LSEMOD [3:3]
+        /// External low-speed oscillator
+        LSEMOD: u1 = 0,
+        /// unused [4:7]
+        _unused4: u4 = 0,
+        /// RTCSEL [8:9]
         /// RTC clock source selection
-        RTCSEL0: u1 = 0,
-        /// RTCSEL1 [9:9]
-        /// RTC clock source selection
-        RTCSEL1: u1 = 0,
+        RTCSEL: u2 = 0,
         /// unused [10:14]
         _unused10: u5 = 0,
         /// RTCEN [15:15]
@@ -5106,7 +5190,7 @@ pub const RCC = struct {
         _unused24: u8 = 0,
     };
     /// Backup domain control register
-    pub const BDCR = Register(BDCR_val).init(base_address + 0x70);
+    pub const BDCR = MMIO(BDCR_val).init(base_address + 0x70);
 
     /// CSR
     const CSR_val = packed struct {
@@ -5146,7 +5230,7 @@ pub const RCC = struct {
         LPWRRSTF: u1 = 0,
     };
     /// clock control &amp; status
-    pub const CSR = Register(CSR_val).init(base_address + 0x74);
+    pub const CSR = MMIO(CSR_val).init(base_address + 0x74);
 
     /// SSCGR
     const SSCGR_val = packed struct {
@@ -5166,586 +5250,153 @@ pub const RCC = struct {
         SSCGEN: u1 = 0,
     };
     /// spread spectrum clock generation
-    pub const SSCGR = Register(SSCGR_val).init(base_address + 0x80);
+    pub const SSCGR = MMIO(SSCGR_val).init(base_address + 0x80);
 
     /// PLLI2SCFGR
     const PLLI2SCFGR_val = packed struct {
-        /// unused [0:5]
-        _unused0: u6 = 0,
-        /// PLLI2SNx [6:14]
+        /// PLLI2SM [0:5]
+        /// Division factor for audio PLL (PLLI2S)
+        PLLI2SM: u6 = 0,
+        /// PLLI2SN [6:14]
         /// PLLI2S multiplication factor for
-        PLLI2SNx: u9 = 192,
-        /// unused [15:27]
+        PLLI2SN: u9 = 192,
+        /// unused [15:15]
         _unused15: u1 = 0,
-        _unused16: u8 = 0,
-        _unused24: u4 = 0,
-        /// PLLI2SRx [28:30]
+        /// PLLI2SP [16:17]
+        /// PLLI2S division factor for SPDIF-IN
+        PLLI2SP: u2 = 0,
+        /// unused [18:23]
+        _unused18: u6 = 0,
+        /// PLLI2SQ [24:27]
+        /// PLLI2S division factor for SAI1
+        PLLI2SQ: u4 = 0,
+        /// PLLI2SR [28:30]
         /// PLLI2S division factor for I2S
-        PLLI2SRx: u3 = 2,
+        PLLI2SR: u3 = 2,
         /// unused [31:31]
         _unused31: u1 = 0,
     };
     /// PLLI2S configuration register
-    pub const PLLI2SCFGR = Register(PLLI2SCFGR_val).init(base_address + 0x84);
-};
+    pub const PLLI2SCFGR = MMIO(PLLI2SCFGR_val).init(base_address + 0x84);
 
-/// General-purpose I/Os
-pub const GPIOI = struct {
-    const base_address = 0x40022000;
-    /// MODER
-    const MODER_val = packed struct {
-        /// MODER0 [0:1]
-        /// Port x configuration bits (y =
-        MODER0: u2 = 0,
-        /// MODER1 [2:3]
-        /// Port x configuration bits (y =
-        MODER1: u2 = 0,
-        /// MODER2 [4:5]
-        /// Port x configuration bits (y =
-        MODER2: u2 = 0,
-        /// MODER3 [6:7]
-        /// Port x configuration bits (y =
-        MODER3: u2 = 0,
-        /// MODER4 [8:9]
-        /// Port x configuration bits (y =
-        MODER4: u2 = 0,
-        /// MODER5 [10:11]
-        /// Port x configuration bits (y =
-        MODER5: u2 = 0,
-        /// MODER6 [12:13]
-        /// Port x configuration bits (y =
-        MODER6: u2 = 0,
-        /// MODER7 [14:15]
-        /// Port x configuration bits (y =
-        MODER7: u2 = 0,
-        /// MODER8 [16:17]
-        /// Port x configuration bits (y =
-        MODER8: u2 = 0,
-        /// MODER9 [18:19]
-        /// Port x configuration bits (y =
-        MODER9: u2 = 0,
-        /// MODER10 [20:21]
-        /// Port x configuration bits (y =
-        MODER10: u2 = 0,
-        /// MODER11 [22:23]
-        /// Port x configuration bits (y =
-        MODER11: u2 = 0,
-        /// MODER12 [24:25]
-        /// Port x configuration bits (y =
-        MODER12: u2 = 0,
-        /// MODER13 [26:27]
-        /// Port x configuration bits (y =
-        MODER13: u2 = 0,
-        /// MODER14 [28:29]
-        /// Port x configuration bits (y =
-        MODER14: u2 = 0,
-        /// MODER15 [30:31]
-        /// Port x configuration bits (y =
-        MODER15: u2 = 0,
+    /// PLLSAICFGR
+    const PLLSAICFGR_val = packed struct {
+        /// PLLSAIM [0:5]
+        /// Division factor for audio PLLSAI input
+        PLLSAIM: u6 = 0,
+        /// PLLSAIN [6:14]
+        /// PLLSAI division factor for
+        PLLSAIN: u9 = 192,
+        /// unused [15:15]
+        _unused15: u1 = 0,
+        /// PLLSAIP [16:17]
+        /// PLLSAI division factor for 48 MHz
+        PLLSAIP: u2 = 0,
+        /// unused [18:23]
+        _unused18: u6 = 0,
+        /// PLLSAIQ [24:27]
+        /// PLLSAI division factor for SAIs
+        PLLSAIQ: u4 = 4,
+        /// unused [28:31]
+        _unused28: u4 = 2,
     };
-    /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    /// PLL configuration register
+    pub const PLLSAICFGR = MMIO(PLLSAICFGR_val).init(base_address + 0x88);
 
-    /// OTYPER
-    const OTYPER_val = packed struct {
-        /// OT0 [0:0]
-        /// Port x configuration bits (y =
-        OT0: u1 = 0,
-        /// OT1 [1:1]
-        /// Port x configuration bits (y =
-        OT1: u1 = 0,
-        /// OT2 [2:2]
-        /// Port x configuration bits (y =
-        OT2: u1 = 0,
-        /// OT3 [3:3]
-        /// Port x configuration bits (y =
-        OT3: u1 = 0,
-        /// OT4 [4:4]
-        /// Port x configuration bits (y =
-        OT4: u1 = 0,
-        /// OT5 [5:5]
-        /// Port x configuration bits (y =
-        OT5: u1 = 0,
-        /// OT6 [6:6]
-        /// Port x configuration bits (y =
-        OT6: u1 = 0,
-        /// OT7 [7:7]
-        /// Port x configuration bits (y =
-        OT7: u1 = 0,
-        /// OT8 [8:8]
-        /// Port x configuration bits (y =
-        OT8: u1 = 0,
-        /// OT9 [9:9]
-        /// Port x configuration bits (y =
-        OT9: u1 = 0,
-        /// OT10 [10:10]
-        /// Port x configuration bits (y =
-        OT10: u1 = 0,
-        /// OT11 [11:11]
-        /// Port x configuration bits (y =
-        OT11: u1 = 0,
-        /// OT12 [12:12]
-        /// Port x configuration bits (y =
-        OT12: u1 = 0,
-        /// OT13 [13:13]
-        /// Port x configuration bits (y =
-        OT13: u1 = 0,
-        /// OT14 [14:14]
-        /// Port x configuration bits (y =
-        OT14: u1 = 0,
-        /// OT15 [15:15]
-        /// Port x configuration bits (y =
-        OT15: u1 = 0,
-        /// unused [16:31]
+    /// DCKCFGR
+    const DCKCFGR_val = packed struct {
+        /// PLLI2SDIVQ [0:4]
+        /// PLLI2S division factor for SAIs
+        PLLI2SDIVQ: u5 = 0,
+        /// unused [5:7]
+        _unused5: u3 = 0,
+        /// PLLSAIDIVQ [8:12]
+        /// PLLSAI division factor for SAIs
+        PLLSAIDIVQ: u5 = 0,
+        /// unused [13:19]
+        _unused13: u3 = 0,
+        _unused16: u4 = 0,
+        /// SAI1SRC [20:21]
+        /// SAI1 clock source
+        SAI1SRC: u2 = 0,
+        /// SAI2SRC [22:23]
+        /// SAI2 clock source
+        SAI2SRC: u2 = 0,
+        /// TIMPRE [24:24]
+        /// Timers clocks prescalers
+        TIMPRE: u1 = 0,
+        /// I2S1SRC [25:26]
+        /// I2S APB1 clock source
+        I2S1SRC: u2 = 0,
+        /// I2S2SRC [27:28]
+        /// I2S APB2 clock source
+        I2S2SRC: u2 = 0,
+        /// unused [29:31]
+        _unused29: u3 = 0,
+    };
+    /// Dedicated Clock Configuration
+    pub const DCKCFGR = MMIO(DCKCFGR_val).init(base_address + 0x8c);
+
+    /// CKGATENR
+    const CKGATENR_val = packed struct {
+        /// AHB2APB1_CKEN [0:0]
+        /// AHB to APB1 Bridge clock
+        AHB2APB1_CKEN: u1 = 0,
+        /// AHB2APB2_CKEN [1:1]
+        /// AHB to APB2 Bridge clock
+        AHB2APB2_CKEN: u1 = 0,
+        /// CM4DBG_CKEN [2:2]
+        /// Cortex M4 ETM clock enable
+        CM4DBG_CKEN: u1 = 0,
+        /// SPARE_CKEN [3:3]
+        /// Spare clock enable
+        SPARE_CKEN: u1 = 0,
+        /// SRAM_CKEN [4:4]
+        /// SRQAM controller clock
+        SRAM_CKEN: u1 = 0,
+        /// FLITF_CKEN [5:5]
+        /// Flash Interface clock
+        FLITF_CKEN: u1 = 0,
+        /// RCC_CKEN [6:6]
+        /// RCC clock enable
+        RCC_CKEN: u1 = 0,
+        /// unused [7:31]
+        _unused7: u1 = 0,
+        _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    /// clocks gated enable register
+    pub const CKGATENR = MMIO(CKGATENR_val).init(base_address + 0x90);
 
-    /// OSPEEDR
-    const OSPEEDR_val = packed struct {
-        /// OSPEEDR0 [0:1]
-        /// Port x configuration bits (y =
-        OSPEEDR0: u2 = 0,
-        /// OSPEEDR1 [2:3]
-        /// Port x configuration bits (y =
-        OSPEEDR1: u2 = 0,
-        /// OSPEEDR2 [4:5]
-        /// Port x configuration bits (y =
-        OSPEEDR2: u2 = 0,
-        /// OSPEEDR3 [6:7]
-        /// Port x configuration bits (y =
-        OSPEEDR3: u2 = 0,
-        /// OSPEEDR4 [8:9]
-        /// Port x configuration bits (y =
-        OSPEEDR4: u2 = 0,
-        /// OSPEEDR5 [10:11]
-        /// Port x configuration bits (y =
-        OSPEEDR5: u2 = 0,
-        /// OSPEEDR6 [12:13]
-        /// Port x configuration bits (y =
-        OSPEEDR6: u2 = 0,
-        /// OSPEEDR7 [14:15]
-        /// Port x configuration bits (y =
-        OSPEEDR7: u2 = 0,
-        /// OSPEEDR8 [16:17]
-        /// Port x configuration bits (y =
-        OSPEEDR8: u2 = 0,
-        /// OSPEEDR9 [18:19]
-        /// Port x configuration bits (y =
-        OSPEEDR9: u2 = 0,
-        /// OSPEEDR10 [20:21]
-        /// Port x configuration bits (y =
-        OSPEEDR10: u2 = 0,
-        /// OSPEEDR11 [22:23]
-        /// Port x configuration bits (y =
-        OSPEEDR11: u2 = 0,
-        /// OSPEEDR12 [24:25]
-        /// Port x configuration bits (y =
-        OSPEEDR12: u2 = 0,
-        /// OSPEEDR13 [26:27]
-        /// Port x configuration bits (y =
-        OSPEEDR13: u2 = 0,
-        /// OSPEEDR14 [28:29]
-        /// Port x configuration bits (y =
-        OSPEEDR14: u2 = 0,
-        /// OSPEEDR15 [30:31]
-        /// Port x configuration bits (y =
-        OSPEEDR15: u2 = 0,
+    /// DCKCFGR2
+    const DCKCFGR2_val = packed struct {
+        /// unused [0:21]
+        _unused0: u8 = 0,
+        _unused8: u8 = 0,
+        _unused16: u6 = 0,
+        /// FMPI2C1SEL [22:23]
+        /// I2C4 kernel clock source
+        FMPI2C1SEL: u2 = 0,
+        /// unused [24:25]
+        _unused24: u2 = 0,
+        /// CECSEL [26:26]
+        /// HDMI CEC clock source
+        CECSEL: u1 = 0,
+        /// CK48MSEL [27:27]
+        /// SDIO/USBFS/HS clock
+        CK48MSEL: u1 = 0,
+        /// SDIOSEL [28:28]
+        /// SDIO clock selection
+        SDIOSEL: u1 = 0,
+        /// SPDIFSEL [29:29]
+        /// SPDIF clock selection
+        SPDIFSEL: u1 = 0,
+        /// unused [30:31]
+        _unused30: u2 = 0,
     };
-    /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
-
-    /// PUPDR
-    const PUPDR_val = packed struct {
-        /// PUPDR0 [0:1]
-        /// Port x configuration bits (y =
-        PUPDR0: u2 = 0,
-        /// PUPDR1 [2:3]
-        /// Port x configuration bits (y =
-        PUPDR1: u2 = 0,
-        /// PUPDR2 [4:5]
-        /// Port x configuration bits (y =
-        PUPDR2: u2 = 0,
-        /// PUPDR3 [6:7]
-        /// Port x configuration bits (y =
-        PUPDR3: u2 = 0,
-        /// PUPDR4 [8:9]
-        /// Port x configuration bits (y =
-        PUPDR4: u2 = 0,
-        /// PUPDR5 [10:11]
-        /// Port x configuration bits (y =
-        PUPDR5: u2 = 0,
-        /// PUPDR6 [12:13]
-        /// Port x configuration bits (y =
-        PUPDR6: u2 = 0,
-        /// PUPDR7 [14:15]
-        /// Port x configuration bits (y =
-        PUPDR7: u2 = 0,
-        /// PUPDR8 [16:17]
-        /// Port x configuration bits (y =
-        PUPDR8: u2 = 0,
-        /// PUPDR9 [18:19]
-        /// Port x configuration bits (y =
-        PUPDR9: u2 = 0,
-        /// PUPDR10 [20:21]
-        /// Port x configuration bits (y =
-        PUPDR10: u2 = 0,
-        /// PUPDR11 [22:23]
-        /// Port x configuration bits (y =
-        PUPDR11: u2 = 0,
-        /// PUPDR12 [24:25]
-        /// Port x configuration bits (y =
-        PUPDR12: u2 = 0,
-        /// PUPDR13 [26:27]
-        /// Port x configuration bits (y =
-        PUPDR13: u2 = 0,
-        /// PUPDR14 [28:29]
-        /// Port x configuration bits (y =
-        PUPDR14: u2 = 0,
-        /// PUPDR15 [30:31]
-        /// Port x configuration bits (y =
-        PUPDR15: u2 = 0,
-    };
-    /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
-
-    /// IDR
-    const IDR_val = packed struct {
-        /// IDR0 [0:0]
-        /// Port input data (y =
-        IDR0: u1 = 0,
-        /// IDR1 [1:1]
-        /// Port input data (y =
-        IDR1: u1 = 0,
-        /// IDR2 [2:2]
-        /// Port input data (y =
-        IDR2: u1 = 0,
-        /// IDR3 [3:3]
-        /// Port input data (y =
-        IDR3: u1 = 0,
-        /// IDR4 [4:4]
-        /// Port input data (y =
-        IDR4: u1 = 0,
-        /// IDR5 [5:5]
-        /// Port input data (y =
-        IDR5: u1 = 0,
-        /// IDR6 [6:6]
-        /// Port input data (y =
-        IDR6: u1 = 0,
-        /// IDR7 [7:7]
-        /// Port input data (y =
-        IDR7: u1 = 0,
-        /// IDR8 [8:8]
-        /// Port input data (y =
-        IDR8: u1 = 0,
-        /// IDR9 [9:9]
-        /// Port input data (y =
-        IDR9: u1 = 0,
-        /// IDR10 [10:10]
-        /// Port input data (y =
-        IDR10: u1 = 0,
-        /// IDR11 [11:11]
-        /// Port input data (y =
-        IDR11: u1 = 0,
-        /// IDR12 [12:12]
-        /// Port input data (y =
-        IDR12: u1 = 0,
-        /// IDR13 [13:13]
-        /// Port input data (y =
-        IDR13: u1 = 0,
-        /// IDR14 [14:14]
-        /// Port input data (y =
-        IDR14: u1 = 0,
-        /// IDR15 [15:15]
-        /// Port input data (y =
-        IDR15: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
-
-    /// ODR
-    const ODR_val = packed struct {
-        /// ODR0 [0:0]
-        /// Port output data (y =
-        ODR0: u1 = 0,
-        /// ODR1 [1:1]
-        /// Port output data (y =
-        ODR1: u1 = 0,
-        /// ODR2 [2:2]
-        /// Port output data (y =
-        ODR2: u1 = 0,
-        /// ODR3 [3:3]
-        /// Port output data (y =
-        ODR3: u1 = 0,
-        /// ODR4 [4:4]
-        /// Port output data (y =
-        ODR4: u1 = 0,
-        /// ODR5 [5:5]
-        /// Port output data (y =
-        ODR5: u1 = 0,
-        /// ODR6 [6:6]
-        /// Port output data (y =
-        ODR6: u1 = 0,
-        /// ODR7 [7:7]
-        /// Port output data (y =
-        ODR7: u1 = 0,
-        /// ODR8 [8:8]
-        /// Port output data (y =
-        ODR8: u1 = 0,
-        /// ODR9 [9:9]
-        /// Port output data (y =
-        ODR9: u1 = 0,
-        /// ODR10 [10:10]
-        /// Port output data (y =
-        ODR10: u1 = 0,
-        /// ODR11 [11:11]
-        /// Port output data (y =
-        ODR11: u1 = 0,
-        /// ODR12 [12:12]
-        /// Port output data (y =
-        ODR12: u1 = 0,
-        /// ODR13 [13:13]
-        /// Port output data (y =
-        ODR13: u1 = 0,
-        /// ODR14 [14:14]
-        /// Port output data (y =
-        ODR14: u1 = 0,
-        /// ODR15 [15:15]
-        /// Port output data (y =
-        ODR15: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
-
-    /// BSRR
-    const BSRR_val = packed struct {
-        /// BS0 [0:0]
-        /// Port x set bit y (y=
-        BS0: u1 = 0,
-        /// BS1 [1:1]
-        /// Port x set bit y (y=
-        BS1: u1 = 0,
-        /// BS2 [2:2]
-        /// Port x set bit y (y=
-        BS2: u1 = 0,
-        /// BS3 [3:3]
-        /// Port x set bit y (y=
-        BS3: u1 = 0,
-        /// BS4 [4:4]
-        /// Port x set bit y (y=
-        BS4: u1 = 0,
-        /// BS5 [5:5]
-        /// Port x set bit y (y=
-        BS5: u1 = 0,
-        /// BS6 [6:6]
-        /// Port x set bit y (y=
-        BS6: u1 = 0,
-        /// BS7 [7:7]
-        /// Port x set bit y (y=
-        BS7: u1 = 0,
-        /// BS8 [8:8]
-        /// Port x set bit y (y=
-        BS8: u1 = 0,
-        /// BS9 [9:9]
-        /// Port x set bit y (y=
-        BS9: u1 = 0,
-        /// BS10 [10:10]
-        /// Port x set bit y (y=
-        BS10: u1 = 0,
-        /// BS11 [11:11]
-        /// Port x set bit y (y=
-        BS11: u1 = 0,
-        /// BS12 [12:12]
-        /// Port x set bit y (y=
-        BS12: u1 = 0,
-        /// BS13 [13:13]
-        /// Port x set bit y (y=
-        BS13: u1 = 0,
-        /// BS14 [14:14]
-        /// Port x set bit y (y=
-        BS14: u1 = 0,
-        /// BS15 [15:15]
-        /// Port x set bit y (y=
-        BS15: u1 = 0,
-        /// BR0 [16:16]
-        /// Port x set bit y (y=
-        BR0: u1 = 0,
-        /// BR1 [17:17]
-        /// Port x reset bit y (y =
-        BR1: u1 = 0,
-        /// BR2 [18:18]
-        /// Port x reset bit y (y =
-        BR2: u1 = 0,
-        /// BR3 [19:19]
-        /// Port x reset bit y (y =
-        BR3: u1 = 0,
-        /// BR4 [20:20]
-        /// Port x reset bit y (y =
-        BR4: u1 = 0,
-        /// BR5 [21:21]
-        /// Port x reset bit y (y =
-        BR5: u1 = 0,
-        /// BR6 [22:22]
-        /// Port x reset bit y (y =
-        BR6: u1 = 0,
-        /// BR7 [23:23]
-        /// Port x reset bit y (y =
-        BR7: u1 = 0,
-        /// BR8 [24:24]
-        /// Port x reset bit y (y =
-        BR8: u1 = 0,
-        /// BR9 [25:25]
-        /// Port x reset bit y (y =
-        BR9: u1 = 0,
-        /// BR10 [26:26]
-        /// Port x reset bit y (y =
-        BR10: u1 = 0,
-        /// BR11 [27:27]
-        /// Port x reset bit y (y =
-        BR11: u1 = 0,
-        /// BR12 [28:28]
-        /// Port x reset bit y (y =
-        BR12: u1 = 0,
-        /// BR13 [29:29]
-        /// Port x reset bit y (y =
-        BR13: u1 = 0,
-        /// BR14 [30:30]
-        /// Port x reset bit y (y =
-        BR14: u1 = 0,
-        /// BR15 [31:31]
-        /// Port x reset bit y (y =
-        BR15: u1 = 0,
-    };
-    /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
-
-    /// LCKR
-    const LCKR_val = packed struct {
-        /// LCK0 [0:0]
-        /// Port x lock bit y (y=
-        LCK0: u1 = 0,
-        /// LCK1 [1:1]
-        /// Port x lock bit y (y=
-        LCK1: u1 = 0,
-        /// LCK2 [2:2]
-        /// Port x lock bit y (y=
-        LCK2: u1 = 0,
-        /// LCK3 [3:3]
-        /// Port x lock bit y (y=
-        LCK3: u1 = 0,
-        /// LCK4 [4:4]
-        /// Port x lock bit y (y=
-        LCK4: u1 = 0,
-        /// LCK5 [5:5]
-        /// Port x lock bit y (y=
-        LCK5: u1 = 0,
-        /// LCK6 [6:6]
-        /// Port x lock bit y (y=
-        LCK6: u1 = 0,
-        /// LCK7 [7:7]
-        /// Port x lock bit y (y=
-        LCK7: u1 = 0,
-        /// LCK8 [8:8]
-        /// Port x lock bit y (y=
-        LCK8: u1 = 0,
-        /// LCK9 [9:9]
-        /// Port x lock bit y (y=
-        LCK9: u1 = 0,
-        /// LCK10 [10:10]
-        /// Port x lock bit y (y=
-        LCK10: u1 = 0,
-        /// LCK11 [11:11]
-        /// Port x lock bit y (y=
-        LCK11: u1 = 0,
-        /// LCK12 [12:12]
-        /// Port x lock bit y (y=
-        LCK12: u1 = 0,
-        /// LCK13 [13:13]
-        /// Port x lock bit y (y=
-        LCK13: u1 = 0,
-        /// LCK14 [14:14]
-        /// Port x lock bit y (y=
-        LCK14: u1 = 0,
-        /// LCK15 [15:15]
-        /// Port x lock bit y (y=
-        LCK15: u1 = 0,
-        /// LCKK [16:16]
-        /// Port x lock bit y (y=
-        LCKK: u1 = 0,
-        /// unused [17:31]
-        _unused17: u7 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
-
-    /// AFRL
-    const AFRL_val = packed struct {
-        /// AFRL0 [0:3]
-        /// Alternate function selection for port x
-        AFRL0: u4 = 0,
-        /// AFRL1 [4:7]
-        /// Alternate function selection for port x
-        AFRL1: u4 = 0,
-        /// AFRL2 [8:11]
-        /// Alternate function selection for port x
-        AFRL2: u4 = 0,
-        /// AFRL3 [12:15]
-        /// Alternate function selection for port x
-        AFRL3: u4 = 0,
-        /// AFRL4 [16:19]
-        /// Alternate function selection for port x
-        AFRL4: u4 = 0,
-        /// AFRL5 [20:23]
-        /// Alternate function selection for port x
-        AFRL5: u4 = 0,
-        /// AFRL6 [24:27]
-        /// Alternate function selection for port x
-        AFRL6: u4 = 0,
-        /// AFRL7 [28:31]
-        /// Alternate function selection for port x
-        AFRL7: u4 = 0,
-    };
-    /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
-
-    /// AFRH
-    const AFRH_val = packed struct {
-        /// AFRH8 [0:3]
-        /// Alternate function selection for port x
-        AFRH8: u4 = 0,
-        /// AFRH9 [4:7]
-        /// Alternate function selection for port x
-        AFRH9: u4 = 0,
-        /// AFRH10 [8:11]
-        /// Alternate function selection for port x
-        AFRH10: u4 = 0,
-        /// AFRH11 [12:15]
-        /// Alternate function selection for port x
-        AFRH11: u4 = 0,
-        /// AFRH12 [16:19]
-        /// Alternate function selection for port x
-        AFRH12: u4 = 0,
-        /// AFRH13 [20:23]
-        /// Alternate function selection for port x
-        AFRH13: u4 = 0,
-        /// AFRH14 [24:27]
-        /// Alternate function selection for port x
-        AFRH14: u4 = 0,
-        /// AFRH15 [28:31]
-        /// Alternate function selection for port x
-        AFRH15: u4 = 0,
-    };
-    /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    /// dedicated clocks configuration register
+    pub const DCKCFGR2 = MMIO(DCKCFGR2_val).init(base_address + 0x94);
 };
 
 /// General-purpose I/Os
@@ -5803,7 +5454,7 @@ pub const GPIOH = struct {
         MODER15: u2 = 0,
     };
     /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    pub const MODER = MMIO(MODER_val).init(base_address + 0x0);
 
     /// OTYPER
     const OTYPER_val = packed struct {
@@ -5860,7 +5511,7 @@ pub const GPIOH = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    pub const OTYPER = MMIO(OTYPER_val).init(base_address + 0x4);
 
     /// OSPEEDR
     const OSPEEDR_val = packed struct {
@@ -5914,7 +5565,7 @@ pub const GPIOH = struct {
         OSPEEDR15: u2 = 0,
     };
     /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
+    pub const OSPEEDR = MMIO(OSPEEDR_val).init(base_address + 0x8);
 
     /// PUPDR
     const PUPDR_val = packed struct {
@@ -5968,7 +5619,7 @@ pub const GPIOH = struct {
         PUPDR15: u2 = 0,
     };
     /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
+    pub const PUPDR = MMIO(PUPDR_val).init(base_address + 0xc);
 
     /// IDR
     const IDR_val = packed struct {
@@ -6025,7 +5676,7 @@ pub const GPIOH = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x10);
 
     /// ODR
     const ODR_val = packed struct {
@@ -6082,7 +5733,7 @@ pub const GPIOH = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
+    pub const ODR = MMIO(ODR_val).init(base_address + 0x14);
 
     /// BSRR
     const BSRR_val = packed struct {
@@ -6184,7 +5835,7 @@ pub const GPIOH = struct {
         BR15: u1 = 0,
     };
     /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
+    pub const BSRR = MMIO(BSRR_val).init(base_address + 0x18);
 
     /// LCKR
     const LCKR_val = packed struct {
@@ -6244,7 +5895,7 @@ pub const GPIOH = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
+    pub const LCKR = MMIO(LCKR_val).init(base_address + 0x1c);
 
     /// AFRL
     const AFRL_val = packed struct {
@@ -6274,7 +5925,7 @@ pub const GPIOH = struct {
         AFRL7: u4 = 0,
     };
     /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
+    pub const AFRL = MMIO(AFRL_val).init(base_address + 0x20);
 
     /// AFRH
     const AFRH_val = packed struct {
@@ -6304,7 +5955,7 @@ pub const GPIOH = struct {
         AFRH15: u4 = 0,
     };
     /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    pub const AFRH = MMIO(AFRH_val).init(base_address + 0x24);
 };
 
 /// General-purpose I/Os
@@ -6362,7 +6013,7 @@ pub const GPIOG = struct {
         MODER15: u2 = 0,
     };
     /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    pub const MODER = MMIO(MODER_val).init(base_address + 0x0);
 
     /// OTYPER
     const OTYPER_val = packed struct {
@@ -6419,7 +6070,7 @@ pub const GPIOG = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    pub const OTYPER = MMIO(OTYPER_val).init(base_address + 0x4);
 
     /// OSPEEDR
     const OSPEEDR_val = packed struct {
@@ -6473,7 +6124,7 @@ pub const GPIOG = struct {
         OSPEEDR15: u2 = 0,
     };
     /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
+    pub const OSPEEDR = MMIO(OSPEEDR_val).init(base_address + 0x8);
 
     /// PUPDR
     const PUPDR_val = packed struct {
@@ -6527,7 +6178,7 @@ pub const GPIOG = struct {
         PUPDR15: u2 = 0,
     };
     /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
+    pub const PUPDR = MMIO(PUPDR_val).init(base_address + 0xc);
 
     /// IDR
     const IDR_val = packed struct {
@@ -6584,7 +6235,7 @@ pub const GPIOG = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x10);
 
     /// ODR
     const ODR_val = packed struct {
@@ -6641,7 +6292,7 @@ pub const GPIOG = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
+    pub const ODR = MMIO(ODR_val).init(base_address + 0x14);
 
     /// BSRR
     const BSRR_val = packed struct {
@@ -6743,7 +6394,7 @@ pub const GPIOG = struct {
         BR15: u1 = 0,
     };
     /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
+    pub const BSRR = MMIO(BSRR_val).init(base_address + 0x18);
 
     /// LCKR
     const LCKR_val = packed struct {
@@ -6803,7 +6454,7 @@ pub const GPIOG = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
+    pub const LCKR = MMIO(LCKR_val).init(base_address + 0x1c);
 
     /// AFRL
     const AFRL_val = packed struct {
@@ -6833,7 +6484,7 @@ pub const GPIOG = struct {
         AFRL7: u4 = 0,
     };
     /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
+    pub const AFRL = MMIO(AFRL_val).init(base_address + 0x20);
 
     /// AFRH
     const AFRH_val = packed struct {
@@ -6863,7 +6514,7 @@ pub const GPIOG = struct {
         AFRH15: u4 = 0,
     };
     /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    pub const AFRH = MMIO(AFRH_val).init(base_address + 0x24);
 };
 
 /// General-purpose I/Os
@@ -6921,7 +6572,7 @@ pub const GPIOF = struct {
         MODER15: u2 = 0,
     };
     /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    pub const MODER = MMIO(MODER_val).init(base_address + 0x0);
 
     /// OTYPER
     const OTYPER_val = packed struct {
@@ -6978,7 +6629,7 @@ pub const GPIOF = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    pub const OTYPER = MMIO(OTYPER_val).init(base_address + 0x4);
 
     /// OSPEEDR
     const OSPEEDR_val = packed struct {
@@ -7032,7 +6683,7 @@ pub const GPIOF = struct {
         OSPEEDR15: u2 = 0,
     };
     /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
+    pub const OSPEEDR = MMIO(OSPEEDR_val).init(base_address + 0x8);
 
     /// PUPDR
     const PUPDR_val = packed struct {
@@ -7086,7 +6737,7 @@ pub const GPIOF = struct {
         PUPDR15: u2 = 0,
     };
     /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
+    pub const PUPDR = MMIO(PUPDR_val).init(base_address + 0xc);
 
     /// IDR
     const IDR_val = packed struct {
@@ -7143,7 +6794,7 @@ pub const GPIOF = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x10);
 
     /// ODR
     const ODR_val = packed struct {
@@ -7200,7 +6851,7 @@ pub const GPIOF = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
+    pub const ODR = MMIO(ODR_val).init(base_address + 0x14);
 
     /// BSRR
     const BSRR_val = packed struct {
@@ -7302,7 +6953,7 @@ pub const GPIOF = struct {
         BR15: u1 = 0,
     };
     /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
+    pub const BSRR = MMIO(BSRR_val).init(base_address + 0x18);
 
     /// LCKR
     const LCKR_val = packed struct {
@@ -7362,7 +7013,7 @@ pub const GPIOF = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
+    pub const LCKR = MMIO(LCKR_val).init(base_address + 0x1c);
 
     /// AFRL
     const AFRL_val = packed struct {
@@ -7392,7 +7043,7 @@ pub const GPIOF = struct {
         AFRL7: u4 = 0,
     };
     /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
+    pub const AFRL = MMIO(AFRL_val).init(base_address + 0x20);
 
     /// AFRH
     const AFRH_val = packed struct {
@@ -7422,7 +7073,7 @@ pub const GPIOF = struct {
         AFRH15: u4 = 0,
     };
     /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    pub const AFRH = MMIO(AFRH_val).init(base_address + 0x24);
 };
 
 /// General-purpose I/Os
@@ -7480,7 +7131,7 @@ pub const GPIOE = struct {
         MODER15: u2 = 0,
     };
     /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    pub const MODER = MMIO(MODER_val).init(base_address + 0x0);
 
     /// OTYPER
     const OTYPER_val = packed struct {
@@ -7537,7 +7188,7 @@ pub const GPIOE = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    pub const OTYPER = MMIO(OTYPER_val).init(base_address + 0x4);
 
     /// OSPEEDR
     const OSPEEDR_val = packed struct {
@@ -7591,7 +7242,7 @@ pub const GPIOE = struct {
         OSPEEDR15: u2 = 0,
     };
     /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
+    pub const OSPEEDR = MMIO(OSPEEDR_val).init(base_address + 0x8);
 
     /// PUPDR
     const PUPDR_val = packed struct {
@@ -7645,7 +7296,7 @@ pub const GPIOE = struct {
         PUPDR15: u2 = 0,
     };
     /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
+    pub const PUPDR = MMIO(PUPDR_val).init(base_address + 0xc);
 
     /// IDR
     const IDR_val = packed struct {
@@ -7702,7 +7353,7 @@ pub const GPIOE = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x10);
 
     /// ODR
     const ODR_val = packed struct {
@@ -7759,7 +7410,7 @@ pub const GPIOE = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
+    pub const ODR = MMIO(ODR_val).init(base_address + 0x14);
 
     /// BSRR
     const BSRR_val = packed struct {
@@ -7861,7 +7512,7 @@ pub const GPIOE = struct {
         BR15: u1 = 0,
     };
     /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
+    pub const BSRR = MMIO(BSRR_val).init(base_address + 0x18);
 
     /// LCKR
     const LCKR_val = packed struct {
@@ -7921,7 +7572,7 @@ pub const GPIOE = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
+    pub const LCKR = MMIO(LCKR_val).init(base_address + 0x1c);
 
     /// AFRL
     const AFRL_val = packed struct {
@@ -7951,7 +7602,7 @@ pub const GPIOE = struct {
         AFRL7: u4 = 0,
     };
     /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
+    pub const AFRL = MMIO(AFRL_val).init(base_address + 0x20);
 
     /// AFRH
     const AFRH_val = packed struct {
@@ -7981,7 +7632,7 @@ pub const GPIOE = struct {
         AFRH15: u4 = 0,
     };
     /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    pub const AFRH = MMIO(AFRH_val).init(base_address + 0x24);
 };
 
 /// General-purpose I/Os
@@ -8039,7 +7690,7 @@ pub const GPIOD = struct {
         MODER15: u2 = 0,
     };
     /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    pub const MODER = MMIO(MODER_val).init(base_address + 0x0);
 
     /// OTYPER
     const OTYPER_val = packed struct {
@@ -8096,7 +7747,7 @@ pub const GPIOD = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    pub const OTYPER = MMIO(OTYPER_val).init(base_address + 0x4);
 
     /// OSPEEDR
     const OSPEEDR_val = packed struct {
@@ -8150,7 +7801,7 @@ pub const GPIOD = struct {
         OSPEEDR15: u2 = 0,
     };
     /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
+    pub const OSPEEDR = MMIO(OSPEEDR_val).init(base_address + 0x8);
 
     /// PUPDR
     const PUPDR_val = packed struct {
@@ -8204,7 +7855,7 @@ pub const GPIOD = struct {
         PUPDR15: u2 = 0,
     };
     /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
+    pub const PUPDR = MMIO(PUPDR_val).init(base_address + 0xc);
 
     /// IDR
     const IDR_val = packed struct {
@@ -8261,7 +7912,7 @@ pub const GPIOD = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x10);
 
     /// ODR
     const ODR_val = packed struct {
@@ -8318,7 +7969,7 @@ pub const GPIOD = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
+    pub const ODR = MMIO(ODR_val).init(base_address + 0x14);
 
     /// BSRR
     const BSRR_val = packed struct {
@@ -8420,7 +8071,7 @@ pub const GPIOD = struct {
         BR15: u1 = 0,
     };
     /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
+    pub const BSRR = MMIO(BSRR_val).init(base_address + 0x18);
 
     /// LCKR
     const LCKR_val = packed struct {
@@ -8480,7 +8131,7 @@ pub const GPIOD = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
+    pub const LCKR = MMIO(LCKR_val).init(base_address + 0x1c);
 
     /// AFRL
     const AFRL_val = packed struct {
@@ -8510,7 +8161,7 @@ pub const GPIOD = struct {
         AFRL7: u4 = 0,
     };
     /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
+    pub const AFRL = MMIO(AFRL_val).init(base_address + 0x20);
 
     /// AFRH
     const AFRH_val = packed struct {
@@ -8540,7 +8191,7 @@ pub const GPIOD = struct {
         AFRH15: u4 = 0,
     };
     /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    pub const AFRH = MMIO(AFRH_val).init(base_address + 0x24);
 };
 
 /// General-purpose I/Os
@@ -8598,7 +8249,7 @@ pub const GPIOC = struct {
         MODER15: u2 = 0,
     };
     /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    pub const MODER = MMIO(MODER_val).init(base_address + 0x0);
 
     /// OTYPER
     const OTYPER_val = packed struct {
@@ -8655,7 +8306,7 @@ pub const GPIOC = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    pub const OTYPER = MMIO(OTYPER_val).init(base_address + 0x4);
 
     /// OSPEEDR
     const OSPEEDR_val = packed struct {
@@ -8709,7 +8360,7 @@ pub const GPIOC = struct {
         OSPEEDR15: u2 = 0,
     };
     /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
+    pub const OSPEEDR = MMIO(OSPEEDR_val).init(base_address + 0x8);
 
     /// PUPDR
     const PUPDR_val = packed struct {
@@ -8763,7 +8414,7 @@ pub const GPIOC = struct {
         PUPDR15: u2 = 0,
     };
     /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
+    pub const PUPDR = MMIO(PUPDR_val).init(base_address + 0xc);
 
     /// IDR
     const IDR_val = packed struct {
@@ -8820,7 +8471,7 @@ pub const GPIOC = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x10);
 
     /// ODR
     const ODR_val = packed struct {
@@ -8877,7 +8528,7 @@ pub const GPIOC = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
+    pub const ODR = MMIO(ODR_val).init(base_address + 0x14);
 
     /// BSRR
     const BSRR_val = packed struct {
@@ -8979,7 +8630,7 @@ pub const GPIOC = struct {
         BR15: u1 = 0,
     };
     /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
+    pub const BSRR = MMIO(BSRR_val).init(base_address + 0x18);
 
     /// LCKR
     const LCKR_val = packed struct {
@@ -9039,7 +8690,7 @@ pub const GPIOC = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
+    pub const LCKR = MMIO(LCKR_val).init(base_address + 0x1c);
 
     /// AFRL
     const AFRL_val = packed struct {
@@ -9069,7 +8720,7 @@ pub const GPIOC = struct {
         AFRL7: u4 = 0,
     };
     /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
+    pub const AFRL = MMIO(AFRL_val).init(base_address + 0x20);
 
     /// AFRH
     const AFRH_val = packed struct {
@@ -9099,1125 +8750,7 @@ pub const GPIOC = struct {
         AFRH15: u4 = 0,
     };
     /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
-};
-
-/// General-purpose I/Os
-pub const GPIOJ = struct {
-    const base_address = 0x40022400;
-    /// MODER
-    const MODER_val = packed struct {
-        /// MODER0 [0:1]
-        /// Port x configuration bits (y =
-        MODER0: u2 = 0,
-        /// MODER1 [2:3]
-        /// Port x configuration bits (y =
-        MODER1: u2 = 0,
-        /// MODER2 [4:5]
-        /// Port x configuration bits (y =
-        MODER2: u2 = 0,
-        /// MODER3 [6:7]
-        /// Port x configuration bits (y =
-        MODER3: u2 = 0,
-        /// MODER4 [8:9]
-        /// Port x configuration bits (y =
-        MODER4: u2 = 0,
-        /// MODER5 [10:11]
-        /// Port x configuration bits (y =
-        MODER5: u2 = 0,
-        /// MODER6 [12:13]
-        /// Port x configuration bits (y =
-        MODER6: u2 = 0,
-        /// MODER7 [14:15]
-        /// Port x configuration bits (y =
-        MODER7: u2 = 0,
-        /// MODER8 [16:17]
-        /// Port x configuration bits (y =
-        MODER8: u2 = 0,
-        /// MODER9 [18:19]
-        /// Port x configuration bits (y =
-        MODER9: u2 = 0,
-        /// MODER10 [20:21]
-        /// Port x configuration bits (y =
-        MODER10: u2 = 0,
-        /// MODER11 [22:23]
-        /// Port x configuration bits (y =
-        MODER11: u2 = 0,
-        /// MODER12 [24:25]
-        /// Port x configuration bits (y =
-        MODER12: u2 = 0,
-        /// MODER13 [26:27]
-        /// Port x configuration bits (y =
-        MODER13: u2 = 0,
-        /// MODER14 [28:29]
-        /// Port x configuration bits (y =
-        MODER14: u2 = 0,
-        /// MODER15 [30:31]
-        /// Port x configuration bits (y =
-        MODER15: u2 = 0,
-    };
-    /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
-
-    /// OTYPER
-    const OTYPER_val = packed struct {
-        /// OT0 [0:0]
-        /// Port x configuration bits (y =
-        OT0: u1 = 0,
-        /// OT1 [1:1]
-        /// Port x configuration bits (y =
-        OT1: u1 = 0,
-        /// OT2 [2:2]
-        /// Port x configuration bits (y =
-        OT2: u1 = 0,
-        /// OT3 [3:3]
-        /// Port x configuration bits (y =
-        OT3: u1 = 0,
-        /// OT4 [4:4]
-        /// Port x configuration bits (y =
-        OT4: u1 = 0,
-        /// OT5 [5:5]
-        /// Port x configuration bits (y =
-        OT5: u1 = 0,
-        /// OT6 [6:6]
-        /// Port x configuration bits (y =
-        OT6: u1 = 0,
-        /// OT7 [7:7]
-        /// Port x configuration bits (y =
-        OT7: u1 = 0,
-        /// OT8 [8:8]
-        /// Port x configuration bits (y =
-        OT8: u1 = 0,
-        /// OT9 [9:9]
-        /// Port x configuration bits (y =
-        OT9: u1 = 0,
-        /// OT10 [10:10]
-        /// Port x configuration bits (y =
-        OT10: u1 = 0,
-        /// OT11 [11:11]
-        /// Port x configuration bits (y =
-        OT11: u1 = 0,
-        /// OT12 [12:12]
-        /// Port x configuration bits (y =
-        OT12: u1 = 0,
-        /// OT13 [13:13]
-        /// Port x configuration bits (y =
-        OT13: u1 = 0,
-        /// OT14 [14:14]
-        /// Port x configuration bits (y =
-        OT14: u1 = 0,
-        /// OT15 [15:15]
-        /// Port x configuration bits (y =
-        OT15: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
-
-    /// OSPEEDR
-    const OSPEEDR_val = packed struct {
-        /// OSPEEDR0 [0:1]
-        /// Port x configuration bits (y =
-        OSPEEDR0: u2 = 0,
-        /// OSPEEDR1 [2:3]
-        /// Port x configuration bits (y =
-        OSPEEDR1: u2 = 0,
-        /// OSPEEDR2 [4:5]
-        /// Port x configuration bits (y =
-        OSPEEDR2: u2 = 0,
-        /// OSPEEDR3 [6:7]
-        /// Port x configuration bits (y =
-        OSPEEDR3: u2 = 0,
-        /// OSPEEDR4 [8:9]
-        /// Port x configuration bits (y =
-        OSPEEDR4: u2 = 0,
-        /// OSPEEDR5 [10:11]
-        /// Port x configuration bits (y =
-        OSPEEDR5: u2 = 0,
-        /// OSPEEDR6 [12:13]
-        /// Port x configuration bits (y =
-        OSPEEDR6: u2 = 0,
-        /// OSPEEDR7 [14:15]
-        /// Port x configuration bits (y =
-        OSPEEDR7: u2 = 0,
-        /// OSPEEDR8 [16:17]
-        /// Port x configuration bits (y =
-        OSPEEDR8: u2 = 0,
-        /// OSPEEDR9 [18:19]
-        /// Port x configuration bits (y =
-        OSPEEDR9: u2 = 0,
-        /// OSPEEDR10 [20:21]
-        /// Port x configuration bits (y =
-        OSPEEDR10: u2 = 0,
-        /// OSPEEDR11 [22:23]
-        /// Port x configuration bits (y =
-        OSPEEDR11: u2 = 0,
-        /// OSPEEDR12 [24:25]
-        /// Port x configuration bits (y =
-        OSPEEDR12: u2 = 0,
-        /// OSPEEDR13 [26:27]
-        /// Port x configuration bits (y =
-        OSPEEDR13: u2 = 0,
-        /// OSPEEDR14 [28:29]
-        /// Port x configuration bits (y =
-        OSPEEDR14: u2 = 0,
-        /// OSPEEDR15 [30:31]
-        /// Port x configuration bits (y =
-        OSPEEDR15: u2 = 0,
-    };
-    /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
-
-    /// PUPDR
-    const PUPDR_val = packed struct {
-        /// PUPDR0 [0:1]
-        /// Port x configuration bits (y =
-        PUPDR0: u2 = 0,
-        /// PUPDR1 [2:3]
-        /// Port x configuration bits (y =
-        PUPDR1: u2 = 0,
-        /// PUPDR2 [4:5]
-        /// Port x configuration bits (y =
-        PUPDR2: u2 = 0,
-        /// PUPDR3 [6:7]
-        /// Port x configuration bits (y =
-        PUPDR3: u2 = 0,
-        /// PUPDR4 [8:9]
-        /// Port x configuration bits (y =
-        PUPDR4: u2 = 0,
-        /// PUPDR5 [10:11]
-        /// Port x configuration bits (y =
-        PUPDR5: u2 = 0,
-        /// PUPDR6 [12:13]
-        /// Port x configuration bits (y =
-        PUPDR6: u2 = 0,
-        /// PUPDR7 [14:15]
-        /// Port x configuration bits (y =
-        PUPDR7: u2 = 0,
-        /// PUPDR8 [16:17]
-        /// Port x configuration bits (y =
-        PUPDR8: u2 = 0,
-        /// PUPDR9 [18:19]
-        /// Port x configuration bits (y =
-        PUPDR9: u2 = 0,
-        /// PUPDR10 [20:21]
-        /// Port x configuration bits (y =
-        PUPDR10: u2 = 0,
-        /// PUPDR11 [22:23]
-        /// Port x configuration bits (y =
-        PUPDR11: u2 = 0,
-        /// PUPDR12 [24:25]
-        /// Port x configuration bits (y =
-        PUPDR12: u2 = 0,
-        /// PUPDR13 [26:27]
-        /// Port x configuration bits (y =
-        PUPDR13: u2 = 0,
-        /// PUPDR14 [28:29]
-        /// Port x configuration bits (y =
-        PUPDR14: u2 = 0,
-        /// PUPDR15 [30:31]
-        /// Port x configuration bits (y =
-        PUPDR15: u2 = 0,
-    };
-    /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
-
-    /// IDR
-    const IDR_val = packed struct {
-        /// IDR0 [0:0]
-        /// Port input data (y =
-        IDR0: u1 = 0,
-        /// IDR1 [1:1]
-        /// Port input data (y =
-        IDR1: u1 = 0,
-        /// IDR2 [2:2]
-        /// Port input data (y =
-        IDR2: u1 = 0,
-        /// IDR3 [3:3]
-        /// Port input data (y =
-        IDR3: u1 = 0,
-        /// IDR4 [4:4]
-        /// Port input data (y =
-        IDR4: u1 = 0,
-        /// IDR5 [5:5]
-        /// Port input data (y =
-        IDR5: u1 = 0,
-        /// IDR6 [6:6]
-        /// Port input data (y =
-        IDR6: u1 = 0,
-        /// IDR7 [7:7]
-        /// Port input data (y =
-        IDR7: u1 = 0,
-        /// IDR8 [8:8]
-        /// Port input data (y =
-        IDR8: u1 = 0,
-        /// IDR9 [9:9]
-        /// Port input data (y =
-        IDR9: u1 = 0,
-        /// IDR10 [10:10]
-        /// Port input data (y =
-        IDR10: u1 = 0,
-        /// IDR11 [11:11]
-        /// Port input data (y =
-        IDR11: u1 = 0,
-        /// IDR12 [12:12]
-        /// Port input data (y =
-        IDR12: u1 = 0,
-        /// IDR13 [13:13]
-        /// Port input data (y =
-        IDR13: u1 = 0,
-        /// IDR14 [14:14]
-        /// Port input data (y =
-        IDR14: u1 = 0,
-        /// IDR15 [15:15]
-        /// Port input data (y =
-        IDR15: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
-
-    /// ODR
-    const ODR_val = packed struct {
-        /// ODR0 [0:0]
-        /// Port output data (y =
-        ODR0: u1 = 0,
-        /// ODR1 [1:1]
-        /// Port output data (y =
-        ODR1: u1 = 0,
-        /// ODR2 [2:2]
-        /// Port output data (y =
-        ODR2: u1 = 0,
-        /// ODR3 [3:3]
-        /// Port output data (y =
-        ODR3: u1 = 0,
-        /// ODR4 [4:4]
-        /// Port output data (y =
-        ODR4: u1 = 0,
-        /// ODR5 [5:5]
-        /// Port output data (y =
-        ODR5: u1 = 0,
-        /// ODR6 [6:6]
-        /// Port output data (y =
-        ODR6: u1 = 0,
-        /// ODR7 [7:7]
-        /// Port output data (y =
-        ODR7: u1 = 0,
-        /// ODR8 [8:8]
-        /// Port output data (y =
-        ODR8: u1 = 0,
-        /// ODR9 [9:9]
-        /// Port output data (y =
-        ODR9: u1 = 0,
-        /// ODR10 [10:10]
-        /// Port output data (y =
-        ODR10: u1 = 0,
-        /// ODR11 [11:11]
-        /// Port output data (y =
-        ODR11: u1 = 0,
-        /// ODR12 [12:12]
-        /// Port output data (y =
-        ODR12: u1 = 0,
-        /// ODR13 [13:13]
-        /// Port output data (y =
-        ODR13: u1 = 0,
-        /// ODR14 [14:14]
-        /// Port output data (y =
-        ODR14: u1 = 0,
-        /// ODR15 [15:15]
-        /// Port output data (y =
-        ODR15: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
-
-    /// BSRR
-    const BSRR_val = packed struct {
-        /// BS0 [0:0]
-        /// Port x set bit y (y=
-        BS0: u1 = 0,
-        /// BS1 [1:1]
-        /// Port x set bit y (y=
-        BS1: u1 = 0,
-        /// BS2 [2:2]
-        /// Port x set bit y (y=
-        BS2: u1 = 0,
-        /// BS3 [3:3]
-        /// Port x set bit y (y=
-        BS3: u1 = 0,
-        /// BS4 [4:4]
-        /// Port x set bit y (y=
-        BS4: u1 = 0,
-        /// BS5 [5:5]
-        /// Port x set bit y (y=
-        BS5: u1 = 0,
-        /// BS6 [6:6]
-        /// Port x set bit y (y=
-        BS6: u1 = 0,
-        /// BS7 [7:7]
-        /// Port x set bit y (y=
-        BS7: u1 = 0,
-        /// BS8 [8:8]
-        /// Port x set bit y (y=
-        BS8: u1 = 0,
-        /// BS9 [9:9]
-        /// Port x set bit y (y=
-        BS9: u1 = 0,
-        /// BS10 [10:10]
-        /// Port x set bit y (y=
-        BS10: u1 = 0,
-        /// BS11 [11:11]
-        /// Port x set bit y (y=
-        BS11: u1 = 0,
-        /// BS12 [12:12]
-        /// Port x set bit y (y=
-        BS12: u1 = 0,
-        /// BS13 [13:13]
-        /// Port x set bit y (y=
-        BS13: u1 = 0,
-        /// BS14 [14:14]
-        /// Port x set bit y (y=
-        BS14: u1 = 0,
-        /// BS15 [15:15]
-        /// Port x set bit y (y=
-        BS15: u1 = 0,
-        /// BR0 [16:16]
-        /// Port x set bit y (y=
-        BR0: u1 = 0,
-        /// BR1 [17:17]
-        /// Port x reset bit y (y =
-        BR1: u1 = 0,
-        /// BR2 [18:18]
-        /// Port x reset bit y (y =
-        BR2: u1 = 0,
-        /// BR3 [19:19]
-        /// Port x reset bit y (y =
-        BR3: u1 = 0,
-        /// BR4 [20:20]
-        /// Port x reset bit y (y =
-        BR4: u1 = 0,
-        /// BR5 [21:21]
-        /// Port x reset bit y (y =
-        BR5: u1 = 0,
-        /// BR6 [22:22]
-        /// Port x reset bit y (y =
-        BR6: u1 = 0,
-        /// BR7 [23:23]
-        /// Port x reset bit y (y =
-        BR7: u1 = 0,
-        /// BR8 [24:24]
-        /// Port x reset bit y (y =
-        BR8: u1 = 0,
-        /// BR9 [25:25]
-        /// Port x reset bit y (y =
-        BR9: u1 = 0,
-        /// BR10 [26:26]
-        /// Port x reset bit y (y =
-        BR10: u1 = 0,
-        /// BR11 [27:27]
-        /// Port x reset bit y (y =
-        BR11: u1 = 0,
-        /// BR12 [28:28]
-        /// Port x reset bit y (y =
-        BR12: u1 = 0,
-        /// BR13 [29:29]
-        /// Port x reset bit y (y =
-        BR13: u1 = 0,
-        /// BR14 [30:30]
-        /// Port x reset bit y (y =
-        BR14: u1 = 0,
-        /// BR15 [31:31]
-        /// Port x reset bit y (y =
-        BR15: u1 = 0,
-    };
-    /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
-
-    /// LCKR
-    const LCKR_val = packed struct {
-        /// LCK0 [0:0]
-        /// Port x lock bit y (y=
-        LCK0: u1 = 0,
-        /// LCK1 [1:1]
-        /// Port x lock bit y (y=
-        LCK1: u1 = 0,
-        /// LCK2 [2:2]
-        /// Port x lock bit y (y=
-        LCK2: u1 = 0,
-        /// LCK3 [3:3]
-        /// Port x lock bit y (y=
-        LCK3: u1 = 0,
-        /// LCK4 [4:4]
-        /// Port x lock bit y (y=
-        LCK4: u1 = 0,
-        /// LCK5 [5:5]
-        /// Port x lock bit y (y=
-        LCK5: u1 = 0,
-        /// LCK6 [6:6]
-        /// Port x lock bit y (y=
-        LCK6: u1 = 0,
-        /// LCK7 [7:7]
-        /// Port x lock bit y (y=
-        LCK7: u1 = 0,
-        /// LCK8 [8:8]
-        /// Port x lock bit y (y=
-        LCK8: u1 = 0,
-        /// LCK9 [9:9]
-        /// Port x lock bit y (y=
-        LCK9: u1 = 0,
-        /// LCK10 [10:10]
-        /// Port x lock bit y (y=
-        LCK10: u1 = 0,
-        /// LCK11 [11:11]
-        /// Port x lock bit y (y=
-        LCK11: u1 = 0,
-        /// LCK12 [12:12]
-        /// Port x lock bit y (y=
-        LCK12: u1 = 0,
-        /// LCK13 [13:13]
-        /// Port x lock bit y (y=
-        LCK13: u1 = 0,
-        /// LCK14 [14:14]
-        /// Port x lock bit y (y=
-        LCK14: u1 = 0,
-        /// LCK15 [15:15]
-        /// Port x lock bit y (y=
-        LCK15: u1 = 0,
-        /// LCKK [16:16]
-        /// Port x lock bit y (y=
-        LCKK: u1 = 0,
-        /// unused [17:31]
-        _unused17: u7 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
-
-    /// AFRL
-    const AFRL_val = packed struct {
-        /// AFRL0 [0:3]
-        /// Alternate function selection for port x
-        AFRL0: u4 = 0,
-        /// AFRL1 [4:7]
-        /// Alternate function selection for port x
-        AFRL1: u4 = 0,
-        /// AFRL2 [8:11]
-        /// Alternate function selection for port x
-        AFRL2: u4 = 0,
-        /// AFRL3 [12:15]
-        /// Alternate function selection for port x
-        AFRL3: u4 = 0,
-        /// AFRL4 [16:19]
-        /// Alternate function selection for port x
-        AFRL4: u4 = 0,
-        /// AFRL5 [20:23]
-        /// Alternate function selection for port x
-        AFRL5: u4 = 0,
-        /// AFRL6 [24:27]
-        /// Alternate function selection for port x
-        AFRL6: u4 = 0,
-        /// AFRL7 [28:31]
-        /// Alternate function selection for port x
-        AFRL7: u4 = 0,
-    };
-    /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
-
-    /// AFRH
-    const AFRH_val = packed struct {
-        /// AFRH8 [0:3]
-        /// Alternate function selection for port x
-        AFRH8: u4 = 0,
-        /// AFRH9 [4:7]
-        /// Alternate function selection for port x
-        AFRH9: u4 = 0,
-        /// AFRH10 [8:11]
-        /// Alternate function selection for port x
-        AFRH10: u4 = 0,
-        /// AFRH11 [12:15]
-        /// Alternate function selection for port x
-        AFRH11: u4 = 0,
-        /// AFRH12 [16:19]
-        /// Alternate function selection for port x
-        AFRH12: u4 = 0,
-        /// AFRH13 [20:23]
-        /// Alternate function selection for port x
-        AFRH13: u4 = 0,
-        /// AFRH14 [24:27]
-        /// Alternate function selection for port x
-        AFRH14: u4 = 0,
-        /// AFRH15 [28:31]
-        /// Alternate function selection for port x
-        AFRH15: u4 = 0,
-    };
-    /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
-};
-
-/// General-purpose I/Os
-pub const GPIOK = struct {
-    const base_address = 0x40022800;
-    /// MODER
-    const MODER_val = packed struct {
-        /// MODER0 [0:1]
-        /// Port x configuration bits (y =
-        MODER0: u2 = 0,
-        /// MODER1 [2:3]
-        /// Port x configuration bits (y =
-        MODER1: u2 = 0,
-        /// MODER2 [4:5]
-        /// Port x configuration bits (y =
-        MODER2: u2 = 0,
-        /// MODER3 [6:7]
-        /// Port x configuration bits (y =
-        MODER3: u2 = 0,
-        /// MODER4 [8:9]
-        /// Port x configuration bits (y =
-        MODER4: u2 = 0,
-        /// MODER5 [10:11]
-        /// Port x configuration bits (y =
-        MODER5: u2 = 0,
-        /// MODER6 [12:13]
-        /// Port x configuration bits (y =
-        MODER6: u2 = 0,
-        /// MODER7 [14:15]
-        /// Port x configuration bits (y =
-        MODER7: u2 = 0,
-        /// MODER8 [16:17]
-        /// Port x configuration bits (y =
-        MODER8: u2 = 0,
-        /// MODER9 [18:19]
-        /// Port x configuration bits (y =
-        MODER9: u2 = 0,
-        /// MODER10 [20:21]
-        /// Port x configuration bits (y =
-        MODER10: u2 = 0,
-        /// MODER11 [22:23]
-        /// Port x configuration bits (y =
-        MODER11: u2 = 0,
-        /// MODER12 [24:25]
-        /// Port x configuration bits (y =
-        MODER12: u2 = 0,
-        /// MODER13 [26:27]
-        /// Port x configuration bits (y =
-        MODER13: u2 = 0,
-        /// MODER14 [28:29]
-        /// Port x configuration bits (y =
-        MODER14: u2 = 0,
-        /// MODER15 [30:31]
-        /// Port x configuration bits (y =
-        MODER15: u2 = 0,
-    };
-    /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
-
-    /// OTYPER
-    const OTYPER_val = packed struct {
-        /// OT0 [0:0]
-        /// Port x configuration bits (y =
-        OT0: u1 = 0,
-        /// OT1 [1:1]
-        /// Port x configuration bits (y =
-        OT1: u1 = 0,
-        /// OT2 [2:2]
-        /// Port x configuration bits (y =
-        OT2: u1 = 0,
-        /// OT3 [3:3]
-        /// Port x configuration bits (y =
-        OT3: u1 = 0,
-        /// OT4 [4:4]
-        /// Port x configuration bits (y =
-        OT4: u1 = 0,
-        /// OT5 [5:5]
-        /// Port x configuration bits (y =
-        OT5: u1 = 0,
-        /// OT6 [6:6]
-        /// Port x configuration bits (y =
-        OT6: u1 = 0,
-        /// OT7 [7:7]
-        /// Port x configuration bits (y =
-        OT7: u1 = 0,
-        /// OT8 [8:8]
-        /// Port x configuration bits (y =
-        OT8: u1 = 0,
-        /// OT9 [9:9]
-        /// Port x configuration bits (y =
-        OT9: u1 = 0,
-        /// OT10 [10:10]
-        /// Port x configuration bits (y =
-        OT10: u1 = 0,
-        /// OT11 [11:11]
-        /// Port x configuration bits (y =
-        OT11: u1 = 0,
-        /// OT12 [12:12]
-        /// Port x configuration bits (y =
-        OT12: u1 = 0,
-        /// OT13 [13:13]
-        /// Port x configuration bits (y =
-        OT13: u1 = 0,
-        /// OT14 [14:14]
-        /// Port x configuration bits (y =
-        OT14: u1 = 0,
-        /// OT15 [15:15]
-        /// Port x configuration bits (y =
-        OT15: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
-
-    /// OSPEEDR
-    const OSPEEDR_val = packed struct {
-        /// OSPEEDR0 [0:1]
-        /// Port x configuration bits (y =
-        OSPEEDR0: u2 = 0,
-        /// OSPEEDR1 [2:3]
-        /// Port x configuration bits (y =
-        OSPEEDR1: u2 = 0,
-        /// OSPEEDR2 [4:5]
-        /// Port x configuration bits (y =
-        OSPEEDR2: u2 = 0,
-        /// OSPEEDR3 [6:7]
-        /// Port x configuration bits (y =
-        OSPEEDR3: u2 = 0,
-        /// OSPEEDR4 [8:9]
-        /// Port x configuration bits (y =
-        OSPEEDR4: u2 = 0,
-        /// OSPEEDR5 [10:11]
-        /// Port x configuration bits (y =
-        OSPEEDR5: u2 = 0,
-        /// OSPEEDR6 [12:13]
-        /// Port x configuration bits (y =
-        OSPEEDR6: u2 = 0,
-        /// OSPEEDR7 [14:15]
-        /// Port x configuration bits (y =
-        OSPEEDR7: u2 = 0,
-        /// OSPEEDR8 [16:17]
-        /// Port x configuration bits (y =
-        OSPEEDR8: u2 = 0,
-        /// OSPEEDR9 [18:19]
-        /// Port x configuration bits (y =
-        OSPEEDR9: u2 = 0,
-        /// OSPEEDR10 [20:21]
-        /// Port x configuration bits (y =
-        OSPEEDR10: u2 = 0,
-        /// OSPEEDR11 [22:23]
-        /// Port x configuration bits (y =
-        OSPEEDR11: u2 = 0,
-        /// OSPEEDR12 [24:25]
-        /// Port x configuration bits (y =
-        OSPEEDR12: u2 = 0,
-        /// OSPEEDR13 [26:27]
-        /// Port x configuration bits (y =
-        OSPEEDR13: u2 = 0,
-        /// OSPEEDR14 [28:29]
-        /// Port x configuration bits (y =
-        OSPEEDR14: u2 = 0,
-        /// OSPEEDR15 [30:31]
-        /// Port x configuration bits (y =
-        OSPEEDR15: u2 = 0,
-    };
-    /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
-
-    /// PUPDR
-    const PUPDR_val = packed struct {
-        /// PUPDR0 [0:1]
-        /// Port x configuration bits (y =
-        PUPDR0: u2 = 0,
-        /// PUPDR1 [2:3]
-        /// Port x configuration bits (y =
-        PUPDR1: u2 = 0,
-        /// PUPDR2 [4:5]
-        /// Port x configuration bits (y =
-        PUPDR2: u2 = 0,
-        /// PUPDR3 [6:7]
-        /// Port x configuration bits (y =
-        PUPDR3: u2 = 0,
-        /// PUPDR4 [8:9]
-        /// Port x configuration bits (y =
-        PUPDR4: u2 = 0,
-        /// PUPDR5 [10:11]
-        /// Port x configuration bits (y =
-        PUPDR5: u2 = 0,
-        /// PUPDR6 [12:13]
-        /// Port x configuration bits (y =
-        PUPDR6: u2 = 0,
-        /// PUPDR7 [14:15]
-        /// Port x configuration bits (y =
-        PUPDR7: u2 = 0,
-        /// PUPDR8 [16:17]
-        /// Port x configuration bits (y =
-        PUPDR8: u2 = 0,
-        /// PUPDR9 [18:19]
-        /// Port x configuration bits (y =
-        PUPDR9: u2 = 0,
-        /// PUPDR10 [20:21]
-        /// Port x configuration bits (y =
-        PUPDR10: u2 = 0,
-        /// PUPDR11 [22:23]
-        /// Port x configuration bits (y =
-        PUPDR11: u2 = 0,
-        /// PUPDR12 [24:25]
-        /// Port x configuration bits (y =
-        PUPDR12: u2 = 0,
-        /// PUPDR13 [26:27]
-        /// Port x configuration bits (y =
-        PUPDR13: u2 = 0,
-        /// PUPDR14 [28:29]
-        /// Port x configuration bits (y =
-        PUPDR14: u2 = 0,
-        /// PUPDR15 [30:31]
-        /// Port x configuration bits (y =
-        PUPDR15: u2 = 0,
-    };
-    /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
-
-    /// IDR
-    const IDR_val = packed struct {
-        /// IDR0 [0:0]
-        /// Port input data (y =
-        IDR0: u1 = 0,
-        /// IDR1 [1:1]
-        /// Port input data (y =
-        IDR1: u1 = 0,
-        /// IDR2 [2:2]
-        /// Port input data (y =
-        IDR2: u1 = 0,
-        /// IDR3 [3:3]
-        /// Port input data (y =
-        IDR3: u1 = 0,
-        /// IDR4 [4:4]
-        /// Port input data (y =
-        IDR4: u1 = 0,
-        /// IDR5 [5:5]
-        /// Port input data (y =
-        IDR5: u1 = 0,
-        /// IDR6 [6:6]
-        /// Port input data (y =
-        IDR6: u1 = 0,
-        /// IDR7 [7:7]
-        /// Port input data (y =
-        IDR7: u1 = 0,
-        /// IDR8 [8:8]
-        /// Port input data (y =
-        IDR8: u1 = 0,
-        /// IDR9 [9:9]
-        /// Port input data (y =
-        IDR9: u1 = 0,
-        /// IDR10 [10:10]
-        /// Port input data (y =
-        IDR10: u1 = 0,
-        /// IDR11 [11:11]
-        /// Port input data (y =
-        IDR11: u1 = 0,
-        /// IDR12 [12:12]
-        /// Port input data (y =
-        IDR12: u1 = 0,
-        /// IDR13 [13:13]
-        /// Port input data (y =
-        IDR13: u1 = 0,
-        /// IDR14 [14:14]
-        /// Port input data (y =
-        IDR14: u1 = 0,
-        /// IDR15 [15:15]
-        /// Port input data (y =
-        IDR15: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
-
-    /// ODR
-    const ODR_val = packed struct {
-        /// ODR0 [0:0]
-        /// Port output data (y =
-        ODR0: u1 = 0,
-        /// ODR1 [1:1]
-        /// Port output data (y =
-        ODR1: u1 = 0,
-        /// ODR2 [2:2]
-        /// Port output data (y =
-        ODR2: u1 = 0,
-        /// ODR3 [3:3]
-        /// Port output data (y =
-        ODR3: u1 = 0,
-        /// ODR4 [4:4]
-        /// Port output data (y =
-        ODR4: u1 = 0,
-        /// ODR5 [5:5]
-        /// Port output data (y =
-        ODR5: u1 = 0,
-        /// ODR6 [6:6]
-        /// Port output data (y =
-        ODR6: u1 = 0,
-        /// ODR7 [7:7]
-        /// Port output data (y =
-        ODR7: u1 = 0,
-        /// ODR8 [8:8]
-        /// Port output data (y =
-        ODR8: u1 = 0,
-        /// ODR9 [9:9]
-        /// Port output data (y =
-        ODR9: u1 = 0,
-        /// ODR10 [10:10]
-        /// Port output data (y =
-        ODR10: u1 = 0,
-        /// ODR11 [11:11]
-        /// Port output data (y =
-        ODR11: u1 = 0,
-        /// ODR12 [12:12]
-        /// Port output data (y =
-        ODR12: u1 = 0,
-        /// ODR13 [13:13]
-        /// Port output data (y =
-        ODR13: u1 = 0,
-        /// ODR14 [14:14]
-        /// Port output data (y =
-        ODR14: u1 = 0,
-        /// ODR15 [15:15]
-        /// Port output data (y =
-        ODR15: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
-
-    /// BSRR
-    const BSRR_val = packed struct {
-        /// BS0 [0:0]
-        /// Port x set bit y (y=
-        BS0: u1 = 0,
-        /// BS1 [1:1]
-        /// Port x set bit y (y=
-        BS1: u1 = 0,
-        /// BS2 [2:2]
-        /// Port x set bit y (y=
-        BS2: u1 = 0,
-        /// BS3 [3:3]
-        /// Port x set bit y (y=
-        BS3: u1 = 0,
-        /// BS4 [4:4]
-        /// Port x set bit y (y=
-        BS4: u1 = 0,
-        /// BS5 [5:5]
-        /// Port x set bit y (y=
-        BS5: u1 = 0,
-        /// BS6 [6:6]
-        /// Port x set bit y (y=
-        BS6: u1 = 0,
-        /// BS7 [7:7]
-        /// Port x set bit y (y=
-        BS7: u1 = 0,
-        /// BS8 [8:8]
-        /// Port x set bit y (y=
-        BS8: u1 = 0,
-        /// BS9 [9:9]
-        /// Port x set bit y (y=
-        BS9: u1 = 0,
-        /// BS10 [10:10]
-        /// Port x set bit y (y=
-        BS10: u1 = 0,
-        /// BS11 [11:11]
-        /// Port x set bit y (y=
-        BS11: u1 = 0,
-        /// BS12 [12:12]
-        /// Port x set bit y (y=
-        BS12: u1 = 0,
-        /// BS13 [13:13]
-        /// Port x set bit y (y=
-        BS13: u1 = 0,
-        /// BS14 [14:14]
-        /// Port x set bit y (y=
-        BS14: u1 = 0,
-        /// BS15 [15:15]
-        /// Port x set bit y (y=
-        BS15: u1 = 0,
-        /// BR0 [16:16]
-        /// Port x set bit y (y=
-        BR0: u1 = 0,
-        /// BR1 [17:17]
-        /// Port x reset bit y (y =
-        BR1: u1 = 0,
-        /// BR2 [18:18]
-        /// Port x reset bit y (y =
-        BR2: u1 = 0,
-        /// BR3 [19:19]
-        /// Port x reset bit y (y =
-        BR3: u1 = 0,
-        /// BR4 [20:20]
-        /// Port x reset bit y (y =
-        BR4: u1 = 0,
-        /// BR5 [21:21]
-        /// Port x reset bit y (y =
-        BR5: u1 = 0,
-        /// BR6 [22:22]
-        /// Port x reset bit y (y =
-        BR6: u1 = 0,
-        /// BR7 [23:23]
-        /// Port x reset bit y (y =
-        BR7: u1 = 0,
-        /// BR8 [24:24]
-        /// Port x reset bit y (y =
-        BR8: u1 = 0,
-        /// BR9 [25:25]
-        /// Port x reset bit y (y =
-        BR9: u1 = 0,
-        /// BR10 [26:26]
-        /// Port x reset bit y (y =
-        BR10: u1 = 0,
-        /// BR11 [27:27]
-        /// Port x reset bit y (y =
-        BR11: u1 = 0,
-        /// BR12 [28:28]
-        /// Port x reset bit y (y =
-        BR12: u1 = 0,
-        /// BR13 [29:29]
-        /// Port x reset bit y (y =
-        BR13: u1 = 0,
-        /// BR14 [30:30]
-        /// Port x reset bit y (y =
-        BR14: u1 = 0,
-        /// BR15 [31:31]
-        /// Port x reset bit y (y =
-        BR15: u1 = 0,
-    };
-    /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
-
-    /// LCKR
-    const LCKR_val = packed struct {
-        /// LCK0 [0:0]
-        /// Port x lock bit y (y=
-        LCK0: u1 = 0,
-        /// LCK1 [1:1]
-        /// Port x lock bit y (y=
-        LCK1: u1 = 0,
-        /// LCK2 [2:2]
-        /// Port x lock bit y (y=
-        LCK2: u1 = 0,
-        /// LCK3 [3:3]
-        /// Port x lock bit y (y=
-        LCK3: u1 = 0,
-        /// LCK4 [4:4]
-        /// Port x lock bit y (y=
-        LCK4: u1 = 0,
-        /// LCK5 [5:5]
-        /// Port x lock bit y (y=
-        LCK5: u1 = 0,
-        /// LCK6 [6:6]
-        /// Port x lock bit y (y=
-        LCK6: u1 = 0,
-        /// LCK7 [7:7]
-        /// Port x lock bit y (y=
-        LCK7: u1 = 0,
-        /// LCK8 [8:8]
-        /// Port x lock bit y (y=
-        LCK8: u1 = 0,
-        /// LCK9 [9:9]
-        /// Port x lock bit y (y=
-        LCK9: u1 = 0,
-        /// LCK10 [10:10]
-        /// Port x lock bit y (y=
-        LCK10: u1 = 0,
-        /// LCK11 [11:11]
-        /// Port x lock bit y (y=
-        LCK11: u1 = 0,
-        /// LCK12 [12:12]
-        /// Port x lock bit y (y=
-        LCK12: u1 = 0,
-        /// LCK13 [13:13]
-        /// Port x lock bit y (y=
-        LCK13: u1 = 0,
-        /// LCK14 [14:14]
-        /// Port x lock bit y (y=
-        LCK14: u1 = 0,
-        /// LCK15 [15:15]
-        /// Port x lock bit y (y=
-        LCK15: u1 = 0,
-        /// LCKK [16:16]
-        /// Port x lock bit y (y=
-        LCKK: u1 = 0,
-        /// unused [17:31]
-        _unused17: u7 = 0,
-        _unused24: u8 = 0,
-    };
-    /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
-
-    /// AFRL
-    const AFRL_val = packed struct {
-        /// AFRL0 [0:3]
-        /// Alternate function selection for port x
-        AFRL0: u4 = 0,
-        /// AFRL1 [4:7]
-        /// Alternate function selection for port x
-        AFRL1: u4 = 0,
-        /// AFRL2 [8:11]
-        /// Alternate function selection for port x
-        AFRL2: u4 = 0,
-        /// AFRL3 [12:15]
-        /// Alternate function selection for port x
-        AFRL3: u4 = 0,
-        /// AFRL4 [16:19]
-        /// Alternate function selection for port x
-        AFRL4: u4 = 0,
-        /// AFRL5 [20:23]
-        /// Alternate function selection for port x
-        AFRL5: u4 = 0,
-        /// AFRL6 [24:27]
-        /// Alternate function selection for port x
-        AFRL6: u4 = 0,
-        /// AFRL7 [28:31]
-        /// Alternate function selection for port x
-        AFRL7: u4 = 0,
-    };
-    /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
-
-    /// AFRH
-    const AFRH_val = packed struct {
-        /// AFRH8 [0:3]
-        /// Alternate function selection for port x
-        AFRH8: u4 = 0,
-        /// AFRH9 [4:7]
-        /// Alternate function selection for port x
-        AFRH9: u4 = 0,
-        /// AFRH10 [8:11]
-        /// Alternate function selection for port x
-        AFRH10: u4 = 0,
-        /// AFRH11 [12:15]
-        /// Alternate function selection for port x
-        AFRH11: u4 = 0,
-        /// AFRH12 [16:19]
-        /// Alternate function selection for port x
-        AFRH12: u4 = 0,
-        /// AFRH13 [20:23]
-        /// Alternate function selection for port x
-        AFRH13: u4 = 0,
-        /// AFRH14 [24:27]
-        /// Alternate function selection for port x
-        AFRH14: u4 = 0,
-        /// AFRH15 [28:31]
-        /// Alternate function selection for port x
-        AFRH15: u4 = 0,
-    };
-    /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    pub const AFRH = MMIO(AFRH_val).init(base_address + 0x24);
 };
 
 /// General-purpose I/Os
@@ -10275,7 +8808,7 @@ pub const GPIOB = struct {
         MODER15: u2 = 0,
     };
     /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    pub const MODER = MMIO(MODER_val).init(base_address + 0x0);
 
     /// OTYPER
     const OTYPER_val = packed struct {
@@ -10332,7 +8865,7 @@ pub const GPIOB = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    pub const OTYPER = MMIO(OTYPER_val).init(base_address + 0x4);
 
     /// OSPEEDR
     const OSPEEDR_val = packed struct {
@@ -10386,7 +8919,7 @@ pub const GPIOB = struct {
         OSPEEDR15: u2 = 0,
     };
     /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
+    pub const OSPEEDR = MMIO(OSPEEDR_val).init(base_address + 0x8);
 
     /// PUPDR
     const PUPDR_val = packed struct {
@@ -10440,7 +8973,7 @@ pub const GPIOB = struct {
         PUPDR15: u2 = 0,
     };
     /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
+    pub const PUPDR = MMIO(PUPDR_val).init(base_address + 0xc);
 
     /// IDR
     const IDR_val = packed struct {
@@ -10497,7 +9030,7 @@ pub const GPIOB = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x10);
 
     /// ODR
     const ODR_val = packed struct {
@@ -10554,7 +9087,7 @@ pub const GPIOB = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
+    pub const ODR = MMIO(ODR_val).init(base_address + 0x14);
 
     /// BSRR
     const BSRR_val = packed struct {
@@ -10656,7 +9189,7 @@ pub const GPIOB = struct {
         BR15: u1 = 0,
     };
     /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
+    pub const BSRR = MMIO(BSRR_val).init(base_address + 0x18);
 
     /// LCKR
     const LCKR_val = packed struct {
@@ -10716,7 +9249,7 @@ pub const GPIOB = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
+    pub const LCKR = MMIO(LCKR_val).init(base_address + 0x1c);
 
     /// AFRL
     const AFRL_val = packed struct {
@@ -10746,7 +9279,7 @@ pub const GPIOB = struct {
         AFRL7: u4 = 0,
     };
     /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
+    pub const AFRL = MMIO(AFRL_val).init(base_address + 0x20);
 
     /// AFRH
     const AFRH_val = packed struct {
@@ -10776,7 +9309,7 @@ pub const GPIOB = struct {
         AFRH15: u4 = 0,
     };
     /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    pub const AFRH = MMIO(AFRH_val).init(base_address + 0x24);
 };
 
 /// General-purpose I/Os
@@ -10834,7 +9367,7 @@ pub const GPIOA = struct {
         MODER15: u2 = 2,
     };
     /// GPIO port mode register
-    pub const MODER = Register(MODER_val).init(base_address + 0x0);
+    pub const MODER = MMIO(MODER_val).init(base_address + 0x0);
 
     /// OTYPER
     const OTYPER_val = packed struct {
@@ -10891,7 +9424,7 @@ pub const GPIOA = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output type register
-    pub const OTYPER = Register(OTYPER_val).init(base_address + 0x4);
+    pub const OTYPER = MMIO(OTYPER_val).init(base_address + 0x4);
 
     /// OSPEEDR
     const OSPEEDR_val = packed struct {
@@ -10945,7 +9478,7 @@ pub const GPIOA = struct {
         OSPEEDR15: u2 = 0,
     };
     /// GPIO port output speed
-    pub const OSPEEDR = Register(OSPEEDR_val).init(base_address + 0x8);
+    pub const OSPEEDR = MMIO(OSPEEDR_val).init(base_address + 0x8);
 
     /// PUPDR
     const PUPDR_val = packed struct {
@@ -10999,7 +9532,7 @@ pub const GPIOA = struct {
         PUPDR15: u2 = 1,
     };
     /// GPIO port pull-up/pull-down
-    pub const PUPDR = Register(PUPDR_val).init(base_address + 0xc);
+    pub const PUPDR = MMIO(PUPDR_val).init(base_address + 0xc);
 
     /// IDR
     const IDR_val = packed struct {
@@ -11056,7 +9589,7 @@ pub const GPIOA = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port input data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x10);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x10);
 
     /// ODR
     const ODR_val = packed struct {
@@ -11113,7 +9646,7 @@ pub const GPIOA = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port output data register
-    pub const ODR = Register(ODR_val).init(base_address + 0x14);
+    pub const ODR = MMIO(ODR_val).init(base_address + 0x14);
 
     /// BSRR
     const BSRR_val = packed struct {
@@ -11215,7 +9748,7 @@ pub const GPIOA = struct {
         BR15: u1 = 0,
     };
     /// GPIO port bit set/reset
-    pub const BSRR = Register(BSRR_val).init(base_address + 0x18);
+    pub const BSRR = MMIO(BSRR_val).init(base_address + 0x18);
 
     /// LCKR
     const LCKR_val = packed struct {
@@ -11275,7 +9808,7 @@ pub const GPIOA = struct {
         _unused24: u8 = 0,
     };
     /// GPIO port configuration lock
-    pub const LCKR = Register(LCKR_val).init(base_address + 0x1c);
+    pub const LCKR = MMIO(LCKR_val).init(base_address + 0x1c);
 
     /// AFRL
     const AFRL_val = packed struct {
@@ -11305,7 +9838,7 @@ pub const GPIOA = struct {
         AFRL7: u4 = 0,
     };
     /// GPIO alternate function low
-    pub const AFRL = Register(AFRL_val).init(base_address + 0x20);
+    pub const AFRL = MMIO(AFRL_val).init(base_address + 0x20);
 
     /// AFRH
     const AFRH_val = packed struct {
@@ -11335,7 +9868,7 @@ pub const GPIOA = struct {
         AFRH15: u4 = 0,
     };
     /// GPIO alternate function high
-    pub const AFRH = Register(AFRH_val).init(base_address + 0x24);
+    pub const AFRH = MMIO(AFRH_val).init(base_address + 0x24);
 };
 
 /// System configuration controller
@@ -11343,24 +9876,43 @@ pub const SYSCFG = struct {
     const base_address = 0x40013800;
     /// MEMRM
     const MEMRM_val = packed struct {
-        /// MEM_MODE [0:1]
-        /// MEM_MODE
-        MEM_MODE: u2 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
-        _unused8: u8 = 0,
+        /// MEM_MODE [0:2]
+        /// Memory mapping selection
+        MEM_MODE: u3 = 0,
+        /// unused [3:7]
+        _unused3: u5 = 0,
+        /// FB_MODE [8:8]
+        /// Flash bank mode selection
+        FB_MODE: u1 = 0,
+        /// unused [9:9]
+        _unused9: u1 = 0,
+        /// SWP_FMC [10:11]
+        /// FMC memory mapping swap
+        SWP_FMC: u2 = 0,
+        /// unused [12:31]
+        _unused12: u4 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
     /// memory remap register
-    pub const MEMRM = Register(MEMRM_val).init(base_address + 0x0);
+    pub const MEMRM = MMIO(MEMRM_val).init(base_address + 0x0);
 
     /// PMC
     const PMC_val = packed struct {
-        /// unused [0:22]
+        /// unused [0:15]
         _unused0: u8 = 0,
         _unused8: u8 = 0,
-        _unused16: u7 = 0,
+        /// ADC1DC2 [16:16]
+        /// ADC1DC2
+        ADC1DC2: u1 = 0,
+        /// ADC2DC2 [17:17]
+        /// ADC2DC2
+        ADC2DC2: u1 = 0,
+        /// ADC3DC2 [18:18]
+        /// ADC3DC2
+        ADC3DC2: u1 = 0,
+        /// unused [19:22]
+        _unused19: u4 = 0,
         /// MII_RMII_SEL [23:23]
         /// Ethernet PHY interface
         MII_RMII_SEL: u1 = 0,
@@ -11368,7 +9920,7 @@ pub const SYSCFG = struct {
         _unused24: u8 = 0,
     };
     /// peripheral mode configuration
-    pub const PMC = Register(PMC_val).init(base_address + 0x4);
+    pub const PMC = MMIO(PMC_val).init(base_address + 0x4);
 
     /// EXTICR1
     const EXTICR1_val = packed struct {
@@ -11389,7 +9941,7 @@ pub const SYSCFG = struct {
         _unused24: u8 = 0,
     };
     /// external interrupt configuration register
-    pub const EXTICR1 = Register(EXTICR1_val).init(base_address + 0x8);
+    pub const EXTICR1 = MMIO(EXTICR1_val).init(base_address + 0x8);
 
     /// EXTICR2
     const EXTICR2_val = packed struct {
@@ -11410,7 +9962,7 @@ pub const SYSCFG = struct {
         _unused24: u8 = 0,
     };
     /// external interrupt configuration register
-    pub const EXTICR2 = Register(EXTICR2_val).init(base_address + 0xc);
+    pub const EXTICR2 = MMIO(EXTICR2_val).init(base_address + 0xc);
 
     /// EXTICR3
     const EXTICR3_val = packed struct {
@@ -11431,7 +9983,7 @@ pub const SYSCFG = struct {
         _unused24: u8 = 0,
     };
     /// external interrupt configuration register
-    pub const EXTICR3 = Register(EXTICR3_val).init(base_address + 0x10);
+    pub const EXTICR3 = MMIO(EXTICR3_val).init(base_address + 0x10);
 
     /// EXTICR4
     const EXTICR4_val = packed struct {
@@ -11452,7 +10004,7 @@ pub const SYSCFG = struct {
         _unused24: u8 = 0,
     };
     /// external interrupt configuration register
-    pub const EXTICR4 = Register(EXTICR4_val).init(base_address + 0x14);
+    pub const EXTICR4 = MMIO(EXTICR4_val).init(base_address + 0x14);
 
     /// CMPCR
     const CMPCR_val = packed struct {
@@ -11470,7 +10022,7 @@ pub const SYSCFG = struct {
         _unused24: u8 = 0,
     };
     /// Compensation cell control
-    pub const CMPCR = Register(CMPCR_val).init(base_address + 0x20);
+    pub const CMPCR = MMIO(CMPCR_val).init(base_address + 0x20);
 };
 
 /// Serial peripheral interface
@@ -11525,7 +10077,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -11558,7 +10110,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SR
     const SR_val = packed struct {
@@ -11595,7 +10147,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
+    pub const SR = MMIO(SR_val).init(base_address + 0x8);
 
     /// DR
     const DR_val = packed struct {
@@ -11607,7 +10159,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// data register
-    pub const DR = Register(DR_val).init(base_address + 0xc);
+    pub const DR = MMIO(DR_val).init(base_address + 0xc);
 
     /// CRCPR
     const CRCPR_val = packed struct {
@@ -11619,7 +10171,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// CRC polynomial register
-    pub const CRCPR = Register(CRCPR_val).init(base_address + 0x10);
+    pub const CRCPR = MMIO(CRCPR_val).init(base_address + 0x10);
 
     /// RXCRCR
     const RXCRCR_val = packed struct {
@@ -11631,7 +10183,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// RX CRC register
-    pub const RXCRCR = Register(RXCRCR_val).init(base_address + 0x14);
+    pub const RXCRCR = MMIO(RXCRCR_val).init(base_address + 0x14);
 
     /// TXCRCR
     const TXCRCR_val = packed struct {
@@ -11643,7 +10195,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// TX CRC register
-    pub const TXCRCR = Register(TXCRCR_val).init(base_address + 0x18);
+    pub const TXCRCR = MMIO(TXCRCR_val).init(base_address + 0x18);
 
     /// I2SCFGR
     const I2SCFGR_val = packed struct {
@@ -11679,7 +10231,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// I2S configuration register
-    pub const I2SCFGR = Register(I2SCFGR_val).init(base_address + 0x1c);
+    pub const I2SCFGR = MMIO(I2SCFGR_val).init(base_address + 0x1c);
 
     /// I2SPR
     const I2SPR_val = packed struct {
@@ -11698,7 +10250,7 @@ pub const SPI1 = struct {
         _unused24: u8 = 0,
     };
     /// I2S prescaler register
-    pub const I2SPR = Register(I2SPR_val).init(base_address + 0x20);
+    pub const I2SPR = MMIO(I2SPR_val).init(base_address + 0x20);
 };
 
 /// Serial peripheral interface
@@ -11753,7 +10305,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -11786,7 +10338,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SR
     const SR_val = packed struct {
@@ -11823,7 +10375,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
+    pub const SR = MMIO(SR_val).init(base_address + 0x8);
 
     /// DR
     const DR_val = packed struct {
@@ -11835,7 +10387,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// data register
-    pub const DR = Register(DR_val).init(base_address + 0xc);
+    pub const DR = MMIO(DR_val).init(base_address + 0xc);
 
     /// CRCPR
     const CRCPR_val = packed struct {
@@ -11847,7 +10399,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// CRC polynomial register
-    pub const CRCPR = Register(CRCPR_val).init(base_address + 0x10);
+    pub const CRCPR = MMIO(CRCPR_val).init(base_address + 0x10);
 
     /// RXCRCR
     const RXCRCR_val = packed struct {
@@ -11859,7 +10411,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// RX CRC register
-    pub const RXCRCR = Register(RXCRCR_val).init(base_address + 0x14);
+    pub const RXCRCR = MMIO(RXCRCR_val).init(base_address + 0x14);
 
     /// TXCRCR
     const TXCRCR_val = packed struct {
@@ -11871,7 +10423,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// TX CRC register
-    pub const TXCRCR = Register(TXCRCR_val).init(base_address + 0x18);
+    pub const TXCRCR = MMIO(TXCRCR_val).init(base_address + 0x18);
 
     /// I2SCFGR
     const I2SCFGR_val = packed struct {
@@ -11907,7 +10459,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// I2S configuration register
-    pub const I2SCFGR = Register(I2SCFGR_val).init(base_address + 0x1c);
+    pub const I2SCFGR = MMIO(I2SCFGR_val).init(base_address + 0x1c);
 
     /// I2SPR
     const I2SPR_val = packed struct {
@@ -11926,7 +10478,7 @@ pub const SPI2 = struct {
         _unused24: u8 = 0,
     };
     /// I2S prescaler register
-    pub const I2SPR = Register(I2SPR_val).init(base_address + 0x20);
+    pub const I2SPR = MMIO(I2SPR_val).init(base_address + 0x20);
 };
 
 /// Serial peripheral interface
@@ -11981,7 +10533,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -12014,7 +10566,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SR
     const SR_val = packed struct {
@@ -12051,7 +10603,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
+    pub const SR = MMIO(SR_val).init(base_address + 0x8);
 
     /// DR
     const DR_val = packed struct {
@@ -12063,7 +10615,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// data register
-    pub const DR = Register(DR_val).init(base_address + 0xc);
+    pub const DR = MMIO(DR_val).init(base_address + 0xc);
 
     /// CRCPR
     const CRCPR_val = packed struct {
@@ -12075,7 +10627,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// CRC polynomial register
-    pub const CRCPR = Register(CRCPR_val).init(base_address + 0x10);
+    pub const CRCPR = MMIO(CRCPR_val).init(base_address + 0x10);
 
     /// RXCRCR
     const RXCRCR_val = packed struct {
@@ -12087,7 +10639,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// RX CRC register
-    pub const RXCRCR = Register(RXCRCR_val).init(base_address + 0x14);
+    pub const RXCRCR = MMIO(RXCRCR_val).init(base_address + 0x14);
 
     /// TXCRCR
     const TXCRCR_val = packed struct {
@@ -12099,7 +10651,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// TX CRC register
-    pub const TXCRCR = Register(TXCRCR_val).init(base_address + 0x18);
+    pub const TXCRCR = MMIO(TXCRCR_val).init(base_address + 0x18);
 
     /// I2SCFGR
     const I2SCFGR_val = packed struct {
@@ -12135,7 +10687,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// I2S configuration register
-    pub const I2SCFGR = Register(I2SCFGR_val).init(base_address + 0x1c);
+    pub const I2SCFGR = MMIO(I2SCFGR_val).init(base_address + 0x1c);
 
     /// I2SPR
     const I2SPR_val = packed struct {
@@ -12154,463 +10706,7 @@ pub const SPI3 = struct {
         _unused24: u8 = 0,
     };
     /// I2S prescaler register
-    pub const I2SPR = Register(I2SPR_val).init(base_address + 0x20);
-};
-
-/// Serial peripheral interface
-pub const I2S2ext = struct {
-    const base_address = 0x40003400;
-    /// CR1
-    const CR1_val = packed struct {
-        /// CPHA [0:0]
-        /// Clock phase
-        CPHA: u1 = 0,
-        /// CPOL [1:1]
-        /// Clock polarity
-        CPOL: u1 = 0,
-        /// MSTR [2:2]
-        /// Master selection
-        MSTR: u1 = 0,
-        /// BR [3:5]
-        /// Baud rate control
-        BR: u3 = 0,
-        /// SPE [6:6]
-        /// SPI enable
-        SPE: u1 = 0,
-        /// LSBFIRST [7:7]
-        /// Frame format
-        LSBFIRST: u1 = 0,
-        /// SSI [8:8]
-        /// Internal slave select
-        SSI: u1 = 0,
-        /// SSM [9:9]
-        /// Software slave management
-        SSM: u1 = 0,
-        /// RXONLY [10:10]
-        /// Receive only
-        RXONLY: u1 = 0,
-        /// DFF [11:11]
-        /// Data frame format
-        DFF: u1 = 0,
-        /// CRCNEXT [12:12]
-        /// CRC transfer next
-        CRCNEXT: u1 = 0,
-        /// CRCEN [13:13]
-        /// Hardware CRC calculation
-        CRCEN: u1 = 0,
-        /// BIDIOE [14:14]
-        /// Output enable in bidirectional
-        BIDIOE: u1 = 0,
-        /// BIDIMODE [15:15]
-        /// Bidirectional data mode
-        BIDIMODE: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
-
-    /// CR2
-    const CR2_val = packed struct {
-        /// RXDMAEN [0:0]
-        /// Rx buffer DMA enable
-        RXDMAEN: u1 = 0,
-        /// TXDMAEN [1:1]
-        /// Tx buffer DMA enable
-        TXDMAEN: u1 = 0,
-        /// SSOE [2:2]
-        /// SS output enable
-        SSOE: u1 = 0,
-        /// unused [3:3]
-        _unused3: u1 = 0,
-        /// FRF [4:4]
-        /// Frame format
-        FRF: u1 = 0,
-        /// ERRIE [5:5]
-        /// Error interrupt enable
-        ERRIE: u1 = 0,
-        /// RXNEIE [6:6]
-        /// RX buffer not empty interrupt
-        RXNEIE: u1 = 0,
-        /// TXEIE [7:7]
-        /// Tx buffer empty interrupt
-        TXEIE: u1 = 0,
-        /// unused [8:31]
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
-
-    /// SR
-    const SR_val = packed struct {
-        /// RXNE [0:0]
-        /// Receive buffer not empty
-        RXNE: u1 = 0,
-        /// TXE [1:1]
-        /// Transmit buffer empty
-        TXE: u1 = 1,
-        /// CHSIDE [2:2]
-        /// Channel side
-        CHSIDE: u1 = 0,
-        /// UDR [3:3]
-        /// Underrun flag
-        UDR: u1 = 0,
-        /// CRCERR [4:4]
-        /// CRC error flag
-        CRCERR: u1 = 0,
-        /// MODF [5:5]
-        /// Mode fault
-        MODF: u1 = 0,
-        /// OVR [6:6]
-        /// Overrun flag
-        OVR: u1 = 0,
-        /// BSY [7:7]
-        /// Busy flag
-        BSY: u1 = 0,
-        /// TIFRFE [8:8]
-        /// TI frame format error
-        TIFRFE: u1 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
-
-    /// DR
-    const DR_val = packed struct {
-        /// DR [0:15]
-        /// Data register
-        DR: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// data register
-    pub const DR = Register(DR_val).init(base_address + 0xc);
-
-    /// CRCPR
-    const CRCPR_val = packed struct {
-        /// CRCPOLY [0:15]
-        /// CRC polynomial register
-        CRCPOLY: u16 = 7,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// CRC polynomial register
-    pub const CRCPR = Register(CRCPR_val).init(base_address + 0x10);
-
-    /// RXCRCR
-    const RXCRCR_val = packed struct {
-        /// RxCRC [0:15]
-        /// Rx CRC register
-        RxCRC: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// RX CRC register
-    pub const RXCRCR = Register(RXCRCR_val).init(base_address + 0x14);
-
-    /// TXCRCR
-    const TXCRCR_val = packed struct {
-        /// TxCRC [0:15]
-        /// Tx CRC register
-        TxCRC: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// TX CRC register
-    pub const TXCRCR = Register(TXCRCR_val).init(base_address + 0x18);
-
-    /// I2SCFGR
-    const I2SCFGR_val = packed struct {
-        /// CHLEN [0:0]
-        /// Channel length (number of bits per audio
-        CHLEN: u1 = 0,
-        /// DATLEN [1:2]
-        /// Data length to be
-        DATLEN: u2 = 0,
-        /// CKPOL [3:3]
-        /// Steady state clock
-        CKPOL: u1 = 0,
-        /// I2SSTD [4:5]
-        /// I2S standard selection
-        I2SSTD: u2 = 0,
-        /// unused [6:6]
-        _unused6: u1 = 0,
-        /// PCMSYNC [7:7]
-        /// PCM frame synchronization
-        PCMSYNC: u1 = 0,
-        /// I2SCFG [8:9]
-        /// I2S configuration mode
-        I2SCFG: u2 = 0,
-        /// I2SE [10:10]
-        /// I2S Enable
-        I2SE: u1 = 0,
-        /// I2SMOD [11:11]
-        /// I2S mode selection
-        I2SMOD: u1 = 0,
-        /// unused [12:31]
-        _unused12: u4 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// I2S configuration register
-    pub const I2SCFGR = Register(I2SCFGR_val).init(base_address + 0x1c);
-
-    /// I2SPR
-    const I2SPR_val = packed struct {
-        /// I2SDIV [0:7]
-        /// I2S Linear prescaler
-        I2SDIV: u8 = 16,
-        /// ODD [8:8]
-        /// Odd factor for the
-        ODD: u1 = 0,
-        /// MCKOE [9:9]
-        /// Master clock output enable
-        MCKOE: u1 = 0,
-        /// unused [10:31]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// I2S prescaler register
-    pub const I2SPR = Register(I2SPR_val).init(base_address + 0x20);
-};
-
-/// Serial peripheral interface
-pub const I2S3ext = struct {
-    const base_address = 0x40004000;
-    /// CR1
-    const CR1_val = packed struct {
-        /// CPHA [0:0]
-        /// Clock phase
-        CPHA: u1 = 0,
-        /// CPOL [1:1]
-        /// Clock polarity
-        CPOL: u1 = 0,
-        /// MSTR [2:2]
-        /// Master selection
-        MSTR: u1 = 0,
-        /// BR [3:5]
-        /// Baud rate control
-        BR: u3 = 0,
-        /// SPE [6:6]
-        /// SPI enable
-        SPE: u1 = 0,
-        /// LSBFIRST [7:7]
-        /// Frame format
-        LSBFIRST: u1 = 0,
-        /// SSI [8:8]
-        /// Internal slave select
-        SSI: u1 = 0,
-        /// SSM [9:9]
-        /// Software slave management
-        SSM: u1 = 0,
-        /// RXONLY [10:10]
-        /// Receive only
-        RXONLY: u1 = 0,
-        /// DFF [11:11]
-        /// Data frame format
-        DFF: u1 = 0,
-        /// CRCNEXT [12:12]
-        /// CRC transfer next
-        CRCNEXT: u1 = 0,
-        /// CRCEN [13:13]
-        /// Hardware CRC calculation
-        CRCEN: u1 = 0,
-        /// BIDIOE [14:14]
-        /// Output enable in bidirectional
-        BIDIOE: u1 = 0,
-        /// BIDIMODE [15:15]
-        /// Bidirectional data mode
-        BIDIMODE: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
-
-    /// CR2
-    const CR2_val = packed struct {
-        /// RXDMAEN [0:0]
-        /// Rx buffer DMA enable
-        RXDMAEN: u1 = 0,
-        /// TXDMAEN [1:1]
-        /// Tx buffer DMA enable
-        TXDMAEN: u1 = 0,
-        /// SSOE [2:2]
-        /// SS output enable
-        SSOE: u1 = 0,
-        /// unused [3:3]
-        _unused3: u1 = 0,
-        /// FRF [4:4]
-        /// Frame format
-        FRF: u1 = 0,
-        /// ERRIE [5:5]
-        /// Error interrupt enable
-        ERRIE: u1 = 0,
-        /// RXNEIE [6:6]
-        /// RX buffer not empty interrupt
-        RXNEIE: u1 = 0,
-        /// TXEIE [7:7]
-        /// Tx buffer empty interrupt
-        TXEIE: u1 = 0,
-        /// unused [8:31]
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
-
-    /// SR
-    const SR_val = packed struct {
-        /// RXNE [0:0]
-        /// Receive buffer not empty
-        RXNE: u1 = 0,
-        /// TXE [1:1]
-        /// Transmit buffer empty
-        TXE: u1 = 1,
-        /// CHSIDE [2:2]
-        /// Channel side
-        CHSIDE: u1 = 0,
-        /// UDR [3:3]
-        /// Underrun flag
-        UDR: u1 = 0,
-        /// CRCERR [4:4]
-        /// CRC error flag
-        CRCERR: u1 = 0,
-        /// MODF [5:5]
-        /// Mode fault
-        MODF: u1 = 0,
-        /// OVR [6:6]
-        /// Overrun flag
-        OVR: u1 = 0,
-        /// BSY [7:7]
-        /// Busy flag
-        BSY: u1 = 0,
-        /// TIFRFE [8:8]
-        /// TI frame format error
-        TIFRFE: u1 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
-
-    /// DR
-    const DR_val = packed struct {
-        /// DR [0:15]
-        /// Data register
-        DR: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// data register
-    pub const DR = Register(DR_val).init(base_address + 0xc);
-
-    /// CRCPR
-    const CRCPR_val = packed struct {
-        /// CRCPOLY [0:15]
-        /// CRC polynomial register
-        CRCPOLY: u16 = 7,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// CRC polynomial register
-    pub const CRCPR = Register(CRCPR_val).init(base_address + 0x10);
-
-    /// RXCRCR
-    const RXCRCR_val = packed struct {
-        /// RxCRC [0:15]
-        /// Rx CRC register
-        RxCRC: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// RX CRC register
-    pub const RXCRCR = Register(RXCRCR_val).init(base_address + 0x14);
-
-    /// TXCRCR
-    const TXCRCR_val = packed struct {
-        /// TxCRC [0:15]
-        /// Tx CRC register
-        TxCRC: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// TX CRC register
-    pub const TXCRCR = Register(TXCRCR_val).init(base_address + 0x18);
-
-    /// I2SCFGR
-    const I2SCFGR_val = packed struct {
-        /// CHLEN [0:0]
-        /// Channel length (number of bits per audio
-        CHLEN: u1 = 0,
-        /// DATLEN [1:2]
-        /// Data length to be
-        DATLEN: u2 = 0,
-        /// CKPOL [3:3]
-        /// Steady state clock
-        CKPOL: u1 = 0,
-        /// I2SSTD [4:5]
-        /// I2S standard selection
-        I2SSTD: u2 = 0,
-        /// unused [6:6]
-        _unused6: u1 = 0,
-        /// PCMSYNC [7:7]
-        /// PCM frame synchronization
-        PCMSYNC: u1 = 0,
-        /// I2SCFG [8:9]
-        /// I2S configuration mode
-        I2SCFG: u2 = 0,
-        /// I2SE [10:10]
-        /// I2S Enable
-        I2SE: u1 = 0,
-        /// I2SMOD [11:11]
-        /// I2S mode selection
-        I2SMOD: u1 = 0,
-        /// unused [12:31]
-        _unused12: u4 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// I2S configuration register
-    pub const I2SCFGR = Register(I2SCFGR_val).init(base_address + 0x1c);
-
-    /// I2SPR
-    const I2SPR_val = packed struct {
-        /// I2SDIV [0:7]
-        /// I2S Linear prescaler
-        I2SDIV: u8 = 16,
-        /// ODD [8:8]
-        /// Odd factor for the
-        ODD: u1 = 0,
-        /// MCKOE [9:9]
-        /// Master clock output enable
-        MCKOE: u1 = 0,
-        /// unused [10:31]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// I2S prescaler register
-    pub const I2SPR = Register(I2SPR_val).init(base_address + 0x20);
+    pub const I2SPR = MMIO(I2SPR_val).init(base_address + 0x20);
 };
 
 /// Serial peripheral interface
@@ -12665,7 +10761,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -12698,7 +10794,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SR
     const SR_val = packed struct {
@@ -12735,7 +10831,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
+    pub const SR = MMIO(SR_val).init(base_address + 0x8);
 
     /// DR
     const DR_val = packed struct {
@@ -12747,7 +10843,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// data register
-    pub const DR = Register(DR_val).init(base_address + 0xc);
+    pub const DR = MMIO(DR_val).init(base_address + 0xc);
 
     /// CRCPR
     const CRCPR_val = packed struct {
@@ -12759,7 +10855,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// CRC polynomial register
-    pub const CRCPR = Register(CRCPR_val).init(base_address + 0x10);
+    pub const CRCPR = MMIO(CRCPR_val).init(base_address + 0x10);
 
     /// RXCRCR
     const RXCRCR_val = packed struct {
@@ -12771,7 +10867,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// RX CRC register
-    pub const RXCRCR = Register(RXCRCR_val).init(base_address + 0x14);
+    pub const RXCRCR = MMIO(RXCRCR_val).init(base_address + 0x14);
 
     /// TXCRCR
     const TXCRCR_val = packed struct {
@@ -12783,7 +10879,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// TX CRC register
-    pub const TXCRCR = Register(TXCRCR_val).init(base_address + 0x18);
+    pub const TXCRCR = MMIO(TXCRCR_val).init(base_address + 0x18);
 
     /// I2SCFGR
     const I2SCFGR_val = packed struct {
@@ -12819,7 +10915,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// I2S configuration register
-    pub const I2SCFGR = Register(I2SCFGR_val).init(base_address + 0x1c);
+    pub const I2SCFGR = MMIO(I2SCFGR_val).init(base_address + 0x1c);
 
     /// I2SPR
     const I2SPR_val = packed struct {
@@ -12838,906 +10934,7 @@ pub const SPI4 = struct {
         _unused24: u8 = 0,
     };
     /// I2S prescaler register
-    pub const I2SPR = Register(I2SPR_val).init(base_address + 0x20);
-};
-
-/// Serial peripheral interface
-pub const SPI5 = struct {
-    const base_address = 0x40015000;
-    /// CR1
-    const CR1_val = packed struct {
-        /// CPHA [0:0]
-        /// Clock phase
-        CPHA: u1 = 0,
-        /// CPOL [1:1]
-        /// Clock polarity
-        CPOL: u1 = 0,
-        /// MSTR [2:2]
-        /// Master selection
-        MSTR: u1 = 0,
-        /// BR [3:5]
-        /// Baud rate control
-        BR: u3 = 0,
-        /// SPE [6:6]
-        /// SPI enable
-        SPE: u1 = 0,
-        /// LSBFIRST [7:7]
-        /// Frame format
-        LSBFIRST: u1 = 0,
-        /// SSI [8:8]
-        /// Internal slave select
-        SSI: u1 = 0,
-        /// SSM [9:9]
-        /// Software slave management
-        SSM: u1 = 0,
-        /// RXONLY [10:10]
-        /// Receive only
-        RXONLY: u1 = 0,
-        /// DFF [11:11]
-        /// Data frame format
-        DFF: u1 = 0,
-        /// CRCNEXT [12:12]
-        /// CRC transfer next
-        CRCNEXT: u1 = 0,
-        /// CRCEN [13:13]
-        /// Hardware CRC calculation
-        CRCEN: u1 = 0,
-        /// BIDIOE [14:14]
-        /// Output enable in bidirectional
-        BIDIOE: u1 = 0,
-        /// BIDIMODE [15:15]
-        /// Bidirectional data mode
-        BIDIMODE: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
-
-    /// CR2
-    const CR2_val = packed struct {
-        /// RXDMAEN [0:0]
-        /// Rx buffer DMA enable
-        RXDMAEN: u1 = 0,
-        /// TXDMAEN [1:1]
-        /// Tx buffer DMA enable
-        TXDMAEN: u1 = 0,
-        /// SSOE [2:2]
-        /// SS output enable
-        SSOE: u1 = 0,
-        /// unused [3:3]
-        _unused3: u1 = 0,
-        /// FRF [4:4]
-        /// Frame format
-        FRF: u1 = 0,
-        /// ERRIE [5:5]
-        /// Error interrupt enable
-        ERRIE: u1 = 0,
-        /// RXNEIE [6:6]
-        /// RX buffer not empty interrupt
-        RXNEIE: u1 = 0,
-        /// TXEIE [7:7]
-        /// Tx buffer empty interrupt
-        TXEIE: u1 = 0,
-        /// unused [8:31]
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
-
-    /// SR
-    const SR_val = packed struct {
-        /// RXNE [0:0]
-        /// Receive buffer not empty
-        RXNE: u1 = 0,
-        /// TXE [1:1]
-        /// Transmit buffer empty
-        TXE: u1 = 1,
-        /// CHSIDE [2:2]
-        /// Channel side
-        CHSIDE: u1 = 0,
-        /// UDR [3:3]
-        /// Underrun flag
-        UDR: u1 = 0,
-        /// CRCERR [4:4]
-        /// CRC error flag
-        CRCERR: u1 = 0,
-        /// MODF [5:5]
-        /// Mode fault
-        MODF: u1 = 0,
-        /// OVR [6:6]
-        /// Overrun flag
-        OVR: u1 = 0,
-        /// BSY [7:7]
-        /// Busy flag
-        BSY: u1 = 0,
-        /// TIFRFE [8:8]
-        /// TI frame format error
-        TIFRFE: u1 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
-
-    /// DR
-    const DR_val = packed struct {
-        /// DR [0:15]
-        /// Data register
-        DR: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// data register
-    pub const DR = Register(DR_val).init(base_address + 0xc);
-
-    /// CRCPR
-    const CRCPR_val = packed struct {
-        /// CRCPOLY [0:15]
-        /// CRC polynomial register
-        CRCPOLY: u16 = 7,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// CRC polynomial register
-    pub const CRCPR = Register(CRCPR_val).init(base_address + 0x10);
-
-    /// RXCRCR
-    const RXCRCR_val = packed struct {
-        /// RxCRC [0:15]
-        /// Rx CRC register
-        RxCRC: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// RX CRC register
-    pub const RXCRCR = Register(RXCRCR_val).init(base_address + 0x14);
-
-    /// TXCRCR
-    const TXCRCR_val = packed struct {
-        /// TxCRC [0:15]
-        /// Tx CRC register
-        TxCRC: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// TX CRC register
-    pub const TXCRCR = Register(TXCRCR_val).init(base_address + 0x18);
-
-    /// I2SCFGR
-    const I2SCFGR_val = packed struct {
-        /// CHLEN [0:0]
-        /// Channel length (number of bits per audio
-        CHLEN: u1 = 0,
-        /// DATLEN [1:2]
-        /// Data length to be
-        DATLEN: u2 = 0,
-        /// CKPOL [3:3]
-        /// Steady state clock
-        CKPOL: u1 = 0,
-        /// I2SSTD [4:5]
-        /// I2S standard selection
-        I2SSTD: u2 = 0,
-        /// unused [6:6]
-        _unused6: u1 = 0,
-        /// PCMSYNC [7:7]
-        /// PCM frame synchronization
-        PCMSYNC: u1 = 0,
-        /// I2SCFG [8:9]
-        /// I2S configuration mode
-        I2SCFG: u2 = 0,
-        /// I2SE [10:10]
-        /// I2S Enable
-        I2SE: u1 = 0,
-        /// I2SMOD [11:11]
-        /// I2S mode selection
-        I2SMOD: u1 = 0,
-        /// unused [12:31]
-        _unused12: u4 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// I2S configuration register
-    pub const I2SCFGR = Register(I2SCFGR_val).init(base_address + 0x1c);
-
-    /// I2SPR
-    const I2SPR_val = packed struct {
-        /// I2SDIV [0:7]
-        /// I2S Linear prescaler
-        I2SDIV: u8 = 16,
-        /// ODD [8:8]
-        /// Odd factor for the
-        ODD: u1 = 0,
-        /// MCKOE [9:9]
-        /// Master clock output enable
-        MCKOE: u1 = 0,
-        /// unused [10:31]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// I2S prescaler register
-    pub const I2SPR = Register(I2SPR_val).init(base_address + 0x20);
-};
-
-/// Serial peripheral interface
-pub const SPI6 = struct {
-    const base_address = 0x40015400;
-    /// CR1
-    const CR1_val = packed struct {
-        /// CPHA [0:0]
-        /// Clock phase
-        CPHA: u1 = 0,
-        /// CPOL [1:1]
-        /// Clock polarity
-        CPOL: u1 = 0,
-        /// MSTR [2:2]
-        /// Master selection
-        MSTR: u1 = 0,
-        /// BR [3:5]
-        /// Baud rate control
-        BR: u3 = 0,
-        /// SPE [6:6]
-        /// SPI enable
-        SPE: u1 = 0,
-        /// LSBFIRST [7:7]
-        /// Frame format
-        LSBFIRST: u1 = 0,
-        /// SSI [8:8]
-        /// Internal slave select
-        SSI: u1 = 0,
-        /// SSM [9:9]
-        /// Software slave management
-        SSM: u1 = 0,
-        /// RXONLY [10:10]
-        /// Receive only
-        RXONLY: u1 = 0,
-        /// DFF [11:11]
-        /// Data frame format
-        DFF: u1 = 0,
-        /// CRCNEXT [12:12]
-        /// CRC transfer next
-        CRCNEXT: u1 = 0,
-        /// CRCEN [13:13]
-        /// Hardware CRC calculation
-        CRCEN: u1 = 0,
-        /// BIDIOE [14:14]
-        /// Output enable in bidirectional
-        BIDIOE: u1 = 0,
-        /// BIDIMODE [15:15]
-        /// Bidirectional data mode
-        BIDIMODE: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
-
-    /// CR2
-    const CR2_val = packed struct {
-        /// RXDMAEN [0:0]
-        /// Rx buffer DMA enable
-        RXDMAEN: u1 = 0,
-        /// TXDMAEN [1:1]
-        /// Tx buffer DMA enable
-        TXDMAEN: u1 = 0,
-        /// SSOE [2:2]
-        /// SS output enable
-        SSOE: u1 = 0,
-        /// unused [3:3]
-        _unused3: u1 = 0,
-        /// FRF [4:4]
-        /// Frame format
-        FRF: u1 = 0,
-        /// ERRIE [5:5]
-        /// Error interrupt enable
-        ERRIE: u1 = 0,
-        /// RXNEIE [6:6]
-        /// RX buffer not empty interrupt
-        RXNEIE: u1 = 0,
-        /// TXEIE [7:7]
-        /// Tx buffer empty interrupt
-        TXEIE: u1 = 0,
-        /// unused [8:31]
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
-
-    /// SR
-    const SR_val = packed struct {
-        /// RXNE [0:0]
-        /// Receive buffer not empty
-        RXNE: u1 = 0,
-        /// TXE [1:1]
-        /// Transmit buffer empty
-        TXE: u1 = 1,
-        /// CHSIDE [2:2]
-        /// Channel side
-        CHSIDE: u1 = 0,
-        /// UDR [3:3]
-        /// Underrun flag
-        UDR: u1 = 0,
-        /// CRCERR [4:4]
-        /// CRC error flag
-        CRCERR: u1 = 0,
-        /// MODF [5:5]
-        /// Mode fault
-        MODF: u1 = 0,
-        /// OVR [6:6]
-        /// Overrun flag
-        OVR: u1 = 0,
-        /// BSY [7:7]
-        /// Busy flag
-        BSY: u1 = 0,
-        /// TIFRFE [8:8]
-        /// TI frame format error
-        TIFRFE: u1 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
-
-    /// DR
-    const DR_val = packed struct {
-        /// DR [0:15]
-        /// Data register
-        DR: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// data register
-    pub const DR = Register(DR_val).init(base_address + 0xc);
-
-    /// CRCPR
-    const CRCPR_val = packed struct {
-        /// CRCPOLY [0:15]
-        /// CRC polynomial register
-        CRCPOLY: u16 = 7,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// CRC polynomial register
-    pub const CRCPR = Register(CRCPR_val).init(base_address + 0x10);
-
-    /// RXCRCR
-    const RXCRCR_val = packed struct {
-        /// RxCRC [0:15]
-        /// Rx CRC register
-        RxCRC: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// RX CRC register
-    pub const RXCRCR = Register(RXCRCR_val).init(base_address + 0x14);
-
-    /// TXCRCR
-    const TXCRCR_val = packed struct {
-        /// TxCRC [0:15]
-        /// Tx CRC register
-        TxCRC: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// TX CRC register
-    pub const TXCRCR = Register(TXCRCR_val).init(base_address + 0x18);
-
-    /// I2SCFGR
-    const I2SCFGR_val = packed struct {
-        /// CHLEN [0:0]
-        /// Channel length (number of bits per audio
-        CHLEN: u1 = 0,
-        /// DATLEN [1:2]
-        /// Data length to be
-        DATLEN: u2 = 0,
-        /// CKPOL [3:3]
-        /// Steady state clock
-        CKPOL: u1 = 0,
-        /// I2SSTD [4:5]
-        /// I2S standard selection
-        I2SSTD: u2 = 0,
-        /// unused [6:6]
-        _unused6: u1 = 0,
-        /// PCMSYNC [7:7]
-        /// PCM frame synchronization
-        PCMSYNC: u1 = 0,
-        /// I2SCFG [8:9]
-        /// I2S configuration mode
-        I2SCFG: u2 = 0,
-        /// I2SE [10:10]
-        /// I2S Enable
-        I2SE: u1 = 0,
-        /// I2SMOD [11:11]
-        /// I2S mode selection
-        I2SMOD: u1 = 0,
-        /// unused [12:31]
-        _unused12: u4 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// I2S configuration register
-    pub const I2SCFGR = Register(I2SCFGR_val).init(base_address + 0x1c);
-
-    /// I2SPR
-    const I2SPR_val = packed struct {
-        /// I2SDIV [0:7]
-        /// I2S Linear prescaler
-        I2SDIV: u8 = 16,
-        /// ODD [8:8]
-        /// Odd factor for the
-        ODD: u1 = 0,
-        /// MCKOE [9:9]
-        /// Master clock output enable
-        MCKOE: u1 = 0,
-        /// unused [10:31]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// I2S prescaler register
-    pub const I2SPR = Register(I2SPR_val).init(base_address + 0x20);
-};
-
-/// Secure digital input/output
-pub const SDIO = struct {
-    const base_address = 0x40012c00;
-    /// POWER
-    const POWER_val = packed struct {
-        /// PWRCTRL [0:1]
-        /// PWRCTRL
-        PWRCTRL: u2 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// power control register
-    pub const POWER = Register(POWER_val).init(base_address + 0x0);
-
-    /// CLKCR
-    const CLKCR_val = packed struct {
-        /// CLKDIV [0:7]
-        /// Clock divide factor
-        CLKDIV: u8 = 0,
-        /// CLKEN [8:8]
-        /// Clock enable bit
-        CLKEN: u1 = 0,
-        /// PWRSAV [9:9]
-        /// Power saving configuration
-        PWRSAV: u1 = 0,
-        /// BYPASS [10:10]
-        /// Clock divider bypass enable
-        BYPASS: u1 = 0,
-        /// WIDBUS [11:12]
-        /// Wide bus mode enable bit
-        WIDBUS: u2 = 0,
-        /// NEGEDGE [13:13]
-        /// SDIO_CK dephasing selection
-        NEGEDGE: u1 = 0,
-        /// HWFC_EN [14:14]
-        /// HW Flow Control enable
-        HWFC_EN: u1 = 0,
-        /// unused [15:31]
-        _unused15: u1 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// SDI clock control register
-    pub const CLKCR = Register(CLKCR_val).init(base_address + 0x4);
-
-    /// ARG
-    const ARG_val = packed struct {
-        /// CMDARG [0:31]
-        /// Command argument
-        CMDARG: u32 = 0,
-    };
-    /// argument register
-    pub const ARG = Register(ARG_val).init(base_address + 0x8);
-
-    /// CMD
-    const CMD_val = packed struct {
-        /// CMDINDEX [0:5]
-        /// Command index
-        CMDINDEX: u6 = 0,
-        /// WAITRESP [6:7]
-        /// Wait for response bits
-        WAITRESP: u2 = 0,
-        /// WAITINT [8:8]
-        /// CPSM waits for interrupt
-        WAITINT: u1 = 0,
-        /// WAITPEND [9:9]
-        /// CPSM Waits for ends of data transfer
-        WAITPEND: u1 = 0,
-        /// CPSMEN [10:10]
-        /// Command path state machine (CPSM) Enable
-        CPSMEN: u1 = 0,
-        /// SDIOSuspend [11:11]
-        /// SD I/O suspend command
-        SDIOSuspend: u1 = 0,
-        /// ENCMDcompl [12:12]
-        /// Enable CMD completion
-        ENCMDcompl: u1 = 0,
-        /// nIEN [13:13]
-        /// not Interrupt Enable
-        nIEN: u1 = 0,
-        /// CE_ATACMD [14:14]
-        /// CE-ATA command
-        CE_ATACMD: u1 = 0,
-        /// unused [15:31]
-        _unused15: u1 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// command register
-    pub const CMD = Register(CMD_val).init(base_address + 0xc);
-
-    /// RESPCMD
-    const RESPCMD_val = packed struct {
-        /// RESPCMD [0:5]
-        /// Response command index
-        RESPCMD: u6 = 0,
-        /// unused [6:31]
-        _unused6: u2 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// command response register
-    pub const RESPCMD = Register(RESPCMD_val).init(base_address + 0x10);
-
-    /// RESP1
-    const RESP1_val = packed struct {
-        /// CARDSTATUS1 [0:31]
-        /// see Table 132.
-        CARDSTATUS1: u32 = 0,
-    };
-    /// response 1..4 register
-    pub const RESP1 = Register(RESP1_val).init(base_address + 0x14);
-
-    /// RESP2
-    const RESP2_val = packed struct {
-        /// CARDSTATUS2 [0:31]
-        /// see Table 132.
-        CARDSTATUS2: u32 = 0,
-    };
-    /// response 1..4 register
-    pub const RESP2 = Register(RESP2_val).init(base_address + 0x18);
-
-    /// RESP3
-    const RESP3_val = packed struct {
-        /// CARDSTATUS3 [0:31]
-        /// see Table 132.
-        CARDSTATUS3: u32 = 0,
-    };
-    /// response 1..4 register
-    pub const RESP3 = Register(RESP3_val).init(base_address + 0x1c);
-
-    /// RESP4
-    const RESP4_val = packed struct {
-        /// CARDSTATUS4 [0:31]
-        /// see Table 132.
-        CARDSTATUS4: u32 = 0,
-    };
-    /// response 1..4 register
-    pub const RESP4 = Register(RESP4_val).init(base_address + 0x20);
-
-    /// DTIMER
-    const DTIMER_val = packed struct {
-        /// DATATIME [0:31]
-        /// Data timeout period
-        DATATIME: u32 = 0,
-    };
-    /// data timer register
-    pub const DTIMER = Register(DTIMER_val).init(base_address + 0x24);
-
-    /// DLEN
-    const DLEN_val = packed struct {
-        /// DATALENGTH [0:24]
-        /// Data length value
-        DATALENGTH: u25 = 0,
-        /// unused [25:31]
-        _unused25: u7 = 0,
-    };
-    /// data length register
-    pub const DLEN = Register(DLEN_val).init(base_address + 0x28);
-
-    /// DCTRL
-    const DCTRL_val = packed struct {
-        /// DTEN [0:0]
-        /// DTEN
-        DTEN: u1 = 0,
-        /// DTDIR [1:1]
-        /// Data transfer direction
-        DTDIR: u1 = 0,
-        /// DTMODE [2:2]
-        /// Data transfer mode selection 1: Stream
-        DTMODE: u1 = 0,
-        /// DMAEN [3:3]
-        /// DMA enable bit
-        DMAEN: u1 = 0,
-        /// DBLOCKSIZE [4:7]
-        /// Data block size
-        DBLOCKSIZE: u4 = 0,
-        /// RWSTART [8:8]
-        /// Read wait start
-        RWSTART: u1 = 0,
-        /// RWSTOP [9:9]
-        /// Read wait stop
-        RWSTOP: u1 = 0,
-        /// RWMOD [10:10]
-        /// Read wait mode
-        RWMOD: u1 = 0,
-        /// SDIOEN [11:11]
-        /// SD I/O enable functions
-        SDIOEN: u1 = 0,
-        /// unused [12:31]
-        _unused12: u4 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// data control register
-    pub const DCTRL = Register(DCTRL_val).init(base_address + 0x2c);
-
-    /// DCOUNT
-    const DCOUNT_val = packed struct {
-        /// DATACOUNT [0:24]
-        /// Data count value
-        DATACOUNT: u25 = 0,
-        /// unused [25:31]
-        _unused25: u7 = 0,
-    };
-    /// data counter register
-    pub const DCOUNT = Register(DCOUNT_val).init(base_address + 0x30);
-
-    /// STA
-    const STA_val = packed struct {
-        /// CCRCFAIL [0:0]
-        /// Command response received (CRC check
-        CCRCFAIL: u1 = 0,
-        /// DCRCFAIL [1:1]
-        /// Data block sent/received (CRC check
-        DCRCFAIL: u1 = 0,
-        /// CTIMEOUT [2:2]
-        /// Command response timeout
-        CTIMEOUT: u1 = 0,
-        /// DTIMEOUT [3:3]
-        /// Data timeout
-        DTIMEOUT: u1 = 0,
-        /// TXUNDERR [4:4]
-        /// Transmit FIFO underrun
-        TXUNDERR: u1 = 0,
-        /// RXOVERR [5:5]
-        /// Received FIFO overrun
-        RXOVERR: u1 = 0,
-        /// CMDREND [6:6]
-        /// Command response received (CRC check
-        CMDREND: u1 = 0,
-        /// CMDSENT [7:7]
-        /// Command sent (no response
-        CMDSENT: u1 = 0,
-        /// DATAEND [8:8]
-        /// Data end (data counter, SDIDCOUNT, is
-        DATAEND: u1 = 0,
-        /// STBITERR [9:9]
-        /// Start bit not detected on all data
-        STBITERR: u1 = 0,
-        /// DBCKEND [10:10]
-        /// Data block sent/received (CRC check
-        DBCKEND: u1 = 0,
-        /// CMDACT [11:11]
-        /// Command transfer in
-        CMDACT: u1 = 0,
-        /// TXACT [12:12]
-        /// Data transmit in progress
-        TXACT: u1 = 0,
-        /// RXACT [13:13]
-        /// Data receive in progress
-        RXACT: u1 = 0,
-        /// TXFIFOHE [14:14]
-        /// Transmit FIFO half empty: at least 8
-        TXFIFOHE: u1 = 0,
-        /// RXFIFOHF [15:15]
-        /// Receive FIFO half full: there are at
-        RXFIFOHF: u1 = 0,
-        /// TXFIFOF [16:16]
-        /// Transmit FIFO full
-        TXFIFOF: u1 = 0,
-        /// RXFIFOF [17:17]
-        /// Receive FIFO full
-        RXFIFOF: u1 = 0,
-        /// TXFIFOE [18:18]
-        /// Transmit FIFO empty
-        TXFIFOE: u1 = 0,
-        /// RXFIFOE [19:19]
-        /// Receive FIFO empty
-        RXFIFOE: u1 = 0,
-        /// TXDAVL [20:20]
-        /// Data available in transmit
-        TXDAVL: u1 = 0,
-        /// RXDAVL [21:21]
-        /// Data available in receive
-        RXDAVL: u1 = 0,
-        /// SDIOIT [22:22]
-        /// SDIO interrupt received
-        SDIOIT: u1 = 0,
-        /// CEATAEND [23:23]
-        /// CE-ATA command completion signal
-        CEATAEND: u1 = 0,
-        /// unused [24:31]
-        _unused24: u8 = 0,
-    };
-    /// status register
-    pub const STA = Register(STA_val).init(base_address + 0x34);
-
-    /// ICR
-    const ICR_val = packed struct {
-        /// CCRCFAILC [0:0]
-        /// CCRCFAIL flag clear bit
-        CCRCFAILC: u1 = 0,
-        /// DCRCFAILC [1:1]
-        /// DCRCFAIL flag clear bit
-        DCRCFAILC: u1 = 0,
-        /// CTIMEOUTC [2:2]
-        /// CTIMEOUT flag clear bit
-        CTIMEOUTC: u1 = 0,
-        /// DTIMEOUTC [3:3]
-        /// DTIMEOUT flag clear bit
-        DTIMEOUTC: u1 = 0,
-        /// TXUNDERRC [4:4]
-        /// TXUNDERR flag clear bit
-        TXUNDERRC: u1 = 0,
-        /// RXOVERRC [5:5]
-        /// RXOVERR flag clear bit
-        RXOVERRC: u1 = 0,
-        /// CMDRENDC [6:6]
-        /// CMDREND flag clear bit
-        CMDRENDC: u1 = 0,
-        /// CMDSENTC [7:7]
-        /// CMDSENT flag clear bit
-        CMDSENTC: u1 = 0,
-        /// DATAENDC [8:8]
-        /// DATAEND flag clear bit
-        DATAENDC: u1 = 0,
-        /// STBITERRC [9:9]
-        /// STBITERR flag clear bit
-        STBITERRC: u1 = 0,
-        /// DBCKENDC [10:10]
-        /// DBCKEND flag clear bit
-        DBCKENDC: u1 = 0,
-        /// unused [11:21]
-        _unused11: u5 = 0,
-        _unused16: u6 = 0,
-        /// SDIOITC [22:22]
-        /// SDIOIT flag clear bit
-        SDIOITC: u1 = 0,
-        /// CEATAENDC [23:23]
-        /// CEATAEND flag clear bit
-        CEATAENDC: u1 = 0,
-        /// unused [24:31]
-        _unused24: u8 = 0,
-    };
-    /// interrupt clear register
-    pub const ICR = Register(ICR_val).init(base_address + 0x38);
-
-    /// MASK
-    const MASK_val = packed struct {
-        /// CCRCFAILIE [0:0]
-        /// Command CRC fail interrupt
-        CCRCFAILIE: u1 = 0,
-        /// DCRCFAILIE [1:1]
-        /// Data CRC fail interrupt
-        DCRCFAILIE: u1 = 0,
-        /// CTIMEOUTIE [2:2]
-        /// Command timeout interrupt
-        CTIMEOUTIE: u1 = 0,
-        /// DTIMEOUTIE [3:3]
-        /// Data timeout interrupt
-        DTIMEOUTIE: u1 = 0,
-        /// TXUNDERRIE [4:4]
-        /// Tx FIFO underrun error interrupt
-        TXUNDERRIE: u1 = 0,
-        /// RXOVERRIE [5:5]
-        /// Rx FIFO overrun error interrupt
-        RXOVERRIE: u1 = 0,
-        /// CMDRENDIE [6:6]
-        /// Command response received interrupt
-        CMDRENDIE: u1 = 0,
-        /// CMDSENTIE [7:7]
-        /// Command sent interrupt
-        CMDSENTIE: u1 = 0,
-        /// DATAENDIE [8:8]
-        /// Data end interrupt enable
-        DATAENDIE: u1 = 0,
-        /// STBITERRIE [9:9]
-        /// Start bit error interrupt
-        STBITERRIE: u1 = 0,
-        /// DBCKENDIE [10:10]
-        /// Data block end interrupt
-        DBCKENDIE: u1 = 0,
-        /// CMDACTIE [11:11]
-        /// Command acting interrupt
-        CMDACTIE: u1 = 0,
-        /// TXACTIE [12:12]
-        /// Data transmit acting interrupt
-        TXACTIE: u1 = 0,
-        /// RXACTIE [13:13]
-        /// Data receive acting interrupt
-        RXACTIE: u1 = 0,
-        /// TXFIFOHEIE [14:14]
-        /// Tx FIFO half empty interrupt
-        TXFIFOHEIE: u1 = 0,
-        /// RXFIFOHFIE [15:15]
-        /// Rx FIFO half full interrupt
-        RXFIFOHFIE: u1 = 0,
-        /// TXFIFOFIE [16:16]
-        /// Tx FIFO full interrupt
-        TXFIFOFIE: u1 = 0,
-        /// RXFIFOFIE [17:17]
-        /// Rx FIFO full interrupt
-        RXFIFOFIE: u1 = 0,
-        /// TXFIFOEIE [18:18]
-        /// Tx FIFO empty interrupt
-        TXFIFOEIE: u1 = 0,
-        /// RXFIFOEIE [19:19]
-        /// Rx FIFO empty interrupt
-        RXFIFOEIE: u1 = 0,
-        /// TXDAVLIE [20:20]
-        /// Data available in Tx FIFO interrupt
-        TXDAVLIE: u1 = 0,
-        /// RXDAVLIE [21:21]
-        /// Data available in Rx FIFO interrupt
-        RXDAVLIE: u1 = 0,
-        /// SDIOITIE [22:22]
-        /// SDIO mode interrupt received interrupt
-        SDIOITIE: u1 = 0,
-        /// CEATAENDIE [23:23]
-        /// CE-ATA command completion signal
-        CEATAENDIE: u1 = 0,
-        /// unused [24:31]
-        _unused24: u8 = 0,
-    };
-    /// mask register
-    pub const MASK = Register(MASK_val).init(base_address + 0x3c);
-
-    /// FIFOCNT
-    const FIFOCNT_val = packed struct {
-        /// FIFOCOUNT [0:23]
-        /// Remaining number of words to be written
-        FIFOCOUNT: u24 = 0,
-        /// unused [24:31]
-        _unused24: u8 = 0,
-    };
-    /// FIFO counter register
-    pub const FIFOCNT = Register(FIFOCNT_val).init(base_address + 0x48);
-
-    /// FIFO
-    const FIFO_val = packed struct {
-        /// FIFOData [0:31]
-        /// Receive and transmit FIFO
-        FIFOData: u32 = 0,
-    };
-    /// data FIFO register
-    pub const FIFO = Register(FIFO_val).init(base_address + 0x80);
+    pub const I2SPR = MMIO(I2SPR_val).init(base_address + 0x20);
 };
 
 /// Analog-to-digital converter
@@ -13770,7 +10967,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// CR1
     const CR1_val = packed struct {
@@ -13822,7 +11019,7 @@ pub const ADC1 = struct {
         _unused27: u5 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x4);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x4);
 
     /// CR2
     const CR2_val = packed struct {
@@ -13872,7 +11069,7 @@ pub const ADC1 = struct {
         _unused31: u1 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x8);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x8);
 
     /// SMPR1
     const SMPR1_val = packed struct {
@@ -13881,7 +11078,7 @@ pub const ADC1 = struct {
         SMPx_x: u32 = 0,
     };
     /// sample time register 1
-    pub const SMPR1 = Register(SMPR1_val).init(base_address + 0xc);
+    pub const SMPR1 = MMIO(SMPR1_val).init(base_address + 0xc);
 
     /// SMPR2
     const SMPR2_val = packed struct {
@@ -13890,7 +11087,7 @@ pub const ADC1 = struct {
         SMPx_x: u32 = 0,
     };
     /// sample time register 2
-    pub const SMPR2 = Register(SMPR2_val).init(base_address + 0x10);
+    pub const SMPR2 = MMIO(SMPR2_val).init(base_address + 0x10);
 
     /// JOFR1
     const JOFR1_val = packed struct {
@@ -13903,7 +11100,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR1 = Register(JOFR1_val).init(base_address + 0x14);
+    pub const JOFR1 = MMIO(JOFR1_val).init(base_address + 0x14);
 
     /// JOFR2
     const JOFR2_val = packed struct {
@@ -13916,7 +11113,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR2 = Register(JOFR2_val).init(base_address + 0x18);
+    pub const JOFR2 = MMIO(JOFR2_val).init(base_address + 0x18);
 
     /// JOFR3
     const JOFR3_val = packed struct {
@@ -13929,7 +11126,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR3 = Register(JOFR3_val).init(base_address + 0x1c);
+    pub const JOFR3 = MMIO(JOFR3_val).init(base_address + 0x1c);
 
     /// JOFR4
     const JOFR4_val = packed struct {
@@ -13942,7 +11139,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR4 = Register(JOFR4_val).init(base_address + 0x20);
+    pub const JOFR4 = MMIO(JOFR4_val).init(base_address + 0x20);
 
     /// HTR
     const HTR_val = packed struct {
@@ -13955,7 +11152,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// watchdog higher threshold
-    pub const HTR = Register(HTR_val).init(base_address + 0x24);
+    pub const HTR = MMIO(HTR_val).init(base_address + 0x24);
 
     /// LTR
     const LTR_val = packed struct {
@@ -13968,7 +11165,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// watchdog lower threshold
-    pub const LTR = Register(LTR_val).init(base_address + 0x28);
+    pub const LTR = MMIO(LTR_val).init(base_address + 0x28);
 
     /// SQR1
     const SQR1_val = packed struct {
@@ -13991,7 +11188,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// regular sequence register 1
-    pub const SQR1 = Register(SQR1_val).init(base_address + 0x2c);
+    pub const SQR1 = MMIO(SQR1_val).init(base_address + 0x2c);
 
     /// SQR2
     const SQR2_val = packed struct {
@@ -14017,7 +11214,7 @@ pub const ADC1 = struct {
         _unused30: u2 = 0,
     };
     /// regular sequence register 2
-    pub const SQR2 = Register(SQR2_val).init(base_address + 0x30);
+    pub const SQR2 = MMIO(SQR2_val).init(base_address + 0x30);
 
     /// SQR3
     const SQR3_val = packed struct {
@@ -14043,7 +11240,7 @@ pub const ADC1 = struct {
         _unused30: u2 = 0,
     };
     /// regular sequence register 3
-    pub const SQR3 = Register(SQR3_val).init(base_address + 0x34);
+    pub const SQR3 = MMIO(SQR3_val).init(base_address + 0x34);
 
     /// JSQR
     const JSQR_val = packed struct {
@@ -14067,7 +11264,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected sequence register
-    pub const JSQR = Register(JSQR_val).init(base_address + 0x38);
+    pub const JSQR = MMIO(JSQR_val).init(base_address + 0x38);
 
     /// JDR1
     const JDR1_val = packed struct {
@@ -14079,7 +11276,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR1 = Register(JDR1_val).init(base_address + 0x3c);
+    pub const JDR1 = MMIO(JDR1_val).init(base_address + 0x3c);
 
     /// JDR2
     const JDR2_val = packed struct {
@@ -14091,7 +11288,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR2 = Register(JDR2_val).init(base_address + 0x40);
+    pub const JDR2 = MMIO(JDR2_val).init(base_address + 0x40);
 
     /// JDR3
     const JDR3_val = packed struct {
@@ -14103,7 +11300,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR3 = Register(JDR3_val).init(base_address + 0x44);
+    pub const JDR3 = MMIO(JDR3_val).init(base_address + 0x44);
 
     /// JDR4
     const JDR4_val = packed struct {
@@ -14115,7 +11312,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR4 = Register(JDR4_val).init(base_address + 0x48);
+    pub const JDR4 = MMIO(JDR4_val).init(base_address + 0x48);
 
     /// DR
     const DR_val = packed struct {
@@ -14127,7 +11324,7 @@ pub const ADC1 = struct {
         _unused24: u8 = 0,
     };
     /// regular data register
-    pub const DR = Register(DR_val).init(base_address + 0x4c);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4c);
 };
 
 /// Analog-to-digital converter
@@ -14160,7 +11357,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// CR1
     const CR1_val = packed struct {
@@ -14212,7 +11409,7 @@ pub const ADC2 = struct {
         _unused27: u5 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x4);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x4);
 
     /// CR2
     const CR2_val = packed struct {
@@ -14262,7 +11459,7 @@ pub const ADC2 = struct {
         _unused31: u1 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x8);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x8);
 
     /// SMPR1
     const SMPR1_val = packed struct {
@@ -14271,7 +11468,7 @@ pub const ADC2 = struct {
         SMPx_x: u32 = 0,
     };
     /// sample time register 1
-    pub const SMPR1 = Register(SMPR1_val).init(base_address + 0xc);
+    pub const SMPR1 = MMIO(SMPR1_val).init(base_address + 0xc);
 
     /// SMPR2
     const SMPR2_val = packed struct {
@@ -14280,7 +11477,7 @@ pub const ADC2 = struct {
         SMPx_x: u32 = 0,
     };
     /// sample time register 2
-    pub const SMPR2 = Register(SMPR2_val).init(base_address + 0x10);
+    pub const SMPR2 = MMIO(SMPR2_val).init(base_address + 0x10);
 
     /// JOFR1
     const JOFR1_val = packed struct {
@@ -14293,7 +11490,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR1 = Register(JOFR1_val).init(base_address + 0x14);
+    pub const JOFR1 = MMIO(JOFR1_val).init(base_address + 0x14);
 
     /// JOFR2
     const JOFR2_val = packed struct {
@@ -14306,7 +11503,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR2 = Register(JOFR2_val).init(base_address + 0x18);
+    pub const JOFR2 = MMIO(JOFR2_val).init(base_address + 0x18);
 
     /// JOFR3
     const JOFR3_val = packed struct {
@@ -14319,7 +11516,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR3 = Register(JOFR3_val).init(base_address + 0x1c);
+    pub const JOFR3 = MMIO(JOFR3_val).init(base_address + 0x1c);
 
     /// JOFR4
     const JOFR4_val = packed struct {
@@ -14332,7 +11529,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR4 = Register(JOFR4_val).init(base_address + 0x20);
+    pub const JOFR4 = MMIO(JOFR4_val).init(base_address + 0x20);
 
     /// HTR
     const HTR_val = packed struct {
@@ -14345,7 +11542,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// watchdog higher threshold
-    pub const HTR = Register(HTR_val).init(base_address + 0x24);
+    pub const HTR = MMIO(HTR_val).init(base_address + 0x24);
 
     /// LTR
     const LTR_val = packed struct {
@@ -14358,7 +11555,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// watchdog lower threshold
-    pub const LTR = Register(LTR_val).init(base_address + 0x28);
+    pub const LTR = MMIO(LTR_val).init(base_address + 0x28);
 
     /// SQR1
     const SQR1_val = packed struct {
@@ -14381,7 +11578,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// regular sequence register 1
-    pub const SQR1 = Register(SQR1_val).init(base_address + 0x2c);
+    pub const SQR1 = MMIO(SQR1_val).init(base_address + 0x2c);
 
     /// SQR2
     const SQR2_val = packed struct {
@@ -14407,7 +11604,7 @@ pub const ADC2 = struct {
         _unused30: u2 = 0,
     };
     /// regular sequence register 2
-    pub const SQR2 = Register(SQR2_val).init(base_address + 0x30);
+    pub const SQR2 = MMIO(SQR2_val).init(base_address + 0x30);
 
     /// SQR3
     const SQR3_val = packed struct {
@@ -14433,7 +11630,7 @@ pub const ADC2 = struct {
         _unused30: u2 = 0,
     };
     /// regular sequence register 3
-    pub const SQR3 = Register(SQR3_val).init(base_address + 0x34);
+    pub const SQR3 = MMIO(SQR3_val).init(base_address + 0x34);
 
     /// JSQR
     const JSQR_val = packed struct {
@@ -14457,7 +11654,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected sequence register
-    pub const JSQR = Register(JSQR_val).init(base_address + 0x38);
+    pub const JSQR = MMIO(JSQR_val).init(base_address + 0x38);
 
     /// JDR1
     const JDR1_val = packed struct {
@@ -14469,7 +11666,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR1 = Register(JDR1_val).init(base_address + 0x3c);
+    pub const JDR1 = MMIO(JDR1_val).init(base_address + 0x3c);
 
     /// JDR2
     const JDR2_val = packed struct {
@@ -14481,7 +11678,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR2 = Register(JDR2_val).init(base_address + 0x40);
+    pub const JDR2 = MMIO(JDR2_val).init(base_address + 0x40);
 
     /// JDR3
     const JDR3_val = packed struct {
@@ -14493,7 +11690,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR3 = Register(JDR3_val).init(base_address + 0x44);
+    pub const JDR3 = MMIO(JDR3_val).init(base_address + 0x44);
 
     /// JDR4
     const JDR4_val = packed struct {
@@ -14505,7 +11702,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR4 = Register(JDR4_val).init(base_address + 0x48);
+    pub const JDR4 = MMIO(JDR4_val).init(base_address + 0x48);
 
     /// DR
     const DR_val = packed struct {
@@ -14517,7 +11714,7 @@ pub const ADC2 = struct {
         _unused24: u8 = 0,
     };
     /// regular data register
-    pub const DR = Register(DR_val).init(base_address + 0x4c);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4c);
 };
 
 /// Analog-to-digital converter
@@ -14550,7 +11747,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// CR1
     const CR1_val = packed struct {
@@ -14602,7 +11799,7 @@ pub const ADC3 = struct {
         _unused27: u5 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x4);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x4);
 
     /// CR2
     const CR2_val = packed struct {
@@ -14652,7 +11849,7 @@ pub const ADC3 = struct {
         _unused31: u1 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x8);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x8);
 
     /// SMPR1
     const SMPR1_val = packed struct {
@@ -14661,7 +11858,7 @@ pub const ADC3 = struct {
         SMPx_x: u32 = 0,
     };
     /// sample time register 1
-    pub const SMPR1 = Register(SMPR1_val).init(base_address + 0xc);
+    pub const SMPR1 = MMIO(SMPR1_val).init(base_address + 0xc);
 
     /// SMPR2
     const SMPR2_val = packed struct {
@@ -14670,7 +11867,7 @@ pub const ADC3 = struct {
         SMPx_x: u32 = 0,
     };
     /// sample time register 2
-    pub const SMPR2 = Register(SMPR2_val).init(base_address + 0x10);
+    pub const SMPR2 = MMIO(SMPR2_val).init(base_address + 0x10);
 
     /// JOFR1
     const JOFR1_val = packed struct {
@@ -14683,7 +11880,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR1 = Register(JOFR1_val).init(base_address + 0x14);
+    pub const JOFR1 = MMIO(JOFR1_val).init(base_address + 0x14);
 
     /// JOFR2
     const JOFR2_val = packed struct {
@@ -14696,7 +11893,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR2 = Register(JOFR2_val).init(base_address + 0x18);
+    pub const JOFR2 = MMIO(JOFR2_val).init(base_address + 0x18);
 
     /// JOFR3
     const JOFR3_val = packed struct {
@@ -14709,7 +11906,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR3 = Register(JOFR3_val).init(base_address + 0x1c);
+    pub const JOFR3 = MMIO(JOFR3_val).init(base_address + 0x1c);
 
     /// JOFR4
     const JOFR4_val = packed struct {
@@ -14722,7 +11919,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected channel data offset register
-    pub const JOFR4 = Register(JOFR4_val).init(base_address + 0x20);
+    pub const JOFR4 = MMIO(JOFR4_val).init(base_address + 0x20);
 
     /// HTR
     const HTR_val = packed struct {
@@ -14735,7 +11932,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// watchdog higher threshold
-    pub const HTR = Register(HTR_val).init(base_address + 0x24);
+    pub const HTR = MMIO(HTR_val).init(base_address + 0x24);
 
     /// LTR
     const LTR_val = packed struct {
@@ -14748,7 +11945,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// watchdog lower threshold
-    pub const LTR = Register(LTR_val).init(base_address + 0x28);
+    pub const LTR = MMIO(LTR_val).init(base_address + 0x28);
 
     /// SQR1
     const SQR1_val = packed struct {
@@ -14771,7 +11968,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// regular sequence register 1
-    pub const SQR1 = Register(SQR1_val).init(base_address + 0x2c);
+    pub const SQR1 = MMIO(SQR1_val).init(base_address + 0x2c);
 
     /// SQR2
     const SQR2_val = packed struct {
@@ -14797,7 +11994,7 @@ pub const ADC3 = struct {
         _unused30: u2 = 0,
     };
     /// regular sequence register 2
-    pub const SQR2 = Register(SQR2_val).init(base_address + 0x30);
+    pub const SQR2 = MMIO(SQR2_val).init(base_address + 0x30);
 
     /// SQR3
     const SQR3_val = packed struct {
@@ -14823,7 +12020,7 @@ pub const ADC3 = struct {
         _unused30: u2 = 0,
     };
     /// regular sequence register 3
-    pub const SQR3 = Register(SQR3_val).init(base_address + 0x34);
+    pub const SQR3 = MMIO(SQR3_val).init(base_address + 0x34);
 
     /// JSQR
     const JSQR_val = packed struct {
@@ -14847,7 +12044,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected sequence register
-    pub const JSQR = Register(JSQR_val).init(base_address + 0x38);
+    pub const JSQR = MMIO(JSQR_val).init(base_address + 0x38);
 
     /// JDR1
     const JDR1_val = packed struct {
@@ -14859,7 +12056,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR1 = Register(JDR1_val).init(base_address + 0x3c);
+    pub const JDR1 = MMIO(JDR1_val).init(base_address + 0x3c);
 
     /// JDR2
     const JDR2_val = packed struct {
@@ -14871,7 +12068,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR2 = Register(JDR2_val).init(base_address + 0x40);
+    pub const JDR2 = MMIO(JDR2_val).init(base_address + 0x40);
 
     /// JDR3
     const JDR3_val = packed struct {
@@ -14883,7 +12080,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR3 = Register(JDR3_val).init(base_address + 0x44);
+    pub const JDR3 = MMIO(JDR3_val).init(base_address + 0x44);
 
     /// JDR4
     const JDR4_val = packed struct {
@@ -14895,7 +12092,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// injected data register x
-    pub const JDR4 = Register(JDR4_val).init(base_address + 0x48);
+    pub const JDR4 = MMIO(JDR4_val).init(base_address + 0x48);
 
     /// DR
     const DR_val = packed struct {
@@ -14907,7 +12104,7 @@ pub const ADC3 = struct {
         _unused24: u8 = 0,
     };
     /// regular data register
-    pub const DR = Register(DR_val).init(base_address + 0x4c);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4c);
 };
 
 /// Universal synchronous asynchronous receiver
@@ -14951,7 +12148,7 @@ pub const USART6 = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// DR
     const DR_val = packed struct {
@@ -14964,7 +12161,7 @@ pub const USART6 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4);
 
     /// BRR
     const BRR_val = packed struct {
@@ -14979,7 +12176,7 @@ pub const USART6 = struct {
         _unused24: u8 = 0,
     };
     /// Baud rate register
-    pub const BRR = Register(BRR_val).init(base_address + 0x8);
+    pub const BRR = MMIO(BRR_val).init(base_address + 0x8);
 
     /// CR1
     const CR1_val = packed struct {
@@ -15035,7 +12232,7 @@ pub const USART6 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0xc);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0xc);
 
     /// CR2
     const CR2_val = packed struct {
@@ -15076,7 +12273,7 @@ pub const USART6 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x10);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x10);
 
     /// CR3
     const CR3_val = packed struct {
@@ -15122,7 +12319,7 @@ pub const USART6 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 3
-    pub const CR3 = Register(CR3_val).init(base_address + 0x14);
+    pub const CR3 = MMIO(CR3_val).init(base_address + 0x14);
 
     /// GTPR
     const GTPR_val = packed struct {
@@ -15137,7 +12334,7 @@ pub const USART6 = struct {
         _unused24: u8 = 0,
     };
     /// Guard time and prescaler
-    pub const GTPR = Register(GTPR_val).init(base_address + 0x18);
+    pub const GTPR = MMIO(GTPR_val).init(base_address + 0x18);
 };
 
 /// Universal synchronous asynchronous receiver
@@ -15181,7 +12378,7 @@ pub const USART1 = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// DR
     const DR_val = packed struct {
@@ -15194,7 +12391,7 @@ pub const USART1 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4);
 
     /// BRR
     const BRR_val = packed struct {
@@ -15209,7 +12406,7 @@ pub const USART1 = struct {
         _unused24: u8 = 0,
     };
     /// Baud rate register
-    pub const BRR = Register(BRR_val).init(base_address + 0x8);
+    pub const BRR = MMIO(BRR_val).init(base_address + 0x8);
 
     /// CR1
     const CR1_val = packed struct {
@@ -15265,7 +12462,7 @@ pub const USART1 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0xc);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0xc);
 
     /// CR2
     const CR2_val = packed struct {
@@ -15306,7 +12503,7 @@ pub const USART1 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x10);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x10);
 
     /// CR3
     const CR3_val = packed struct {
@@ -15352,7 +12549,7 @@ pub const USART1 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 3
-    pub const CR3 = Register(CR3_val).init(base_address + 0x14);
+    pub const CR3 = MMIO(CR3_val).init(base_address + 0x14);
 
     /// GTPR
     const GTPR_val = packed struct {
@@ -15367,7 +12564,7 @@ pub const USART1 = struct {
         _unused24: u8 = 0,
     };
     /// Guard time and prescaler
-    pub const GTPR = Register(GTPR_val).init(base_address + 0x18);
+    pub const GTPR = MMIO(GTPR_val).init(base_address + 0x18);
 };
 
 /// Universal synchronous asynchronous receiver
@@ -15411,7 +12608,7 @@ pub const USART2 = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// DR
     const DR_val = packed struct {
@@ -15424,7 +12621,7 @@ pub const USART2 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4);
 
     /// BRR
     const BRR_val = packed struct {
@@ -15439,7 +12636,7 @@ pub const USART2 = struct {
         _unused24: u8 = 0,
     };
     /// Baud rate register
-    pub const BRR = Register(BRR_val).init(base_address + 0x8);
+    pub const BRR = MMIO(BRR_val).init(base_address + 0x8);
 
     /// CR1
     const CR1_val = packed struct {
@@ -15495,7 +12692,7 @@ pub const USART2 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0xc);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0xc);
 
     /// CR2
     const CR2_val = packed struct {
@@ -15536,7 +12733,7 @@ pub const USART2 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x10);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x10);
 
     /// CR3
     const CR3_val = packed struct {
@@ -15582,7 +12779,7 @@ pub const USART2 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 3
-    pub const CR3 = Register(CR3_val).init(base_address + 0x14);
+    pub const CR3 = MMIO(CR3_val).init(base_address + 0x14);
 
     /// GTPR
     const GTPR_val = packed struct {
@@ -15597,7 +12794,7 @@ pub const USART2 = struct {
         _unused24: u8 = 0,
     };
     /// Guard time and prescaler
-    pub const GTPR = Register(GTPR_val).init(base_address + 0x18);
+    pub const GTPR = MMIO(GTPR_val).init(base_address + 0x18);
 };
 
 /// Universal synchronous asynchronous receiver
@@ -15641,7 +12838,7 @@ pub const USART3 = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// DR
     const DR_val = packed struct {
@@ -15654,7 +12851,7 @@ pub const USART3 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4);
 
     /// BRR
     const BRR_val = packed struct {
@@ -15669,7 +12866,7 @@ pub const USART3 = struct {
         _unused24: u8 = 0,
     };
     /// Baud rate register
-    pub const BRR = Register(BRR_val).init(base_address + 0x8);
+    pub const BRR = MMIO(BRR_val).init(base_address + 0x8);
 
     /// CR1
     const CR1_val = packed struct {
@@ -15725,7 +12922,7 @@ pub const USART3 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0xc);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0xc);
 
     /// CR2
     const CR2_val = packed struct {
@@ -15766,7 +12963,7 @@ pub const USART3 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x10);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x10);
 
     /// CR3
     const CR3_val = packed struct {
@@ -15812,7 +13009,7 @@ pub const USART3 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 3
-    pub const CR3 = Register(CR3_val).init(base_address + 0x14);
+    pub const CR3 = MMIO(CR3_val).init(base_address + 0x14);
 
     /// GTPR
     const GTPR_val = packed struct {
@@ -15827,7 +13024,7 @@ pub const USART3 = struct {
         _unused24: u8 = 0,
     };
     /// Guard time and prescaler
-    pub const GTPR = Register(GTPR_val).init(base_address + 0x18);
+    pub const GTPR = MMIO(GTPR_val).init(base_address + 0x18);
 };
 
 /// Digital-to-analog converter
@@ -15889,7 +13086,7 @@ pub const DAC = struct {
         _unused30: u2 = 0,
     };
     /// control register
-    pub const CR = Register(CR_val).init(base_address + 0x0);
+    pub const CR = MMIO(CR_val).init(base_address + 0x0);
 
     /// SWTRIGR
     const SWTRIGR_val = packed struct {
@@ -15906,7 +13103,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// software trigger register
-    pub const SWTRIGR = Register(SWTRIGR_val).init(base_address + 0x4);
+    pub const SWTRIGR = MMIO(SWTRIGR_val).init(base_address + 0x4);
 
     /// DHR12R1
     const DHR12R1_val = packed struct {
@@ -15919,7 +13116,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// channel1 12-bit right-aligned data holding
-    pub const DHR12R1 = Register(DHR12R1_val).init(base_address + 0x8);
+    pub const DHR12R1 = MMIO(DHR12R1_val).init(base_address + 0x8);
 
     /// DHR12L1
     const DHR12L1_val = packed struct {
@@ -15933,7 +13130,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// channel1 12-bit left aligned data holding
-    pub const DHR12L1 = Register(DHR12L1_val).init(base_address + 0xc);
+    pub const DHR12L1 = MMIO(DHR12L1_val).init(base_address + 0xc);
 
     /// DHR8R1
     const DHR8R1_val = packed struct {
@@ -15946,7 +13143,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// channel1 8-bit right aligned data holding
-    pub const DHR8R1 = Register(DHR8R1_val).init(base_address + 0x10);
+    pub const DHR8R1 = MMIO(DHR8R1_val).init(base_address + 0x10);
 
     /// DHR12R2
     const DHR12R2_val = packed struct {
@@ -15959,7 +13156,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// channel2 12-bit right aligned data holding
-    pub const DHR12R2 = Register(DHR12R2_val).init(base_address + 0x14);
+    pub const DHR12R2 = MMIO(DHR12R2_val).init(base_address + 0x14);
 
     /// DHR12L2
     const DHR12L2_val = packed struct {
@@ -15973,7 +13170,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// channel2 12-bit left aligned data holding
-    pub const DHR12L2 = Register(DHR12L2_val).init(base_address + 0x18);
+    pub const DHR12L2 = MMIO(DHR12L2_val).init(base_address + 0x18);
 
     /// DHR8R2
     const DHR8R2_val = packed struct {
@@ -15986,7 +13183,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// channel2 8-bit right-aligned data holding
-    pub const DHR8R2 = Register(DHR8R2_val).init(base_address + 0x1c);
+    pub const DHR8R2 = MMIO(DHR8R2_val).init(base_address + 0x1c);
 
     /// DHR12RD
     const DHR12RD_val = packed struct {
@@ -16002,7 +13199,7 @@ pub const DAC = struct {
         _unused28: u4 = 0,
     };
     /// Dual DAC 12-bit right-aligned data holding
-    pub const DHR12RD = Register(DHR12RD_val).init(base_address + 0x20);
+    pub const DHR12RD = MMIO(DHR12RD_val).init(base_address + 0x20);
 
     /// DHR12LD
     const DHR12LD_val = packed struct {
@@ -16018,7 +13215,7 @@ pub const DAC = struct {
         DACC2DHR: u12 = 0,
     };
     /// DUAL DAC 12-bit left aligned data holding
-    pub const DHR12LD = Register(DHR12LD_val).init(base_address + 0x24);
+    pub const DHR12LD = MMIO(DHR12LD_val).init(base_address + 0x24);
 
     /// DHR8RD
     const DHR8RD_val = packed struct {
@@ -16033,7 +13230,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// DUAL DAC 8-bit right aligned data holding
-    pub const DHR8RD = Register(DHR8RD_val).init(base_address + 0x28);
+    pub const DHR8RD = MMIO(DHR8RD_val).init(base_address + 0x28);
 
     /// DOR1
     const DOR1_val = packed struct {
@@ -16046,7 +13243,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// channel1 data output register
-    pub const DOR1 = Register(DOR1_val).init(base_address + 0x2c);
+    pub const DOR1 = MMIO(DOR1_val).init(base_address + 0x2c);
 
     /// DOR2
     const DOR2_val = packed struct {
@@ -16059,7 +13256,7 @@ pub const DAC = struct {
         _unused24: u8 = 0,
     };
     /// channel2 data output register
-    pub const DOR2 = Register(DOR2_val).init(base_address + 0x30);
+    pub const DOR2 = MMIO(DOR2_val).init(base_address + 0x30);
 
     /// SR
     const SR_val = packed struct {
@@ -16080,80 +13277,7 @@ pub const DAC = struct {
         _unused30: u2 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x34);
-};
-
-/// Power control
-pub const PWR = struct {
-    const base_address = 0x40007000;
-    /// CR
-    const CR_val = packed struct {
-        /// LPDS [0:0]
-        /// Low-power deep sleep
-        LPDS: u1 = 0,
-        /// PDDS [1:1]
-        /// Power down deepsleep
-        PDDS: u1 = 0,
-        /// CWUF [2:2]
-        /// Clear wakeup flag
-        CWUF: u1 = 0,
-        /// CSBF [3:3]
-        /// Clear standby flag
-        CSBF: u1 = 0,
-        /// PVDE [4:4]
-        /// Power voltage detector
-        PVDE: u1 = 0,
-        /// PLS [5:7]
-        /// PVD level selection
-        PLS: u3 = 0,
-        /// DBP [8:8]
-        /// Disable backup domain write
-        DBP: u1 = 0,
-        /// FPDS [9:9]
-        /// Flash power down in Stop
-        FPDS: u1 = 0,
-        /// unused [10:31]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// power control register
-    pub const CR = Register(CR_val).init(base_address + 0x0);
-
-    /// CSR
-    const CSR_val = packed struct {
-        /// WUF [0:0]
-        /// Wakeup flag
-        WUF: u1 = 0,
-        /// SBF [1:1]
-        /// Standby flag
-        SBF: u1 = 0,
-        /// PVDO [2:2]
-        /// PVD output
-        PVDO: u1 = 0,
-        /// BRR [3:3]
-        /// Backup regulator ready
-        BRR: u1 = 0,
-        /// unused [4:7]
-        _unused4: u4 = 0,
-        /// EWUP [8:8]
-        /// Enable WKUP pin
-        EWUP: u1 = 0,
-        /// BRE [9:9]
-        /// Backup regulator enable
-        BRE: u1 = 0,
-        /// unused [10:13]
-        _unused10: u4 = 0,
-        /// VOSRDY [14:14]
-        /// Regulator voltage scaling output
-        VOSRDY: u1 = 0,
-        /// unused [15:31]
-        _unused15: u1 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// power control/status register
-    pub const CSR = Register(CSR_val).init(base_address + 0x4);
+    pub const SR = MMIO(SR_val).init(base_address + 0x34);
 };
 
 /// Inter-integrated circuit
@@ -16212,7 +13336,7 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -16242,7 +13366,7 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// OAR1
     const OAR1_val = packed struct {
@@ -16265,7 +13389,7 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// Own address register 1
-    pub const OAR1 = Register(OAR1_val).init(base_address + 0x8);
+    pub const OAR1 = MMIO(OAR1_val).init(base_address + 0x8);
 
     /// OAR2
     const OAR2_val = packed struct {
@@ -16281,7 +13405,7 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// Own address register 2
-    pub const OAR2 = Register(OAR2_val).init(base_address + 0xc);
+    pub const OAR2 = MMIO(OAR2_val).init(base_address + 0xc);
 
     /// DR
     const DR_val = packed struct {
@@ -16294,7 +13418,7 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x10);
+    pub const DR = MMIO(DR_val).init(base_address + 0x10);
 
     /// SR1
     const SR1_val = packed struct {
@@ -16349,7 +13473,7 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// Status register 1
-    pub const SR1 = Register(SR1_val).init(base_address + 0x14);
+    pub const SR1 = MMIO(SR1_val).init(base_address + 0x14);
 
     /// SR2
     const SR2_val = packed struct {
@@ -16384,7 +13508,7 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// Status register 2
-    pub const SR2 = Register(SR2_val).init(base_address + 0x18);
+    pub const SR2 = MMIO(SR2_val).init(base_address + 0x18);
 
     /// CCR
     const CCR_val = packed struct {
@@ -16404,7 +13528,7 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// Clock control register
-    pub const CCR = Register(CCR_val).init(base_address + 0x1c);
+    pub const CCR = MMIO(CCR_val).init(base_address + 0x1c);
 
     /// TRISE
     const TRISE_val = packed struct {
@@ -16418,7 +13542,24 @@ pub const I2C3 = struct {
         _unused24: u8 = 0,
     };
     /// TRISE register
-    pub const TRISE = Register(TRISE_val).init(base_address + 0x20);
+    pub const TRISE = MMIO(TRISE_val).init(base_address + 0x20);
+
+    /// FLTR
+    const FLTR_val = packed struct {
+        /// DNF [0:3]
+        /// Digital noise filter
+        DNF: u4 = 0,
+        /// ANOFF [4:4]
+        /// Analog noise filter OFF
+        ANOFF: u1 = 0,
+        /// unused [5:31]
+        _unused5: u3 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// I2C FLTR register
+    pub const FLTR = MMIO(FLTR_val).init(base_address + 0x24);
 };
 
 /// Inter-integrated circuit
@@ -16477,7 +13618,7 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -16507,7 +13648,7 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// OAR1
     const OAR1_val = packed struct {
@@ -16530,7 +13671,7 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// Own address register 1
-    pub const OAR1 = Register(OAR1_val).init(base_address + 0x8);
+    pub const OAR1 = MMIO(OAR1_val).init(base_address + 0x8);
 
     /// OAR2
     const OAR2_val = packed struct {
@@ -16546,7 +13687,7 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// Own address register 2
-    pub const OAR2 = Register(OAR2_val).init(base_address + 0xc);
+    pub const OAR2 = MMIO(OAR2_val).init(base_address + 0xc);
 
     /// DR
     const DR_val = packed struct {
@@ -16559,7 +13700,7 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x10);
+    pub const DR = MMIO(DR_val).init(base_address + 0x10);
 
     /// SR1
     const SR1_val = packed struct {
@@ -16614,7 +13755,7 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// Status register 1
-    pub const SR1 = Register(SR1_val).init(base_address + 0x14);
+    pub const SR1 = MMIO(SR1_val).init(base_address + 0x14);
 
     /// SR2
     const SR2_val = packed struct {
@@ -16649,7 +13790,7 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// Status register 2
-    pub const SR2 = Register(SR2_val).init(base_address + 0x18);
+    pub const SR2 = MMIO(SR2_val).init(base_address + 0x18);
 
     /// CCR
     const CCR_val = packed struct {
@@ -16669,7 +13810,7 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// Clock control register
-    pub const CCR = Register(CCR_val).init(base_address + 0x1c);
+    pub const CCR = MMIO(CCR_val).init(base_address + 0x1c);
 
     /// TRISE
     const TRISE_val = packed struct {
@@ -16683,7 +13824,24 @@ pub const I2C2 = struct {
         _unused24: u8 = 0,
     };
     /// TRISE register
-    pub const TRISE = Register(TRISE_val).init(base_address + 0x20);
+    pub const TRISE = MMIO(TRISE_val).init(base_address + 0x20);
+
+    /// FLTR
+    const FLTR_val = packed struct {
+        /// DNF [0:3]
+        /// Digital noise filter
+        DNF: u4 = 0,
+        /// ANOFF [4:4]
+        /// Analog noise filter OFF
+        ANOFF: u1 = 0,
+        /// unused [5:31]
+        _unused5: u3 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// I2C FLTR register
+    pub const FLTR = MMIO(FLTR_val).init(base_address + 0x24);
 };
 
 /// Inter-integrated circuit
@@ -16742,7 +13900,7 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -16772,7 +13930,7 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// OAR1
     const OAR1_val = packed struct {
@@ -16795,7 +13953,7 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// Own address register 1
-    pub const OAR1 = Register(OAR1_val).init(base_address + 0x8);
+    pub const OAR1 = MMIO(OAR1_val).init(base_address + 0x8);
 
     /// OAR2
     const OAR2_val = packed struct {
@@ -16811,7 +13969,7 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// Own address register 2
-    pub const OAR2 = Register(OAR2_val).init(base_address + 0xc);
+    pub const OAR2 = MMIO(OAR2_val).init(base_address + 0xc);
 
     /// DR
     const DR_val = packed struct {
@@ -16824,7 +13982,7 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x10);
+    pub const DR = MMIO(DR_val).init(base_address + 0x10);
 
     /// SR1
     const SR1_val = packed struct {
@@ -16879,7 +14037,7 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// Status register 1
-    pub const SR1 = Register(SR1_val).init(base_address + 0x14);
+    pub const SR1 = MMIO(SR1_val).init(base_address + 0x14);
 
     /// SR2
     const SR2_val = packed struct {
@@ -16914,7 +14072,7 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// Status register 2
-    pub const SR2 = Register(SR2_val).init(base_address + 0x18);
+    pub const SR2 = MMIO(SR2_val).init(base_address + 0x18);
 
     /// CCR
     const CCR_val = packed struct {
@@ -16934,7 +14092,7 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// Clock control register
-    pub const CCR = Register(CCR_val).init(base_address + 0x1c);
+    pub const CCR = MMIO(CCR_val).init(base_address + 0x1c);
 
     /// TRISE
     const TRISE_val = packed struct {
@@ -16948,7 +14106,24 @@ pub const I2C1 = struct {
         _unused24: u8 = 0,
     };
     /// TRISE register
-    pub const TRISE = Register(TRISE_val).init(base_address + 0x20);
+    pub const TRISE = MMIO(TRISE_val).init(base_address + 0x20);
+
+    /// FLTR
+    const FLTR_val = packed struct {
+        /// DNF [0:3]
+        /// Digital noise filter
+        DNF: u4 = 0,
+        /// ANOFF [4:4]
+        /// Analog noise filter OFF
+        ANOFF: u1 = 0,
+        /// unused [5:31]
+        _unused5: u3 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// I2C FLTR register
+    pub const FLTR = MMIO(FLTR_val).init(base_address + 0x24);
 };
 
 /// Independent watchdog
@@ -16964,7 +14139,7 @@ pub const IWDG = struct {
         _unused24: u8 = 0,
     };
     /// Key register
-    pub const KR = Register(KR_val).init(base_address + 0x0);
+    pub const KR = MMIO(KR_val).init(base_address + 0x0);
 
     /// PR
     const PR_val = packed struct {
@@ -16978,7 +14153,7 @@ pub const IWDG = struct {
         _unused24: u8 = 0,
     };
     /// Prescaler register
-    pub const PR = Register(PR_val).init(base_address + 0x4);
+    pub const PR = MMIO(PR_val).init(base_address + 0x4);
 
     /// RLR
     const RLR_val = packed struct {
@@ -16991,7 +14166,7 @@ pub const IWDG = struct {
         _unused24: u8 = 0,
     };
     /// Reload register
-    pub const RLR = Register(RLR_val).init(base_address + 0x8);
+    pub const RLR = MMIO(RLR_val).init(base_address + 0x8);
 
     /// SR
     const SR_val = packed struct {
@@ -17008,7 +14183,7 @@ pub const IWDG = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0xc);
+    pub const SR = MMIO(SR_val).init(base_address + 0xc);
 };
 
 /// Window watchdog
@@ -17028,7 +14203,7 @@ pub const WWDG = struct {
         _unused24: u8 = 0,
     };
     /// Control register
-    pub const CR = Register(CR_val).init(base_address + 0x0);
+    pub const CR = MMIO(CR_val).init(base_address + 0x0);
 
     /// CFR
     const CFR_val = packed struct {
@@ -17050,7 +14225,7 @@ pub const WWDG = struct {
         _unused24: u8 = 0,
     };
     /// Configuration register
-    pub const CFR = Register(CFR_val).init(base_address + 0x4);
+    pub const CFR = MMIO(CFR_val).init(base_address + 0x4);
 
     /// SR
     const SR_val = packed struct {
@@ -17064,7 +14239,7 @@ pub const WWDG = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x8);
+    pub const SR = MMIO(SR_val).init(base_address + 0x8);
 };
 
 /// Real-time clock
@@ -17102,7 +14277,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// time register
-    pub const TR = Register(TR_val).init(base_address + 0x0);
+    pub const TR = MMIO(TR_val).init(base_address + 0x0);
 
     /// DR
     const DR_val = packed struct {
@@ -17133,7 +14308,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// date register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4);
 
     /// CR
     const CR_val = packed struct {
@@ -17202,7 +14377,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// control register
-    pub const CR = Register(CR_val).init(base_address + 0x8);
+    pub const CR = MMIO(CR_val).init(base_address + 0x8);
 
     /// ISR
     const ISR_val = packed struct {
@@ -17261,7 +14436,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// initialization and status
-    pub const ISR = Register(ISR_val).init(base_address + 0xc);
+    pub const ISR = MMIO(ISR_val).init(base_address + 0xc);
 
     /// PRER
     const PRER_val = packed struct {
@@ -17278,7 +14453,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// prescaler register
-    pub const PRER = Register(PRER_val).init(base_address + 0x10);
+    pub const PRER = MMIO(PRER_val).init(base_address + 0x10);
 
     /// WUTR
     const WUTR_val = packed struct {
@@ -17290,7 +14465,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// wakeup timer register
-    pub const WUTR = Register(WUTR_val).init(base_address + 0x14);
+    pub const WUTR = MMIO(WUTR_val).init(base_address + 0x14);
 
     /// CALIBR
     const CALIBR_val = packed struct {
@@ -17308,7 +14483,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// calibration register
-    pub const CALIBR = Register(CALIBR_val).init(base_address + 0x18);
+    pub const CALIBR = MMIO(CALIBR_val).init(base_address + 0x18);
 
     /// ALRMAR
     const ALRMAR_val = packed struct {
@@ -17356,7 +14531,7 @@ pub const RTC = struct {
         MSK4: u1 = 0,
     };
     /// alarm A register
-    pub const ALRMAR = Register(ALRMAR_val).init(base_address + 0x1c);
+    pub const ALRMAR = MMIO(ALRMAR_val).init(base_address + 0x1c);
 
     /// ALRMBR
     const ALRMBR_val = packed struct {
@@ -17404,7 +14579,7 @@ pub const RTC = struct {
         MSK4: u1 = 0,
     };
     /// alarm B register
-    pub const ALRMBR = Register(ALRMBR_val).init(base_address + 0x20);
+    pub const ALRMBR = MMIO(ALRMBR_val).init(base_address + 0x20);
 
     /// WPR
     const WPR_val = packed struct {
@@ -17417,7 +14592,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// write protection register
-    pub const WPR = Register(WPR_val).init(base_address + 0x24);
+    pub const WPR = MMIO(WPR_val).init(base_address + 0x24);
 
     /// SSR
     const SSR_val = packed struct {
@@ -17429,7 +14604,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// sub second register
-    pub const SSR = Register(SSR_val).init(base_address + 0x28);
+    pub const SSR = MMIO(SSR_val).init(base_address + 0x28);
 
     /// SHIFTR
     const SHIFTR_val = packed struct {
@@ -17445,7 +14620,7 @@ pub const RTC = struct {
         ADD1S: u1 = 0,
     };
     /// shift control register
-    pub const SHIFTR = Register(SHIFTR_val).init(base_address + 0x2c);
+    pub const SHIFTR = MMIO(SHIFTR_val).init(base_address + 0x2c);
 
     /// TSTR
     const TSTR_val = packed struct {
@@ -17475,7 +14650,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// time stamp time register
-    pub const TSTR = Register(TSTR_val).init(base_address + 0x30);
+    pub const TSTR = MMIO(TSTR_val).init(base_address + 0x30);
 
     /// TSDR
     const TSDR_val = packed struct {
@@ -17501,7 +14676,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// time stamp date register
-    pub const TSDR = Register(TSDR_val).init(base_address + 0x34);
+    pub const TSDR = MMIO(TSDR_val).init(base_address + 0x34);
 
     /// TSSSR
     const TSSSR_val = packed struct {
@@ -17513,7 +14688,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// timestamp sub second register
-    pub const TSSSR = Register(TSSSR_val).init(base_address + 0x38);
+    pub const TSSSR = MMIO(TSSSR_val).init(base_address + 0x38);
 
     /// CALR
     const CALR_val = packed struct {
@@ -17536,7 +14711,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// calibration register
-    pub const CALR = Register(CALR_val).init(base_address + 0x3c);
+    pub const CALR = MMIO(CALR_val).init(base_address + 0x3c);
 
     /// TAFCR
     const TAFCR_val = packed struct {
@@ -17586,7 +14761,7 @@ pub const RTC = struct {
         _unused24: u8 = 0,
     };
     /// tamper and alternate function configuration
-    pub const TAFCR = Register(TAFCR_val).init(base_address + 0x40);
+    pub const TAFCR = MMIO(TAFCR_val).init(base_address + 0x40);
 
     /// ALRMASSR
     const ALRMASSR_val = packed struct {
@@ -17603,7 +14778,7 @@ pub const RTC = struct {
         _unused28: u4 = 0,
     };
     /// alarm A sub second register
-    pub const ALRMASSR = Register(ALRMASSR_val).init(base_address + 0x44);
+    pub const ALRMASSR = MMIO(ALRMASSR_val).init(base_address + 0x44);
 
     /// ALRMBSSR
     const ALRMBSSR_val = packed struct {
@@ -17620,7 +14795,7 @@ pub const RTC = struct {
         _unused28: u4 = 0,
     };
     /// alarm B sub second register
-    pub const ALRMBSSR = Register(ALRMBSSR_val).init(base_address + 0x48);
+    pub const ALRMBSSR = MMIO(ALRMBSSR_val).init(base_address + 0x48);
 
     /// BKP0R
     const BKP0R_val = packed struct {
@@ -17629,7 +14804,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP0R = Register(BKP0R_val).init(base_address + 0x50);
+    pub const BKP0R = MMIO(BKP0R_val).init(base_address + 0x50);
 
     /// BKP1R
     const BKP1R_val = packed struct {
@@ -17638,7 +14813,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP1R = Register(BKP1R_val).init(base_address + 0x54);
+    pub const BKP1R = MMIO(BKP1R_val).init(base_address + 0x54);
 
     /// BKP2R
     const BKP2R_val = packed struct {
@@ -17647,7 +14822,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP2R = Register(BKP2R_val).init(base_address + 0x58);
+    pub const BKP2R = MMIO(BKP2R_val).init(base_address + 0x58);
 
     /// BKP3R
     const BKP3R_val = packed struct {
@@ -17656,7 +14831,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP3R = Register(BKP3R_val).init(base_address + 0x5c);
+    pub const BKP3R = MMIO(BKP3R_val).init(base_address + 0x5c);
 
     /// BKP4R
     const BKP4R_val = packed struct {
@@ -17665,7 +14840,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP4R = Register(BKP4R_val).init(base_address + 0x60);
+    pub const BKP4R = MMIO(BKP4R_val).init(base_address + 0x60);
 
     /// BKP5R
     const BKP5R_val = packed struct {
@@ -17674,7 +14849,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP5R = Register(BKP5R_val).init(base_address + 0x64);
+    pub const BKP5R = MMIO(BKP5R_val).init(base_address + 0x64);
 
     /// BKP6R
     const BKP6R_val = packed struct {
@@ -17683,7 +14858,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP6R = Register(BKP6R_val).init(base_address + 0x68);
+    pub const BKP6R = MMIO(BKP6R_val).init(base_address + 0x68);
 
     /// BKP7R
     const BKP7R_val = packed struct {
@@ -17692,7 +14867,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP7R = Register(BKP7R_val).init(base_address + 0x6c);
+    pub const BKP7R = MMIO(BKP7R_val).init(base_address + 0x6c);
 
     /// BKP8R
     const BKP8R_val = packed struct {
@@ -17701,7 +14876,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP8R = Register(BKP8R_val).init(base_address + 0x70);
+    pub const BKP8R = MMIO(BKP8R_val).init(base_address + 0x70);
 
     /// BKP9R
     const BKP9R_val = packed struct {
@@ -17710,7 +14885,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP9R = Register(BKP9R_val).init(base_address + 0x74);
+    pub const BKP9R = MMIO(BKP9R_val).init(base_address + 0x74);
 
     /// BKP10R
     const BKP10R_val = packed struct {
@@ -17719,7 +14894,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP10R = Register(BKP10R_val).init(base_address + 0x78);
+    pub const BKP10R = MMIO(BKP10R_val).init(base_address + 0x78);
 
     /// BKP11R
     const BKP11R_val = packed struct {
@@ -17728,7 +14903,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP11R = Register(BKP11R_val).init(base_address + 0x7c);
+    pub const BKP11R = MMIO(BKP11R_val).init(base_address + 0x7c);
 
     /// BKP12R
     const BKP12R_val = packed struct {
@@ -17737,7 +14912,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP12R = Register(BKP12R_val).init(base_address + 0x80);
+    pub const BKP12R = MMIO(BKP12R_val).init(base_address + 0x80);
 
     /// BKP13R
     const BKP13R_val = packed struct {
@@ -17746,7 +14921,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP13R = Register(BKP13R_val).init(base_address + 0x84);
+    pub const BKP13R = MMIO(BKP13R_val).init(base_address + 0x84);
 
     /// BKP14R
     const BKP14R_val = packed struct {
@@ -17755,7 +14930,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP14R = Register(BKP14R_val).init(base_address + 0x88);
+    pub const BKP14R = MMIO(BKP14R_val).init(base_address + 0x88);
 
     /// BKP15R
     const BKP15R_val = packed struct {
@@ -17764,7 +14939,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP15R = Register(BKP15R_val).init(base_address + 0x8c);
+    pub const BKP15R = MMIO(BKP15R_val).init(base_address + 0x8c);
 
     /// BKP16R
     const BKP16R_val = packed struct {
@@ -17773,7 +14948,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP16R = Register(BKP16R_val).init(base_address + 0x90);
+    pub const BKP16R = MMIO(BKP16R_val).init(base_address + 0x90);
 
     /// BKP17R
     const BKP17R_val = packed struct {
@@ -17782,7 +14957,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP17R = Register(BKP17R_val).init(base_address + 0x94);
+    pub const BKP17R = MMIO(BKP17R_val).init(base_address + 0x94);
 
     /// BKP18R
     const BKP18R_val = packed struct {
@@ -17791,7 +14966,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP18R = Register(BKP18R_val).init(base_address + 0x98);
+    pub const BKP18R = MMIO(BKP18R_val).init(base_address + 0x98);
 
     /// BKP19R
     const BKP19R_val = packed struct {
@@ -17800,7 +14975,7 @@ pub const RTC = struct {
         BKP: u32 = 0,
     };
     /// backup register
-    pub const BKP19R = Register(BKP19R_val).init(base_address + 0x9c);
+    pub const BKP19R = MMIO(BKP19R_val).init(base_address + 0x9c);
 };
 
 /// Universal synchronous asynchronous receiver
@@ -17841,7 +15016,7 @@ pub const UART4 = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// DR
     const DR_val = packed struct {
@@ -17854,7 +15029,7 @@ pub const UART4 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4);
 
     /// BRR
     const BRR_val = packed struct {
@@ -17869,7 +15044,7 @@ pub const UART4 = struct {
         _unused24: u8 = 0,
     };
     /// Baud rate register
-    pub const BRR = Register(BRR_val).init(base_address + 0x8);
+    pub const BRR = MMIO(BRR_val).init(base_address + 0x8);
 
     /// CR1
     const CR1_val = packed struct {
@@ -17925,7 +15100,7 @@ pub const UART4 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0xc);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0xc);
 
     /// CR2
     const CR2_val = packed struct {
@@ -17955,7 +15130,7 @@ pub const UART4 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x10);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x10);
 
     /// CR3
     const CR3_val = packed struct {
@@ -17990,7 +15165,7 @@ pub const UART4 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 3
-    pub const CR3 = Register(CR3_val).init(base_address + 0x14);
+    pub const CR3 = MMIO(CR3_val).init(base_address + 0x14);
 };
 
 /// Universal synchronous asynchronous receiver
@@ -18031,7 +15206,7 @@ pub const UART5 = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
+    pub const SR = MMIO(SR_val).init(base_address + 0x0);
 
     /// DR
     const DR_val = packed struct {
@@ -18044,7 +15219,7 @@ pub const UART5 = struct {
         _unused24: u8 = 0,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
+    pub const DR = MMIO(DR_val).init(base_address + 0x4);
 
     /// BRR
     const BRR_val = packed struct {
@@ -18059,7 +15234,7 @@ pub const UART5 = struct {
         _unused24: u8 = 0,
     };
     /// Baud rate register
-    pub const BRR = Register(BRR_val).init(base_address + 0x8);
+    pub const BRR = MMIO(BRR_val).init(base_address + 0x8);
 
     /// CR1
     const CR1_val = packed struct {
@@ -18115,7 +15290,7 @@ pub const UART5 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0xc);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0xc);
 
     /// CR2
     const CR2_val = packed struct {
@@ -18145,7 +15320,7 @@ pub const UART5 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x10);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x10);
 
     /// CR3
     const CR3_val = packed struct {
@@ -18180,387 +15355,7 @@ pub const UART5 = struct {
         _unused24: u8 = 0,
     };
     /// Control register 3
-    pub const CR3 = Register(CR3_val).init(base_address + 0x14);
-};
-
-/// Universal synchronous asynchronous receiver
-pub const UART7 = struct {
-    const base_address = 0x40007800;
-    /// SR
-    const SR_val = packed struct {
-        /// PE [0:0]
-        /// Parity error
-        PE: u1 = 0,
-        /// FE [1:1]
-        /// Framing error
-        FE: u1 = 0,
-        /// NF [2:2]
-        /// Noise detected flag
-        NF: u1 = 0,
-        /// ORE [3:3]
-        /// Overrun error
-        ORE: u1 = 0,
-        /// IDLE [4:4]
-        /// IDLE line detected
-        IDLE: u1 = 0,
-        /// RXNE [5:5]
-        /// Read data register not
-        RXNE: u1 = 0,
-        /// TC [6:6]
-        /// Transmission complete
-        TC: u1 = 0,
-        /// TXE [7:7]
-        /// Transmit data register
-        TXE: u1 = 0,
-        /// LBD [8:8]
-        /// LIN break detection flag
-        LBD: u1 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 192,
-        _unused24: u8 = 0,
-    };
-    /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
-
-    /// DR
-    const DR_val = packed struct {
-        /// DR [0:8]
-        /// Data value
-        DR: u9 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
-
-    /// BRR
-    const BRR_val = packed struct {
-        /// DIV_Fraction [0:3]
-        /// fraction of USARTDIV
-        DIV_Fraction: u4 = 0,
-        /// DIV_Mantissa [4:15]
-        /// mantissa of USARTDIV
-        DIV_Mantissa: u12 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Baud rate register
-    pub const BRR = Register(BRR_val).init(base_address + 0x8);
-
-    /// CR1
-    const CR1_val = packed struct {
-        /// SBK [0:0]
-        /// Send break
-        SBK: u1 = 0,
-        /// RWU [1:1]
-        /// Receiver wakeup
-        RWU: u1 = 0,
-        /// RE [2:2]
-        /// Receiver enable
-        RE: u1 = 0,
-        /// TE [3:3]
-        /// Transmitter enable
-        TE: u1 = 0,
-        /// IDLEIE [4:4]
-        /// IDLE interrupt enable
-        IDLEIE: u1 = 0,
-        /// RXNEIE [5:5]
-        /// RXNE interrupt enable
-        RXNEIE: u1 = 0,
-        /// TCIE [6:6]
-        /// Transmission complete interrupt
-        TCIE: u1 = 0,
-        /// TXEIE [7:7]
-        /// TXE interrupt enable
-        TXEIE: u1 = 0,
-        /// PEIE [8:8]
-        /// PE interrupt enable
-        PEIE: u1 = 0,
-        /// PS [9:9]
-        /// Parity selection
-        PS: u1 = 0,
-        /// PCE [10:10]
-        /// Parity control enable
-        PCE: u1 = 0,
-        /// WAKE [11:11]
-        /// Wakeup method
-        WAKE: u1 = 0,
-        /// M [12:12]
-        /// Word length
-        M: u1 = 0,
-        /// UE [13:13]
-        /// USART enable
-        UE: u1 = 0,
-        /// unused [14:14]
-        _unused14: u1 = 0,
-        /// OVER8 [15:15]
-        /// Oversampling mode
-        OVER8: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0xc);
-
-    /// CR2
-    const CR2_val = packed struct {
-        /// ADD [0:3]
-        /// Address of the USART node
-        ADD: u4 = 0,
-        /// unused [4:4]
-        _unused4: u1 = 0,
-        /// LBDL [5:5]
-        /// lin break detection length
-        LBDL: u1 = 0,
-        /// LBDIE [6:6]
-        /// LIN break detection interrupt
-        LBDIE: u1 = 0,
-        /// unused [7:11]
-        _unused7: u1 = 0,
-        _unused8: u4 = 0,
-        /// STOP [12:13]
-        /// STOP bits
-        STOP: u2 = 0,
-        /// LINEN [14:14]
-        /// LIN mode enable
-        LINEN: u1 = 0,
-        /// unused [15:31]
-        _unused15: u1 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x10);
-
-    /// CR3
-    const CR3_val = packed struct {
-        /// EIE [0:0]
-        /// Error interrupt enable
-        EIE: u1 = 0,
-        /// IREN [1:1]
-        /// IrDA mode enable
-        IREN: u1 = 0,
-        /// IRLP [2:2]
-        /// IrDA low-power
-        IRLP: u1 = 0,
-        /// HDSEL [3:3]
-        /// Half-duplex selection
-        HDSEL: u1 = 0,
-        /// unused [4:5]
-        _unused4: u2 = 0,
-        /// DMAR [6:6]
-        /// DMA enable receiver
-        DMAR: u1 = 0,
-        /// DMAT [7:7]
-        /// DMA enable transmitter
-        DMAT: u1 = 0,
-        /// unused [8:10]
-        _unused8: u3 = 0,
-        /// ONEBIT [11:11]
-        /// One sample bit method
-        ONEBIT: u1 = 0,
-        /// unused [12:31]
-        _unused12: u4 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Control register 3
-    pub const CR3 = Register(CR3_val).init(base_address + 0x14);
-};
-
-/// Universal synchronous asynchronous receiver
-pub const UART8 = struct {
-    const base_address = 0x40007c00;
-    /// SR
-    const SR_val = packed struct {
-        /// PE [0:0]
-        /// Parity error
-        PE: u1 = 0,
-        /// FE [1:1]
-        /// Framing error
-        FE: u1 = 0,
-        /// NF [2:2]
-        /// Noise detected flag
-        NF: u1 = 0,
-        /// ORE [3:3]
-        /// Overrun error
-        ORE: u1 = 0,
-        /// IDLE [4:4]
-        /// IDLE line detected
-        IDLE: u1 = 0,
-        /// RXNE [5:5]
-        /// Read data register not
-        RXNE: u1 = 0,
-        /// TC [6:6]
-        /// Transmission complete
-        TC: u1 = 0,
-        /// TXE [7:7]
-        /// Transmit data register
-        TXE: u1 = 0,
-        /// LBD [8:8]
-        /// LIN break detection flag
-        LBD: u1 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 192,
-        _unused24: u8 = 0,
-    };
-    /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0x0);
-
-    /// DR
-    const DR_val = packed struct {
-        /// DR [0:8]
-        /// Data value
-        DR: u9 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x4);
-
-    /// BRR
-    const BRR_val = packed struct {
-        /// DIV_Fraction [0:3]
-        /// fraction of USARTDIV
-        DIV_Fraction: u4 = 0,
-        /// DIV_Mantissa [4:15]
-        /// mantissa of USARTDIV
-        DIV_Mantissa: u12 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Baud rate register
-    pub const BRR = Register(BRR_val).init(base_address + 0x8);
-
-    /// CR1
-    const CR1_val = packed struct {
-        /// SBK [0:0]
-        /// Send break
-        SBK: u1 = 0,
-        /// RWU [1:1]
-        /// Receiver wakeup
-        RWU: u1 = 0,
-        /// RE [2:2]
-        /// Receiver enable
-        RE: u1 = 0,
-        /// TE [3:3]
-        /// Transmitter enable
-        TE: u1 = 0,
-        /// IDLEIE [4:4]
-        /// IDLE interrupt enable
-        IDLEIE: u1 = 0,
-        /// RXNEIE [5:5]
-        /// RXNE interrupt enable
-        RXNEIE: u1 = 0,
-        /// TCIE [6:6]
-        /// Transmission complete interrupt
-        TCIE: u1 = 0,
-        /// TXEIE [7:7]
-        /// TXE interrupt enable
-        TXEIE: u1 = 0,
-        /// PEIE [8:8]
-        /// PE interrupt enable
-        PEIE: u1 = 0,
-        /// PS [9:9]
-        /// Parity selection
-        PS: u1 = 0,
-        /// PCE [10:10]
-        /// Parity control enable
-        PCE: u1 = 0,
-        /// WAKE [11:11]
-        /// Wakeup method
-        WAKE: u1 = 0,
-        /// M [12:12]
-        /// Word length
-        M: u1 = 0,
-        /// UE [13:13]
-        /// USART enable
-        UE: u1 = 0,
-        /// unused [14:14]
-        _unused14: u1 = 0,
-        /// OVER8 [15:15]
-        /// Oversampling mode
-        OVER8: u1 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0xc);
-
-    /// CR2
-    const CR2_val = packed struct {
-        /// ADD [0:3]
-        /// Address of the USART node
-        ADD: u4 = 0,
-        /// unused [4:4]
-        _unused4: u1 = 0,
-        /// LBDL [5:5]
-        /// lin break detection length
-        LBDL: u1 = 0,
-        /// LBDIE [6:6]
-        /// LIN break detection interrupt
-        LBDIE: u1 = 0,
-        /// unused [7:11]
-        _unused7: u1 = 0,
-        _unused8: u4 = 0,
-        /// STOP [12:13]
-        /// STOP bits
-        STOP: u2 = 0,
-        /// LINEN [14:14]
-        /// LIN mode enable
-        LINEN: u1 = 0,
-        /// unused [15:31]
-        _unused15: u1 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x10);
-
-    /// CR3
-    const CR3_val = packed struct {
-        /// EIE [0:0]
-        /// Error interrupt enable
-        EIE: u1 = 0,
-        /// IREN [1:1]
-        /// IrDA mode enable
-        IREN: u1 = 0,
-        /// IRLP [2:2]
-        /// IrDA low-power
-        IRLP: u1 = 0,
-        /// HDSEL [3:3]
-        /// Half-duplex selection
-        HDSEL: u1 = 0,
-        /// unused [4:5]
-        _unused4: u2 = 0,
-        /// DMAR [6:6]
-        /// DMA enable receiver
-        DMAR: u1 = 0,
-        /// DMAT [7:7]
-        /// DMA enable transmitter
-        DMAT: u1 = 0,
-        /// unused [8:10]
-        _unused8: u3 = 0,
-        /// ONEBIT [11:11]
-        /// One sample bit method
-        ONEBIT: u1 = 0,
-        /// unused [12:31]
-        _unused12: u4 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Control register 3
-    pub const CR3 = Register(CR3_val).init(base_address + 0x14);
+    pub const CR3 = MMIO(CR3_val).init(base_address + 0x14);
 };
 
 /// Common ADC registers
@@ -18631,7 +15426,7 @@ pub const C_ADC = struct {
         _unused24: u8 = 0,
     };
     /// ADC Common status register
-    pub const CSR = Register(CSR_val).init(base_address + 0x0);
+    pub const CSR = MMIO(CSR_val).init(base_address + 0x0);
 
     /// CCR
     const CCR_val = packed struct {
@@ -18666,7 +15461,7 @@ pub const C_ADC = struct {
         _unused24: u8 = 0,
     };
     /// ADC common control register
-    pub const CCR = Register(CCR_val).init(base_address + 0x4);
+    pub const CCR = MMIO(CCR_val).init(base_address + 0x4);
 
     /// CDR
     const CDR_val = packed struct {
@@ -18678,7 +15473,7 @@ pub const C_ADC = struct {
         DATA2: u16 = 0,
     };
     /// ADC common regular data register for dual
-    pub const CDR = Register(CDR_val).init(base_address + 0x8);
+    pub const CDR = MMIO(CDR_val).init(base_address + 0x8);
 };
 
 /// Advanced-timers
@@ -18716,7 +15511,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -18764,7 +15559,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SMCR
     const SMCR_val = packed struct {
@@ -18796,7 +15591,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// slave mode control register
-    pub const SMCR = Register(SMCR_val).init(base_address + 0x8);
+    pub const SMCR = MMIO(SMCR_val).init(base_address + 0x8);
 
     /// DIER
     const DIER_val = packed struct {
@@ -18851,7 +15646,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -18899,7 +15694,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -18933,7 +15728,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -18972,7 +15767,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -18999,7 +15794,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCMR2_Output
     const CCMR2_Output_val = packed struct {
@@ -19038,7 +15833,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (output
-    pub const CCMR2_Output = Register(CCMR2_Output_val).init(base_address + 0x1c);
+    pub const CCMR2_Output = MMIO(CCMR2_Output_val).init(base_address + 0x1c);
 
     /// CCMR2_Input
     const CCMR2_Input_val = packed struct {
@@ -19065,7 +15860,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (input
-    pub const CCMR2_Input = Register(CCMR2_Input_val).init(base_address + 0x1c);
+    pub const CCMR2_Input = MMIO(CCMR2_Input_val).init(base_address + 0x1c);
 
     /// CCER
     const CCER_val = packed struct {
@@ -19117,7 +15912,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -19129,7 +15924,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -19141,7 +15936,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -19153,7 +15948,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -19165,7 +15960,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// CCR2
     const CCR2_val = packed struct {
@@ -19177,7 +15972,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 2
-    pub const CCR2 = Register(CCR2_val).init(base_address + 0x38);
+    pub const CCR2 = MMIO(CCR2_val).init(base_address + 0x38);
 
     /// CCR3
     const CCR3_val = packed struct {
@@ -19189,7 +15984,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 3
-    pub const CCR3 = Register(CCR3_val).init(base_address + 0x3c);
+    pub const CCR3 = MMIO(CCR3_val).init(base_address + 0x3c);
 
     /// CCR4
     const CCR4_val = packed struct {
@@ -19201,7 +15996,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 4
-    pub const CCR4 = Register(CCR4_val).init(base_address + 0x40);
+    pub const CCR4 = MMIO(CCR4_val).init(base_address + 0x40);
 
     /// DCR
     const DCR_val = packed struct {
@@ -19219,7 +16014,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// DMA control register
-    pub const DCR = Register(DCR_val).init(base_address + 0x48);
+    pub const DCR = MMIO(DCR_val).init(base_address + 0x48);
 
     /// DMAR
     const DMAR_val = packed struct {
@@ -19231,7 +16026,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// DMA address for full transfer
-    pub const DMAR = Register(DMAR_val).init(base_address + 0x4c);
+    pub const DMAR = MMIO(DMAR_val).init(base_address + 0x4c);
 
     /// RCR
     const RCR_val = packed struct {
@@ -19244,7 +16039,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// repetition counter register
-    pub const RCR = Register(RCR_val).init(base_address + 0x30);
+    pub const RCR = MMIO(RCR_val).init(base_address + 0x30);
 
     /// BDTR
     const BDTR_val = packed struct {
@@ -19277,7 +16072,7 @@ pub const TIM1 = struct {
         _unused24: u8 = 0,
     };
     /// break and dead-time register
-    pub const BDTR = Register(BDTR_val).init(base_address + 0x44);
+    pub const BDTR = MMIO(BDTR_val).init(base_address + 0x44);
 };
 
 /// Advanced-timers
@@ -19315,7 +16110,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -19363,7 +16158,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SMCR
     const SMCR_val = packed struct {
@@ -19395,7 +16190,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// slave mode control register
-    pub const SMCR = Register(SMCR_val).init(base_address + 0x8);
+    pub const SMCR = MMIO(SMCR_val).init(base_address + 0x8);
 
     /// DIER
     const DIER_val = packed struct {
@@ -19450,7 +16245,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -19498,7 +16293,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -19532,7 +16327,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -19571,7 +16366,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -19598,7 +16393,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCMR2_Output
     const CCMR2_Output_val = packed struct {
@@ -19637,7 +16432,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (output
-    pub const CCMR2_Output = Register(CCMR2_Output_val).init(base_address + 0x1c);
+    pub const CCMR2_Output = MMIO(CCMR2_Output_val).init(base_address + 0x1c);
 
     /// CCMR2_Input
     const CCMR2_Input_val = packed struct {
@@ -19664,7 +16459,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (input
-    pub const CCMR2_Input = Register(CCMR2_Input_val).init(base_address + 0x1c);
+    pub const CCMR2_Input = MMIO(CCMR2_Input_val).init(base_address + 0x1c);
 
     /// CCER
     const CCER_val = packed struct {
@@ -19716,7 +16511,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -19728,7 +16523,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -19740,7 +16535,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -19752,7 +16547,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -19764,7 +16559,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// CCR2
     const CCR2_val = packed struct {
@@ -19776,7 +16571,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 2
-    pub const CCR2 = Register(CCR2_val).init(base_address + 0x38);
+    pub const CCR2 = MMIO(CCR2_val).init(base_address + 0x38);
 
     /// CCR3
     const CCR3_val = packed struct {
@@ -19788,7 +16583,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 3
-    pub const CCR3 = Register(CCR3_val).init(base_address + 0x3c);
+    pub const CCR3 = MMIO(CCR3_val).init(base_address + 0x3c);
 
     /// CCR4
     const CCR4_val = packed struct {
@@ -19800,7 +16595,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 4
-    pub const CCR4 = Register(CCR4_val).init(base_address + 0x40);
+    pub const CCR4 = MMIO(CCR4_val).init(base_address + 0x40);
 
     /// DCR
     const DCR_val = packed struct {
@@ -19818,7 +16613,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// DMA control register
-    pub const DCR = Register(DCR_val).init(base_address + 0x48);
+    pub const DCR = MMIO(DCR_val).init(base_address + 0x48);
 
     /// DMAR
     const DMAR_val = packed struct {
@@ -19830,7 +16625,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// DMA address for full transfer
-    pub const DMAR = Register(DMAR_val).init(base_address + 0x4c);
+    pub const DMAR = MMIO(DMAR_val).init(base_address + 0x4c);
 
     /// RCR
     const RCR_val = packed struct {
@@ -19843,7 +16638,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// repetition counter register
-    pub const RCR = Register(RCR_val).init(base_address + 0x30);
+    pub const RCR = MMIO(RCR_val).init(base_address + 0x30);
 
     /// BDTR
     const BDTR_val = packed struct {
@@ -19876,7 +16671,7 @@ pub const TIM8 = struct {
         _unused24: u8 = 0,
     };
     /// break and dead-time register
-    pub const BDTR = Register(BDTR_val).init(base_address + 0x44);
+    pub const BDTR = MMIO(BDTR_val).init(base_address + 0x44);
 };
 
 /// General purpose timers
@@ -19914,7 +16709,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -19935,7 +16730,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SMCR
     const SMCR_val = packed struct {
@@ -19967,7 +16762,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// slave mode control register
-    pub const SMCR = Register(SMCR_val).init(base_address + 0x8);
+    pub const SMCR = MMIO(SMCR_val).init(base_address + 0x8);
 
     /// DIER
     const DIER_val = packed struct {
@@ -20019,7 +16814,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -20064,7 +16859,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -20095,7 +16890,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -20134,7 +16929,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -20161,7 +16956,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCMR2_Output
     const CCMR2_Output_val = packed struct {
@@ -20200,7 +16995,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (output
-    pub const CCMR2_Output = Register(CCMR2_Output_val).init(base_address + 0x1c);
+    pub const CCMR2_Output = MMIO(CCMR2_Output_val).init(base_address + 0x1c);
 
     /// CCMR2_Input
     const CCMR2_Input_val = packed struct {
@@ -20227,7 +17022,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (input
-    pub const CCMR2_Input = Register(CCMR2_Input_val).init(base_address + 0x1c);
+    pub const CCMR2_Input = MMIO(CCMR2_Input_val).init(base_address + 0x1c);
 
     /// CCER
     const CCER_val = packed struct {
@@ -20280,7 +17075,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -20292,7 +17087,7 @@ pub const TIM2 = struct {
         CNT_H: u16 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -20304,7 +17099,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -20316,7 +17111,7 @@ pub const TIM2 = struct {
         ARR_H: u16 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -20328,7 +17123,7 @@ pub const TIM2 = struct {
         CCR1_H: u16 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// CCR2
     const CCR2_val = packed struct {
@@ -20340,7 +17135,7 @@ pub const TIM2 = struct {
         CCR2_H: u16 = 0,
     };
     /// capture/compare register 2
-    pub const CCR2 = Register(CCR2_val).init(base_address + 0x38);
+    pub const CCR2 = MMIO(CCR2_val).init(base_address + 0x38);
 
     /// CCR3
     const CCR3_val = packed struct {
@@ -20352,7 +17147,7 @@ pub const TIM2 = struct {
         CCR3_H: u16 = 0,
     };
     /// capture/compare register 3
-    pub const CCR3 = Register(CCR3_val).init(base_address + 0x3c);
+    pub const CCR3 = MMIO(CCR3_val).init(base_address + 0x3c);
 
     /// CCR4
     const CCR4_val = packed struct {
@@ -20364,7 +17159,7 @@ pub const TIM2 = struct {
         CCR4_H: u16 = 0,
     };
     /// capture/compare register 4
-    pub const CCR4 = Register(CCR4_val).init(base_address + 0x40);
+    pub const CCR4 = MMIO(CCR4_val).init(base_address + 0x40);
 
     /// DCR
     const DCR_val = packed struct {
@@ -20382,7 +17177,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// DMA control register
-    pub const DCR = Register(DCR_val).init(base_address + 0x48);
+    pub const DCR = MMIO(DCR_val).init(base_address + 0x48);
 
     /// DMAR
     const DMAR_val = packed struct {
@@ -20394,7 +17189,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// DMA address for full transfer
-    pub const DMAR = Register(DMAR_val).init(base_address + 0x4c);
+    pub const DMAR = MMIO(DMAR_val).init(base_address + 0x4c);
 
     /// OR
     const OR_val = packed struct {
@@ -20410,7 +17205,7 @@ pub const TIM2 = struct {
         _unused24: u8 = 0,
     };
     /// TIM5 option register
-    pub const OR = Register(OR_val).init(base_address + 0x50);
+    pub const OR = MMIO(OR_val).init(base_address + 0x50);
 };
 
 /// General purpose timers
@@ -20448,7 +17243,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -20469,7 +17264,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SMCR
     const SMCR_val = packed struct {
@@ -20501,7 +17296,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// slave mode control register
-    pub const SMCR = Register(SMCR_val).init(base_address + 0x8);
+    pub const SMCR = MMIO(SMCR_val).init(base_address + 0x8);
 
     /// DIER
     const DIER_val = packed struct {
@@ -20553,7 +17348,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -20598,7 +17393,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -20629,7 +17424,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -20668,7 +17463,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -20695,7 +17490,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCMR2_Output
     const CCMR2_Output_val = packed struct {
@@ -20734,7 +17529,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (output
-    pub const CCMR2_Output = Register(CCMR2_Output_val).init(base_address + 0x1c);
+    pub const CCMR2_Output = MMIO(CCMR2_Output_val).init(base_address + 0x1c);
 
     /// CCMR2_Input
     const CCMR2_Input_val = packed struct {
@@ -20761,7 +17556,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (input
-    pub const CCMR2_Input = Register(CCMR2_Input_val).init(base_address + 0x1c);
+    pub const CCMR2_Input = MMIO(CCMR2_Input_val).init(base_address + 0x1c);
 
     /// CCER
     const CCER_val = packed struct {
@@ -20814,7 +17609,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -20826,7 +17621,7 @@ pub const TIM3 = struct {
         CNT_H: u16 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -20838,7 +17633,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -20850,7 +17645,7 @@ pub const TIM3 = struct {
         ARR_H: u16 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -20862,7 +17657,7 @@ pub const TIM3 = struct {
         CCR1_H: u16 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// CCR2
     const CCR2_val = packed struct {
@@ -20874,7 +17669,7 @@ pub const TIM3 = struct {
         CCR2_H: u16 = 0,
     };
     /// capture/compare register 2
-    pub const CCR2 = Register(CCR2_val).init(base_address + 0x38);
+    pub const CCR2 = MMIO(CCR2_val).init(base_address + 0x38);
 
     /// CCR3
     const CCR3_val = packed struct {
@@ -20886,7 +17681,7 @@ pub const TIM3 = struct {
         CCR3_H: u16 = 0,
     };
     /// capture/compare register 3
-    pub const CCR3 = Register(CCR3_val).init(base_address + 0x3c);
+    pub const CCR3 = MMIO(CCR3_val).init(base_address + 0x3c);
 
     /// CCR4
     const CCR4_val = packed struct {
@@ -20898,7 +17693,7 @@ pub const TIM3 = struct {
         CCR4_H: u16 = 0,
     };
     /// capture/compare register 4
-    pub const CCR4 = Register(CCR4_val).init(base_address + 0x40);
+    pub const CCR4 = MMIO(CCR4_val).init(base_address + 0x40);
 
     /// DCR
     const DCR_val = packed struct {
@@ -20916,7 +17711,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// DMA control register
-    pub const DCR = Register(DCR_val).init(base_address + 0x48);
+    pub const DCR = MMIO(DCR_val).init(base_address + 0x48);
 
     /// DMAR
     const DMAR_val = packed struct {
@@ -20928,7 +17723,7 @@ pub const TIM3 = struct {
         _unused24: u8 = 0,
     };
     /// DMA address for full transfer
-    pub const DMAR = Register(DMAR_val).init(base_address + 0x4c);
+    pub const DMAR = MMIO(DMAR_val).init(base_address + 0x4c);
 };
 
 /// General purpose timers
@@ -20966,7 +17761,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -20987,7 +17782,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SMCR
     const SMCR_val = packed struct {
@@ -21019,7 +17814,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// slave mode control register
-    pub const SMCR = Register(SMCR_val).init(base_address + 0x8);
+    pub const SMCR = MMIO(SMCR_val).init(base_address + 0x8);
 
     /// DIER
     const DIER_val = packed struct {
@@ -21071,7 +17866,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -21116,7 +17911,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -21147,7 +17942,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -21186,7 +17981,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -21213,7 +18008,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCMR2_Output
     const CCMR2_Output_val = packed struct {
@@ -21252,7 +18047,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (output
-    pub const CCMR2_Output = Register(CCMR2_Output_val).init(base_address + 0x1c);
+    pub const CCMR2_Output = MMIO(CCMR2_Output_val).init(base_address + 0x1c);
 
     /// CCMR2_Input
     const CCMR2_Input_val = packed struct {
@@ -21279,7 +18074,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (input
-    pub const CCMR2_Input = Register(CCMR2_Input_val).init(base_address + 0x1c);
+    pub const CCMR2_Input = MMIO(CCMR2_Input_val).init(base_address + 0x1c);
 
     /// CCER
     const CCER_val = packed struct {
@@ -21332,7 +18127,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -21344,7 +18139,7 @@ pub const TIM4 = struct {
         CNT_H: u16 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -21356,7 +18151,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -21368,7 +18163,7 @@ pub const TIM4 = struct {
         ARR_H: u16 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -21380,7 +18175,7 @@ pub const TIM4 = struct {
         CCR1_H: u16 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// CCR2
     const CCR2_val = packed struct {
@@ -21392,7 +18187,7 @@ pub const TIM4 = struct {
         CCR2_H: u16 = 0,
     };
     /// capture/compare register 2
-    pub const CCR2 = Register(CCR2_val).init(base_address + 0x38);
+    pub const CCR2 = MMIO(CCR2_val).init(base_address + 0x38);
 
     /// CCR3
     const CCR3_val = packed struct {
@@ -21404,7 +18199,7 @@ pub const TIM4 = struct {
         CCR3_H: u16 = 0,
     };
     /// capture/compare register 3
-    pub const CCR3 = Register(CCR3_val).init(base_address + 0x3c);
+    pub const CCR3 = MMIO(CCR3_val).init(base_address + 0x3c);
 
     /// CCR4
     const CCR4_val = packed struct {
@@ -21416,7 +18211,7 @@ pub const TIM4 = struct {
         CCR4_H: u16 = 0,
     };
     /// capture/compare register 4
-    pub const CCR4 = Register(CCR4_val).init(base_address + 0x40);
+    pub const CCR4 = MMIO(CCR4_val).init(base_address + 0x40);
 
     /// DCR
     const DCR_val = packed struct {
@@ -21434,7 +18229,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// DMA control register
-    pub const DCR = Register(DCR_val).init(base_address + 0x48);
+    pub const DCR = MMIO(DCR_val).init(base_address + 0x48);
 
     /// DMAR
     const DMAR_val = packed struct {
@@ -21446,7 +18241,7 @@ pub const TIM4 = struct {
         _unused24: u8 = 0,
     };
     /// DMA address for full transfer
-    pub const DMAR = Register(DMAR_val).init(base_address + 0x4c);
+    pub const DMAR = MMIO(DMAR_val).init(base_address + 0x4c);
 };
 
 /// General-purpose-timers
@@ -21484,7 +18279,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -21505,7 +18300,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SMCR
     const SMCR_val = packed struct {
@@ -21537,7 +18332,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// slave mode control register
-    pub const SMCR = Register(SMCR_val).init(base_address + 0x8);
+    pub const SMCR = MMIO(SMCR_val).init(base_address + 0x8);
 
     /// DIER
     const DIER_val = packed struct {
@@ -21589,7 +18384,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -21634,7 +18429,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -21665,7 +18460,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -21704,7 +18499,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -21731,7 +18526,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCMR2_Output
     const CCMR2_Output_val = packed struct {
@@ -21770,7 +18565,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (output
-    pub const CCMR2_Output = Register(CCMR2_Output_val).init(base_address + 0x1c);
+    pub const CCMR2_Output = MMIO(CCMR2_Output_val).init(base_address + 0x1c);
 
     /// CCMR2_Input
     const CCMR2_Input_val = packed struct {
@@ -21797,7 +18592,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 2 (input
-    pub const CCMR2_Input = Register(CCMR2_Input_val).init(base_address + 0x1c);
+    pub const CCMR2_Input = MMIO(CCMR2_Input_val).init(base_address + 0x1c);
 
     /// CCER
     const CCER_val = packed struct {
@@ -21850,7 +18645,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -21862,7 +18657,7 @@ pub const TIM5 = struct {
         CNT_H: u16 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -21874,7 +18669,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -21886,7 +18681,7 @@ pub const TIM5 = struct {
         ARR_H: u16 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -21898,7 +18693,7 @@ pub const TIM5 = struct {
         CCR1_H: u16 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// CCR2
     const CCR2_val = packed struct {
@@ -21910,7 +18705,7 @@ pub const TIM5 = struct {
         CCR2_H: u16 = 0,
     };
     /// capture/compare register 2
-    pub const CCR2 = Register(CCR2_val).init(base_address + 0x38);
+    pub const CCR2 = MMIO(CCR2_val).init(base_address + 0x38);
 
     /// CCR3
     const CCR3_val = packed struct {
@@ -21922,7 +18717,7 @@ pub const TIM5 = struct {
         CCR3_H: u16 = 0,
     };
     /// capture/compare register 3
-    pub const CCR3 = Register(CCR3_val).init(base_address + 0x3c);
+    pub const CCR3 = MMIO(CCR3_val).init(base_address + 0x3c);
 
     /// CCR4
     const CCR4_val = packed struct {
@@ -21934,7 +18729,7 @@ pub const TIM5 = struct {
         CCR4_H: u16 = 0,
     };
     /// capture/compare register 4
-    pub const CCR4 = Register(CCR4_val).init(base_address + 0x40);
+    pub const CCR4 = MMIO(CCR4_val).init(base_address + 0x40);
 
     /// DCR
     const DCR_val = packed struct {
@@ -21952,7 +18747,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// DMA control register
-    pub const DCR = Register(DCR_val).init(base_address + 0x48);
+    pub const DCR = MMIO(DCR_val).init(base_address + 0x48);
 
     /// DMAR
     const DMAR_val = packed struct {
@@ -21964,7 +18759,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// DMA address for full transfer
-    pub const DMAR = Register(DMAR_val).init(base_address + 0x4c);
+    pub const DMAR = MMIO(DMAR_val).init(base_address + 0x4c);
 
     /// OR
     const OR_val = packed struct {
@@ -21979,7 +18774,7 @@ pub const TIM5 = struct {
         _unused24: u8 = 0,
     };
     /// TIM5 option register
-    pub const OR = Register(OR_val).init(base_address + 0x50);
+    pub const OR = MMIO(OR_val).init(base_address + 0x50);
 };
 
 /// General purpose timers
@@ -22013,7 +18808,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -22029,7 +18824,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SMCR
     const SMCR_val = packed struct {
@@ -22050,7 +18845,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// slave mode control register
-    pub const SMCR = Register(SMCR_val).init(base_address + 0x8);
+    pub const SMCR = MMIO(SMCR_val).init(base_address + 0x8);
 
     /// DIER
     const DIER_val = packed struct {
@@ -22075,7 +18870,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -22108,7 +18903,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -22133,7 +18928,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -22169,7 +18964,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -22199,7 +18994,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCER
     const CCER_val = packed struct {
@@ -22231,7 +19026,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -22243,7 +19038,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -22255,7 +19050,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -22267,7 +19062,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -22279,7 +19074,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// CCR2
     const CCR2_val = packed struct {
@@ -22291,7 +19086,7 @@ pub const TIM9 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 2
-    pub const CCR2 = Register(CCR2_val).init(base_address + 0x38);
+    pub const CCR2 = MMIO(CCR2_val).init(base_address + 0x38);
 };
 
 /// General purpose timers
@@ -22325,7 +19120,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -22341,7 +19136,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// SMCR
     const SMCR_val = packed struct {
@@ -22362,7 +19157,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// slave mode control register
-    pub const SMCR = Register(SMCR_val).init(base_address + 0x8);
+    pub const SMCR = MMIO(SMCR_val).init(base_address + 0x8);
 
     /// DIER
     const DIER_val = packed struct {
@@ -22387,7 +19182,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -22420,7 +19215,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -22445,7 +19240,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -22481,7 +19276,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -22511,7 +19306,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCER
     const CCER_val = packed struct {
@@ -22543,7 +19338,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -22555,7 +19350,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -22567,7 +19362,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -22579,7 +19374,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -22591,7 +19386,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// CCR2
     const CCR2_val = packed struct {
@@ -22603,7 +19398,7 @@ pub const TIM12 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 2
-    pub const CCR2 = Register(CCR2_val).init(base_address + 0x38);
+    pub const CCR2 = MMIO(CCR2_val).init(base_address + 0x38);
 };
 
 /// General-purpose-timers
@@ -22634,7 +19429,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// DIER
     const DIER_val = packed struct {
@@ -22651,7 +19446,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -22673,7 +19468,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -22690,7 +19485,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -22713,7 +19508,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -22732,7 +19527,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCER
     const CCER_val = packed struct {
@@ -22754,7 +19549,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -22766,7 +19561,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -22778,7 +19573,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -22790,7 +19585,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -22802,7 +19597,7 @@ pub const TIM10 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 };
 
 /// General-purpose-timers
@@ -22833,7 +19628,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// DIER
     const DIER_val = packed struct {
@@ -22850,7 +19645,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -22872,7 +19667,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -22889,7 +19684,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -22912,7 +19707,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -22931,7 +19726,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCER
     const CCER_val = packed struct {
@@ -22953,7 +19748,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -22965,7 +19760,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -22977,7 +19772,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -22989,7 +19784,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -23001,7 +19796,7 @@ pub const TIM13 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 };
 
 /// General-purpose-timers
@@ -23032,7 +19827,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// DIER
     const DIER_val = packed struct {
@@ -23049,7 +19844,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -23071,7 +19866,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -23088,7 +19883,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -23111,7 +19906,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -23130,7 +19925,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCER
     const CCER_val = packed struct {
@@ -23152,7 +19947,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -23164,7 +19959,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -23176,7 +19971,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -23188,7 +19983,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -23200,7 +19995,7 @@ pub const TIM14 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 };
 
 /// General-purpose-timers
@@ -23231,7 +20026,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// DIER
     const DIER_val = packed struct {
@@ -23248,7 +20043,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -23270,7 +20065,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -23287,7 +20082,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CCMR1_Output
     const CCMR1_Output_val = packed struct {
@@ -23310,7 +20105,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (output
-    pub const CCMR1_Output = Register(CCMR1_Output_val).init(base_address + 0x18);
+    pub const CCMR1_Output = MMIO(CCMR1_Output_val).init(base_address + 0x18);
 
     /// CCMR1_Input
     const CCMR1_Input_val = packed struct {
@@ -23329,7 +20124,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare mode register 1 (input
-    pub const CCMR1_Input = Register(CCMR1_Input_val).init(base_address + 0x18);
+    pub const CCMR1_Input = MMIO(CCMR1_Input_val).init(base_address + 0x18);
 
     /// CCER
     const CCER_val = packed struct {
@@ -23351,7 +20146,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare enable
-    pub const CCER = Register(CCER_val).init(base_address + 0x20);
+    pub const CCER = MMIO(CCER_val).init(base_address + 0x20);
 
     /// CNT
     const CNT_val = packed struct {
@@ -23363,7 +20158,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -23375,7 +20170,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -23387,7 +20182,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 
     /// CCR1
     const CCR1_val = packed struct {
@@ -23399,7 +20194,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// capture/compare register 1
-    pub const CCR1 = Register(CCR1_val).init(base_address + 0x34);
+    pub const CCR1 = MMIO(CCR1_val).init(base_address + 0x34);
 
     /// OR
     const OR_val = packed struct {
@@ -23413,7 +20208,7 @@ pub const TIM11 = struct {
         _unused24: u8 = 0,
     };
     /// option register
-    pub const OR = Register(OR_val).init(base_address + 0x50);
+    pub const OR = MMIO(OR_val).init(base_address + 0x50);
 };
 
 /// Basic timers
@@ -23444,7 +20239,7 @@ pub const TIM6 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -23460,7 +20255,7 @@ pub const TIM6 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// DIER
     const DIER_val = packed struct {
@@ -23478,7 +20273,7 @@ pub const TIM6 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -23492,7 +20287,7 @@ pub const TIM6 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -23506,7 +20301,7 @@ pub const TIM6 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CNT
     const CNT_val = packed struct {
@@ -23518,7 +20313,7 @@ pub const TIM6 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -23530,7 +20325,7 @@ pub const TIM6 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -23542,7 +20337,7 @@ pub const TIM6 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 };
 
 /// Basic timers
@@ -23573,7 +20368,7 @@ pub const TIM7 = struct {
         _unused24: u8 = 0,
     };
     /// control register 1
-    pub const CR1 = Register(CR1_val).init(base_address + 0x0);
+    pub const CR1 = MMIO(CR1_val).init(base_address + 0x0);
 
     /// CR2
     const CR2_val = packed struct {
@@ -23589,7 +20384,7 @@ pub const TIM7 = struct {
         _unused24: u8 = 0,
     };
     /// control register 2
-    pub const CR2 = Register(CR2_val).init(base_address + 0x4);
+    pub const CR2 = MMIO(CR2_val).init(base_address + 0x4);
 
     /// DIER
     const DIER_val = packed struct {
@@ -23607,7 +20402,7 @@ pub const TIM7 = struct {
         _unused24: u8 = 0,
     };
     /// DMA/Interrupt enable register
-    pub const DIER = Register(DIER_val).init(base_address + 0xc);
+    pub const DIER = MMIO(DIER_val).init(base_address + 0xc);
 
     /// SR
     const SR_val = packed struct {
@@ -23621,7 +20416,7 @@ pub const TIM7 = struct {
         _unused24: u8 = 0,
     };
     /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x10);
+    pub const SR = MMIO(SR_val).init(base_address + 0x10);
 
     /// EGR
     const EGR_val = packed struct {
@@ -23635,7 +20430,7 @@ pub const TIM7 = struct {
         _unused24: u8 = 0,
     };
     /// event generation register
-    pub const EGR = Register(EGR_val).init(base_address + 0x14);
+    pub const EGR = MMIO(EGR_val).init(base_address + 0x14);
 
     /// CNT
     const CNT_val = packed struct {
@@ -23647,7 +20442,7 @@ pub const TIM7 = struct {
         _unused24: u8 = 0,
     };
     /// counter
-    pub const CNT = Register(CNT_val).init(base_address + 0x24);
+    pub const CNT = MMIO(CNT_val).init(base_address + 0x24);
 
     /// PSC
     const PSC_val = packed struct {
@@ -23659,7 +20454,7 @@ pub const TIM7 = struct {
         _unused24: u8 = 0,
     };
     /// prescaler
-    pub const PSC = Register(PSC_val).init(base_address + 0x28);
+    pub const PSC = MMIO(PSC_val).init(base_address + 0x28);
 
     /// ARR
     const ARR_val = packed struct {
@@ -23671,1147 +20466,7 @@ pub const TIM7 = struct {
         _unused24: u8 = 0,
     };
     /// auto-reload register
-    pub const ARR = Register(ARR_val).init(base_address + 0x2c);
-};
-
-/// Ethernet: media access control
-pub const Ethernet_MAC = struct {
-    const base_address = 0x40028000;
-    /// MACCR
-    const MACCR_val = packed struct {
-        /// unused [0:1]
-        _unused0: u2 = 0,
-        /// RE [2:2]
-        /// RE
-        RE: u1 = 0,
-        /// TE [3:3]
-        /// TE
-        TE: u1 = 0,
-        /// DC [4:4]
-        /// DC
-        DC: u1 = 0,
-        /// BL [5:6]
-        /// BL
-        BL: u2 = 0,
-        /// APCS [7:7]
-        /// APCS
-        APCS: u1 = 0,
-        /// unused [8:8]
-        _unused8: u1 = 0,
-        /// RD [9:9]
-        /// RD
-        RD: u1 = 0,
-        /// IPCO [10:10]
-        /// IPCO
-        IPCO: u1 = 0,
-        /// DM [11:11]
-        /// DM
-        DM: u1 = 0,
-        /// LM [12:12]
-        /// LM
-        LM: u1 = 0,
-        /// ROD [13:13]
-        /// ROD
-        ROD: u1 = 0,
-        /// FES [14:14]
-        /// FES
-        FES: u1 = 0,
-        /// unused [15:15]
-        _unused15: u1 = 1,
-        /// CSD [16:16]
-        /// CSD
-        CSD: u1 = 0,
-        /// IFG [17:19]
-        /// IFG
-        IFG: u3 = 0,
-        /// unused [20:21]
-        _unused20: u2 = 0,
-        /// JD [22:22]
-        /// JD
-        JD: u1 = 0,
-        /// WD [23:23]
-        /// WD
-        WD: u1 = 0,
-        /// unused [24:24]
-        _unused24: u1 = 0,
-        /// CSTF [25:25]
-        /// CSTF
-        CSTF: u1 = 0,
-        /// unused [26:31]
-        _unused26: u6 = 0,
-    };
-    /// Ethernet MAC configuration
-    pub const MACCR = Register(MACCR_val).init(base_address + 0x0);
-
-    /// MACFFR
-    const MACFFR_val = packed struct {
-        /// PM [0:0]
-        /// PM
-        PM: u1 = 0,
-        /// HU [1:1]
-        /// HU
-        HU: u1 = 0,
-        /// HM [2:2]
-        /// HM
-        HM: u1 = 0,
-        /// DAIF [3:3]
-        /// DAIF
-        DAIF: u1 = 0,
-        /// RAM [4:4]
-        /// RAM
-        RAM: u1 = 0,
-        /// BFD [5:5]
-        /// BFD
-        BFD: u1 = 0,
-        /// PCF [6:6]
-        /// PCF
-        PCF: u1 = 0,
-        /// SAIF [7:7]
-        /// SAIF
-        SAIF: u1 = 0,
-        /// SAF [8:8]
-        /// SAF
-        SAF: u1 = 0,
-        /// HPF [9:9]
-        /// HPF
-        HPF: u1 = 0,
-        /// unused [10:30]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u7 = 0,
-        /// RA [31:31]
-        /// RA
-        RA: u1 = 0,
-    };
-    /// Ethernet MAC frame filter
-    pub const MACFFR = Register(MACFFR_val).init(base_address + 0x4);
-
-    /// MACHTHR
-    const MACHTHR_val = packed struct {
-        /// HTH [0:31]
-        /// HTH
-        HTH: u32 = 0,
-    };
-    /// Ethernet MAC hash table high
-    pub const MACHTHR = Register(MACHTHR_val).init(base_address + 0x8);
-
-    /// MACHTLR
-    const MACHTLR_val = packed struct {
-        /// HTL [0:31]
-        /// HTL
-        HTL: u32 = 0,
-    };
-    /// Ethernet MAC hash table low
-    pub const MACHTLR = Register(MACHTLR_val).init(base_address + 0xc);
-
-    /// MACMIIAR
-    const MACMIIAR_val = packed struct {
-        /// MB [0:0]
-        /// MB
-        MB: u1 = 0,
-        /// MW [1:1]
-        /// MW
-        MW: u1 = 0,
-        /// CR [2:4]
-        /// CR
-        CR: u3 = 0,
-        /// unused [5:5]
-        _unused5: u1 = 0,
-        /// MR [6:10]
-        /// MR
-        MR: u5 = 0,
-        /// PA [11:15]
-        /// PA
-        PA: u5 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MAC MII address
-    pub const MACMIIAR = Register(MACMIIAR_val).init(base_address + 0x10);
-
-    /// MACMIIDR
-    const MACMIIDR_val = packed struct {
-        /// TD [0:15]
-        /// TD
-        TD: u16 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MAC MII data register
-    pub const MACMIIDR = Register(MACMIIDR_val).init(base_address + 0x14);
-
-    /// MACFCR
-    const MACFCR_val = packed struct {
-        /// FCB [0:0]
-        /// FCB
-        FCB: u1 = 0,
-        /// TFCE [1:1]
-        /// TFCE
-        TFCE: u1 = 0,
-        /// RFCE [2:2]
-        /// RFCE
-        RFCE: u1 = 0,
-        /// UPFD [3:3]
-        /// UPFD
-        UPFD: u1 = 0,
-        /// PLT [4:5]
-        /// PLT
-        PLT: u2 = 0,
-        /// unused [6:6]
-        _unused6: u1 = 0,
-        /// ZQPD [7:7]
-        /// ZQPD
-        ZQPD: u1 = 0,
-        /// unused [8:15]
-        _unused8: u8 = 0,
-        /// PT [16:31]
-        /// PT
-        PT: u16 = 0,
-    };
-    /// Ethernet MAC flow control
-    pub const MACFCR = Register(MACFCR_val).init(base_address + 0x18);
-
-    /// MACVLANTR
-    const MACVLANTR_val = packed struct {
-        /// VLANTI [0:15]
-        /// VLANTI
-        VLANTI: u16 = 0,
-        /// VLANTC [16:16]
-        /// VLANTC
-        VLANTC: u1 = 0,
-        /// unused [17:31]
-        _unused17: u7 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MAC VLAN tag register
-    pub const MACVLANTR = Register(MACVLANTR_val).init(base_address + 0x1c);
-
-    /// MACPMTCSR
-    const MACPMTCSR_val = packed struct {
-        /// PD [0:0]
-        /// PD
-        PD: u1 = 0,
-        /// MPE [1:1]
-        /// MPE
-        MPE: u1 = 0,
-        /// WFE [2:2]
-        /// WFE
-        WFE: u1 = 0,
-        /// unused [3:4]
-        _unused3: u2 = 0,
-        /// MPR [5:5]
-        /// MPR
-        MPR: u1 = 0,
-        /// WFR [6:6]
-        /// WFR
-        WFR: u1 = 0,
-        /// unused [7:8]
-        _unused7: u1 = 0,
-        _unused8: u1 = 0,
-        /// GU [9:9]
-        /// GU
-        GU: u1 = 0,
-        /// unused [10:30]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u7 = 0,
-        /// WFFRPR [31:31]
-        /// WFFRPR
-        WFFRPR: u1 = 0,
-    };
-    /// Ethernet MAC PMT control and status
-    pub const MACPMTCSR = Register(MACPMTCSR_val).init(base_address + 0x2c);
-
-    /// MACDBGR
-    const MACDBGR_val = packed struct {
-        /// CR [0:0]
-        /// CR
-        CR: u1 = 0,
-        /// CSR [1:1]
-        /// CSR
-        CSR: u1 = 0,
-        /// ROR [2:2]
-        /// ROR
-        ROR: u1 = 0,
-        /// MCF [3:3]
-        /// MCF
-        MCF: u1 = 0,
-        /// MCP [4:4]
-        /// MCP
-        MCP: u1 = 0,
-        /// MCFHP [5:5]
-        /// MCFHP
-        MCFHP: u1 = 0,
-        /// unused [6:31]
-        _unused6: u2 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MAC debug register
-    pub const MACDBGR = Register(MACDBGR_val).init(base_address + 0x34);
-
-    /// MACSR
-    const MACSR_val = packed struct {
-        /// unused [0:2]
-        _unused0: u3 = 0,
-        /// PMTS [3:3]
-        /// PMTS
-        PMTS: u1 = 0,
-        /// MMCS [4:4]
-        /// MMCS
-        MMCS: u1 = 0,
-        /// MMCRS [5:5]
-        /// MMCRS
-        MMCRS: u1 = 0,
-        /// MMCTS [6:6]
-        /// MMCTS
-        MMCTS: u1 = 0,
-        /// unused [7:8]
-        _unused7: u1 = 0,
-        _unused8: u1 = 0,
-        /// TSTS [9:9]
-        /// TSTS
-        TSTS: u1 = 0,
-        /// unused [10:31]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MAC interrupt status
-    pub const MACSR = Register(MACSR_val).init(base_address + 0x38);
-
-    /// MACIMR
-    const MACIMR_val = packed struct {
-        /// unused [0:2]
-        _unused0: u3 = 0,
-        /// PMTIM [3:3]
-        /// PMTIM
-        PMTIM: u1 = 0,
-        /// unused [4:8]
-        _unused4: u4 = 0,
-        _unused8: u1 = 0,
-        /// TSTIM [9:9]
-        /// TSTIM
-        TSTIM: u1 = 0,
-        /// unused [10:31]
-        _unused10: u6 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MAC interrupt mask
-    pub const MACIMR = Register(MACIMR_val).init(base_address + 0x3c);
-
-    /// MACA0HR
-    const MACA0HR_val = packed struct {
-        /// MACA0H [0:15]
-        /// MAC address0 high
-        MACA0H: u16 = 65535,
-        /// unused [16:30]
-        _unused16: u8 = 16,
-        _unused24: u7 = 0,
-        /// MO [31:31]
-        /// Always 1
-        MO: u1 = 0,
-    };
-    /// Ethernet MAC address 0 high
-    pub const MACA0HR = Register(MACA0HR_val).init(base_address + 0x40);
-
-    /// MACA0LR
-    const MACA0LR_val = packed struct {
-        /// MACA0L [0:31]
-        /// 0
-        MACA0L: u32 = 4294967295,
-    };
-    /// Ethernet MAC address 0 low
-    pub const MACA0LR = Register(MACA0LR_val).init(base_address + 0x44);
-
-    /// MACA1HR
-    const MACA1HR_val = packed struct {
-        /// MACA1H [0:15]
-        /// MACA1H
-        MACA1H: u16 = 65535,
-        /// unused [16:23]
-        _unused16: u8 = 0,
-        /// MBC [24:29]
-        /// MBC
-        MBC: u6 = 0,
-        /// SA [30:30]
-        /// SA
-        SA: u1 = 0,
-        /// AE [31:31]
-        /// AE
-        AE: u1 = 0,
-    };
-    /// Ethernet MAC address 1 high
-    pub const MACA1HR = Register(MACA1HR_val).init(base_address + 0x48);
-
-    /// MACA1LR
-    const MACA1LR_val = packed struct {
-        /// MACA1LR [0:31]
-        /// MACA1LR
-        MACA1LR: u32 = 4294967295,
-    };
-    /// Ethernet MAC address1 low
-    pub const MACA1LR = Register(MACA1LR_val).init(base_address + 0x4c);
-
-    /// MACA2HR
-    const MACA2HR_val = packed struct {
-        /// MAC2AH [0:15]
-        /// MAC2AH
-        MAC2AH: u16 = 65535,
-        /// unused [16:23]
-        _unused16: u8 = 0,
-        /// MBC [24:29]
-        /// MBC
-        MBC: u6 = 0,
-        /// SA [30:30]
-        /// SA
-        SA: u1 = 0,
-        /// AE [31:31]
-        /// AE
-        AE: u1 = 0,
-    };
-    /// Ethernet MAC address 2 high
-    pub const MACA2HR = Register(MACA2HR_val).init(base_address + 0x50);
-
-    /// MACA2LR
-    const MACA2LR_val = packed struct {
-        /// MACA2L [0:30]
-        /// MACA2L
-        MACA2L: u31 = 2147483647,
-        /// unused [31:31]
-        _unused31: u1 = 1,
-    };
-    /// Ethernet MAC address 2 low
-    pub const MACA2LR = Register(MACA2LR_val).init(base_address + 0x54);
-
-    /// MACA3HR
-    const MACA3HR_val = packed struct {
-        /// MACA3H [0:15]
-        /// MACA3H
-        MACA3H: u16 = 65535,
-        /// unused [16:23]
-        _unused16: u8 = 0,
-        /// MBC [24:29]
-        /// MBC
-        MBC: u6 = 0,
-        /// SA [30:30]
-        /// SA
-        SA: u1 = 0,
-        /// AE [31:31]
-        /// AE
-        AE: u1 = 0,
-    };
-    /// Ethernet MAC address 3 high
-    pub const MACA3HR = Register(MACA3HR_val).init(base_address + 0x58);
-
-    /// MACA3LR
-    const MACA3LR_val = packed struct {
-        /// MBCA3L [0:31]
-        /// MBCA3L
-        MBCA3L: u32 = 4294967295,
-    };
-    /// Ethernet MAC address 3 low
-    pub const MACA3LR = Register(MACA3LR_val).init(base_address + 0x5c);
-};
-
-/// Ethernet: MAC management counters
-pub const Ethernet_MMC = struct {
-    const base_address = 0x40028100;
-    /// MMCCR
-    const MMCCR_val = packed struct {
-        /// CR [0:0]
-        /// CR
-        CR: u1 = 0,
-        /// CSR [1:1]
-        /// CSR
-        CSR: u1 = 0,
-        /// ROR [2:2]
-        /// ROR
-        ROR: u1 = 0,
-        /// MCF [3:3]
-        /// MCF
-        MCF: u1 = 0,
-        /// MCP [4:4]
-        /// MCP
-        MCP: u1 = 0,
-        /// MCFHP [5:5]
-        /// MCFHP
-        MCFHP: u1 = 0,
-        /// unused [6:31]
-        _unused6: u2 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MMC control register
-    pub const MMCCR = Register(MMCCR_val).init(base_address + 0x0);
-
-    /// MMCRIR
-    const MMCRIR_val = packed struct {
-        /// unused [0:4]
-        _unused0: u5 = 0,
-        /// RFCES [5:5]
-        /// RFCES
-        RFCES: u1 = 0,
-        /// RFAES [6:6]
-        /// RFAES
-        RFAES: u1 = 0,
-        /// unused [7:16]
-        _unused7: u1 = 0,
-        _unused8: u8 = 0,
-        _unused16: u1 = 0,
-        /// RGUFS [17:17]
-        /// RGUFS
-        RGUFS: u1 = 0,
-        /// unused [18:31]
-        _unused18: u6 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MMC receive interrupt
-    pub const MMCRIR = Register(MMCRIR_val).init(base_address + 0x4);
-
-    /// MMCTIR
-    const MMCTIR_val = packed struct {
-        /// unused [0:13]
-        _unused0: u8 = 0,
-        _unused8: u6 = 0,
-        /// TGFSCS [14:14]
-        /// TGFSCS
-        TGFSCS: u1 = 0,
-        /// TGFMSCS [15:15]
-        /// TGFMSCS
-        TGFMSCS: u1 = 0,
-        /// unused [16:20]
-        _unused16: u5 = 0,
-        /// TGFS [21:21]
-        /// TGFS
-        TGFS: u1 = 0,
-        /// unused [22:31]
-        _unused22: u2 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MMC transmit interrupt
-    pub const MMCTIR = Register(MMCTIR_val).init(base_address + 0x8);
-
-    /// MMCRIMR
-    const MMCRIMR_val = packed struct {
-        /// unused [0:4]
-        _unused0: u5 = 0,
-        /// RFCEM [5:5]
-        /// RFCEM
-        RFCEM: u1 = 0,
-        /// RFAEM [6:6]
-        /// RFAEM
-        RFAEM: u1 = 0,
-        /// unused [7:16]
-        _unused7: u1 = 0,
-        _unused8: u8 = 0,
-        _unused16: u1 = 0,
-        /// RGUFM [17:17]
-        /// RGUFM
-        RGUFM: u1 = 0,
-        /// unused [18:31]
-        _unused18: u6 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MMC receive interrupt mask
-    pub const MMCRIMR = Register(MMCRIMR_val).init(base_address + 0xc);
-
-    /// MMCTIMR
-    const MMCTIMR_val = packed struct {
-        /// unused [0:13]
-        _unused0: u8 = 0,
-        _unused8: u6 = 0,
-        /// TGFSCM [14:14]
-        /// TGFSCM
-        TGFSCM: u1 = 0,
-        /// TGFMSCM [15:15]
-        /// TGFMSCM
-        TGFMSCM: u1 = 0,
-        /// TGFM [16:16]
-        /// TGFM
-        TGFM: u1 = 0,
-        /// unused [17:31]
-        _unused17: u7 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet MMC transmit interrupt mask
-    pub const MMCTIMR = Register(MMCTIMR_val).init(base_address + 0x10);
-
-    /// MMCTGFSCCR
-    const MMCTGFSCCR_val = packed struct {
-        /// TGFSCC [0:31]
-        /// TGFSCC
-        TGFSCC: u32 = 0,
-    };
-    /// Ethernet MMC transmitted good frames after a
-    pub const MMCTGFSCCR = Register(MMCTGFSCCR_val).init(base_address + 0x4c);
-
-    /// MMCTGFMSCCR
-    const MMCTGFMSCCR_val = packed struct {
-        /// TGFMSCC [0:31]
-        /// TGFMSCC
-        TGFMSCC: u32 = 0,
-    };
-    /// Ethernet MMC transmitted good frames after
-    pub const MMCTGFMSCCR = Register(MMCTGFMSCCR_val).init(base_address + 0x50);
-
-    /// MMCTGFCR
-    const MMCTGFCR_val = packed struct {
-        /// TGFC [0:31]
-        /// HTL
-        TGFC: u32 = 0,
-    };
-    /// Ethernet MMC transmitted good frames counter
-    pub const MMCTGFCR = Register(MMCTGFCR_val).init(base_address + 0x68);
-
-    /// MMCRFCECR
-    const MMCRFCECR_val = packed struct {
-        /// RFCFC [0:31]
-        /// RFCFC
-        RFCFC: u32 = 0,
-    };
-    /// Ethernet MMC received frames with CRC error
-    pub const MMCRFCECR = Register(MMCRFCECR_val).init(base_address + 0x94);
-
-    /// MMCRFAECR
-    const MMCRFAECR_val = packed struct {
-        /// RFAEC [0:31]
-        /// RFAEC
-        RFAEC: u32 = 0,
-    };
-    /// Ethernet MMC received frames with alignment
-    pub const MMCRFAECR = Register(MMCRFAECR_val).init(base_address + 0x98);
-
-    /// MMCRGUFCR
-    const MMCRGUFCR_val = packed struct {
-        /// RGUFC [0:31]
-        /// RGUFC
-        RGUFC: u32 = 0,
-    };
-    /// MMC received good unicast frames counter
-    pub const MMCRGUFCR = Register(MMCRGUFCR_val).init(base_address + 0xc4);
-};
-
-/// Ethernet: Precision time protocol
-pub const Ethernet_PTP = struct {
-    const base_address = 0x40028700;
-    /// PTPTSCR
-    const PTPTSCR_val = packed struct {
-        /// TSE [0:0]
-        /// TSE
-        TSE: u1 = 0,
-        /// TSFCU [1:1]
-        /// TSFCU
-        TSFCU: u1 = 0,
-        /// TSSTI [2:2]
-        /// TSSTI
-        TSSTI: u1 = 0,
-        /// TSSTU [3:3]
-        /// TSSTU
-        TSSTU: u1 = 0,
-        /// TSITE [4:4]
-        /// TSITE
-        TSITE: u1 = 0,
-        /// TTSARU [5:5]
-        /// TTSARU
-        TTSARU: u1 = 0,
-        /// unused [6:7]
-        _unused6: u2 = 0,
-        /// TSSARFE [8:8]
-        /// TSSARFE
-        TSSARFE: u1 = 0,
-        /// TSSSR [9:9]
-        /// TSSSR
-        TSSSR: u1 = 0,
-        /// TSPTPPSV2E [10:10]
-        /// TSPTPPSV2E
-        TSPTPPSV2E: u1 = 0,
-        /// TSSPTPOEFE [11:11]
-        /// TSSPTPOEFE
-        TSSPTPOEFE: u1 = 0,
-        /// TSSIPV6FE [12:12]
-        /// TSSIPV6FE
-        TSSIPV6FE: u1 = 0,
-        /// TSSIPV4FE [13:13]
-        /// TSSIPV4FE
-        TSSIPV4FE: u1 = 1,
-        /// TSSEME [14:14]
-        /// TSSEME
-        TSSEME: u1 = 0,
-        /// TSSMRME [15:15]
-        /// TSSMRME
-        TSSMRME: u1 = 0,
-        /// TSCNT [16:17]
-        /// TSCNT
-        TSCNT: u2 = 0,
-        /// TSPFFMAE [18:18]
-        /// TSPFFMAE
-        TSPFFMAE: u1 = 0,
-        /// unused [19:31]
-        _unused19: u5 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet PTP time stamp control
-    pub const PTPTSCR = Register(PTPTSCR_val).init(base_address + 0x0);
-
-    /// PTPSSIR
-    const PTPSSIR_val = packed struct {
-        /// STSSI [0:7]
-        /// STSSI
-        STSSI: u8 = 0,
-        /// unused [8:31]
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet PTP subsecond increment
-    pub const PTPSSIR = Register(PTPSSIR_val).init(base_address + 0x4);
-
-    /// PTPTSHR
-    const PTPTSHR_val = packed struct {
-        /// STS [0:31]
-        /// STS
-        STS: u32 = 0,
-    };
-    /// Ethernet PTP time stamp high
-    pub const PTPTSHR = Register(PTPTSHR_val).init(base_address + 0x8);
-
-    /// PTPTSLR
-    const PTPTSLR_val = packed struct {
-        /// STSS [0:30]
-        /// STSS
-        STSS: u31 = 0,
-        /// STPNS [31:31]
-        /// STPNS
-        STPNS: u1 = 0,
-    };
-    /// Ethernet PTP time stamp low
-    pub const PTPTSLR = Register(PTPTSLR_val).init(base_address + 0xc);
-
-    /// PTPTSHUR
-    const PTPTSHUR_val = packed struct {
-        /// TSUS [0:31]
-        /// TSUS
-        TSUS: u32 = 0,
-    };
-    /// Ethernet PTP time stamp high update
-    pub const PTPTSHUR = Register(PTPTSHUR_val).init(base_address + 0x10);
-
-    /// PTPTSLUR
-    const PTPTSLUR_val = packed struct {
-        /// TSUSS [0:30]
-        /// TSUSS
-        TSUSS: u31 = 0,
-        /// TSUPNS [31:31]
-        /// TSUPNS
-        TSUPNS: u1 = 0,
-    };
-    /// Ethernet PTP time stamp low update
-    pub const PTPTSLUR = Register(PTPTSLUR_val).init(base_address + 0x14);
-
-    /// PTPTSAR
-    const PTPTSAR_val = packed struct {
-        /// TSA [0:31]
-        /// TSA
-        TSA: u32 = 0,
-    };
-    /// Ethernet PTP time stamp addend
-    pub const PTPTSAR = Register(PTPTSAR_val).init(base_address + 0x18);
-
-    /// PTPTTHR
-    const PTPTTHR_val = packed struct {
-        /// TTSH [0:31]
-        /// 0
-        TTSH: u32 = 0,
-    };
-    /// Ethernet PTP target time high
-    pub const PTPTTHR = Register(PTPTTHR_val).init(base_address + 0x1c);
-
-    /// PTPTTLR
-    const PTPTTLR_val = packed struct {
-        /// TTSL [0:31]
-        /// TTSL
-        TTSL: u32 = 0,
-    };
-    /// Ethernet PTP target time low
-    pub const PTPTTLR = Register(PTPTTLR_val).init(base_address + 0x20);
-
-    /// PTPTSSR
-    const PTPTSSR_val = packed struct {
-        /// TSSO [0:0]
-        /// TSSO
-        TSSO: u1 = 0,
-        /// TSTTR [1:1]
-        /// TSTTR
-        TSTTR: u1 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet PTP time stamp status
-    pub const PTPTSSR = Register(PTPTSSR_val).init(base_address + 0x28);
-
-    /// PTPPPSCR
-    const PTPPPSCR_val = packed struct {
-        /// TSSO [0:0]
-        /// TSSO
-        TSSO: u1 = 0,
-        /// TSTTR [1:1]
-        /// TSTTR
-        TSTTR: u1 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet PTP PPS control
-    pub const PTPPPSCR = Register(PTPPPSCR_val).init(base_address + 0x2c);
-};
-
-/// Ethernet: DMA controller operation
-pub const Ethernet_DMA = struct {
-    const base_address = 0x40029000;
-    /// DMABMR
-    const DMABMR_val = packed struct {
-        /// SR [0:0]
-        /// SR
-        SR: u1 = 1,
-        /// DA [1:1]
-        /// DA
-        DA: u1 = 0,
-        /// DSL [2:6]
-        /// DSL
-        DSL: u5 = 0,
-        /// EDFE [7:7]
-        /// EDFE
-        EDFE: u1 = 0,
-        /// PBL [8:13]
-        /// PBL
-        PBL: u6 = 33,
-        /// RTPR [14:15]
-        /// RTPR
-        RTPR: u2 = 0,
-        /// FB [16:16]
-        /// FB
-        FB: u1 = 0,
-        /// RDP [17:22]
-        /// RDP
-        RDP: u6 = 0,
-        /// USP [23:23]
-        /// USP
-        USP: u1 = 0,
-        /// FPM [24:24]
-        /// FPM
-        FPM: u1 = 0,
-        /// AAB [25:25]
-        /// AAB
-        AAB: u1 = 0,
-        /// MB [26:26]
-        /// MB
-        MB: u1 = 0,
-        /// unused [27:31]
-        _unused27: u5 = 0,
-    };
-    /// Ethernet DMA bus mode register
-    pub const DMABMR = Register(DMABMR_val).init(base_address + 0x0);
-
-    /// DMATPDR
-    const DMATPDR_val = packed struct {
-        /// TPD [0:31]
-        /// TPD
-        TPD: u32 = 0,
-    };
-    /// Ethernet DMA transmit poll demand
-    pub const DMATPDR = Register(DMATPDR_val).init(base_address + 0x4);
-
-    /// DMARPDR
-    const DMARPDR_val = packed struct {
-        /// RPD [0:31]
-        /// RPD
-        RPD: u32 = 0,
-    };
-    /// EHERNET DMA receive poll demand
-    pub const DMARPDR = Register(DMARPDR_val).init(base_address + 0x8);
-
-    /// DMARDLAR
-    const DMARDLAR_val = packed struct {
-        /// SRL [0:31]
-        /// SRL
-        SRL: u32 = 0,
-    };
-    /// Ethernet DMA receive descriptor list address
-    pub const DMARDLAR = Register(DMARDLAR_val).init(base_address + 0xc);
-
-    /// DMATDLAR
-    const DMATDLAR_val = packed struct {
-        /// STL [0:31]
-        /// STL
-        STL: u32 = 0,
-    };
-    /// Ethernet DMA transmit descriptor list
-    pub const DMATDLAR = Register(DMATDLAR_val).init(base_address + 0x10);
-
-    /// DMASR
-    const DMASR_val = packed struct {
-        /// TS [0:0]
-        /// TS
-        TS: u1 = 0,
-        /// TPSS [1:1]
-        /// TPSS
-        TPSS: u1 = 0,
-        /// TBUS [2:2]
-        /// TBUS
-        TBUS: u1 = 0,
-        /// TJTS [3:3]
-        /// TJTS
-        TJTS: u1 = 0,
-        /// ROS [4:4]
-        /// ROS
-        ROS: u1 = 0,
-        /// TUS [5:5]
-        /// TUS
-        TUS: u1 = 0,
-        /// RS [6:6]
-        /// RS
-        RS: u1 = 0,
-        /// RBUS [7:7]
-        /// RBUS
-        RBUS: u1 = 0,
-        /// RPSS [8:8]
-        /// RPSS
-        RPSS: u1 = 0,
-        /// PWTS [9:9]
-        /// PWTS
-        PWTS: u1 = 0,
-        /// ETS [10:10]
-        /// ETS
-        ETS: u1 = 0,
-        /// unused [11:12]
-        _unused11: u2 = 0,
-        /// FBES [13:13]
-        /// FBES
-        FBES: u1 = 0,
-        /// ERS [14:14]
-        /// ERS
-        ERS: u1 = 0,
-        /// AIS [15:15]
-        /// AIS
-        AIS: u1 = 0,
-        /// NIS [16:16]
-        /// NIS
-        NIS: u1 = 0,
-        /// RPS [17:19]
-        /// RPS
-        RPS: u3 = 0,
-        /// TPS [20:22]
-        /// TPS
-        TPS: u3 = 0,
-        /// EBS [23:25]
-        /// EBS
-        EBS: u3 = 0,
-        /// unused [26:26]
-        _unused26: u1 = 0,
-        /// MMCS [27:27]
-        /// MMCS
-        MMCS: u1 = 0,
-        /// PMTS [28:28]
-        /// PMTS
-        PMTS: u1 = 0,
-        /// TSTS [29:29]
-        /// TSTS
-        TSTS: u1 = 0,
-        /// unused [30:31]
-        _unused30: u2 = 0,
-    };
-    /// Ethernet DMA status register
-    pub const DMASR = Register(DMASR_val).init(base_address + 0x14);
-
-    /// DMAOMR
-    const DMAOMR_val = packed struct {
-        /// unused [0:0]
-        _unused0: u1 = 0,
-        /// SR [1:1]
-        /// SR
-        SR: u1 = 0,
-        /// OSF [2:2]
-        /// OSF
-        OSF: u1 = 0,
-        /// RTC [3:4]
-        /// RTC
-        RTC: u2 = 0,
-        /// unused [5:5]
-        _unused5: u1 = 0,
-        /// FUGF [6:6]
-        /// FUGF
-        FUGF: u1 = 0,
-        /// FEF [7:7]
-        /// FEF
-        FEF: u1 = 0,
-        /// unused [8:12]
-        _unused8: u5 = 0,
-        /// ST [13:13]
-        /// ST
-        ST: u1 = 0,
-        /// TTC [14:16]
-        /// TTC
-        TTC: u3 = 0,
-        /// unused [17:19]
-        _unused17: u3 = 0,
-        /// FTF [20:20]
-        /// FTF
-        FTF: u1 = 0,
-        /// TSF [21:21]
-        /// TSF
-        TSF: u1 = 0,
-        /// unused [22:23]
-        _unused22: u2 = 0,
-        /// DFRF [24:24]
-        /// DFRF
-        DFRF: u1 = 0,
-        /// RSF [25:25]
-        /// RSF
-        RSF: u1 = 0,
-        /// DTCEFD [26:26]
-        /// DTCEFD
-        DTCEFD: u1 = 0,
-        /// unused [27:31]
-        _unused27: u5 = 0,
-    };
-    /// Ethernet DMA operation mode
-    pub const DMAOMR = Register(DMAOMR_val).init(base_address + 0x18);
-
-    /// DMAIER
-    const DMAIER_val = packed struct {
-        /// TIE [0:0]
-        /// TIE
-        TIE: u1 = 0,
-        /// TPSIE [1:1]
-        /// TPSIE
-        TPSIE: u1 = 0,
-        /// TBUIE [2:2]
-        /// TBUIE
-        TBUIE: u1 = 0,
-        /// TJTIE [3:3]
-        /// TJTIE
-        TJTIE: u1 = 0,
-        /// ROIE [4:4]
-        /// ROIE
-        ROIE: u1 = 0,
-        /// TUIE [5:5]
-        /// TUIE
-        TUIE: u1 = 0,
-        /// RIE [6:6]
-        /// RIE
-        RIE: u1 = 0,
-        /// RBUIE [7:7]
-        /// RBUIE
-        RBUIE: u1 = 0,
-        /// RPSIE [8:8]
-        /// RPSIE
-        RPSIE: u1 = 0,
-        /// RWTIE [9:9]
-        /// RWTIE
-        RWTIE: u1 = 0,
-        /// ETIE [10:10]
-        /// ETIE
-        ETIE: u1 = 0,
-        /// unused [11:12]
-        _unused11: u2 = 0,
-        /// FBEIE [13:13]
-        /// FBEIE
-        FBEIE: u1 = 0,
-        /// ERIE [14:14]
-        /// ERIE
-        ERIE: u1 = 0,
-        /// AISE [15:15]
-        /// AISE
-        AISE: u1 = 0,
-        /// NISE [16:16]
-        /// NISE
-        NISE: u1 = 0,
-        /// unused [17:31]
-        _unused17: u7 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet DMA interrupt enable
-    pub const DMAIER = Register(DMAIER_val).init(base_address + 0x1c);
-
-    /// DMAMFBOCR
-    const DMAMFBOCR_val = packed struct {
-        /// MFC [0:15]
-        /// MFC
-        MFC: u16 = 0,
-        /// OMFC [16:16]
-        /// OMFC
-        OMFC: u1 = 0,
-        /// MFA [17:27]
-        /// MFA
-        MFA: u11 = 0,
-        /// OFOC [28:28]
-        /// OFOC
-        OFOC: u1 = 0,
-        /// unused [29:31]
-        _unused29: u3 = 0,
-    };
-    /// Ethernet DMA missed frame and buffer
-    pub const DMAMFBOCR = Register(DMAMFBOCR_val).init(base_address + 0x20);
-
-    /// DMARSWTR
-    const DMARSWTR_val = packed struct {
-        /// RSWTC [0:7]
-        /// RSWTC
-        RSWTC: u8 = 0,
-        /// unused [8:31]
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Ethernet DMA receive status watchdog timer
-    pub const DMARSWTR = Register(DMARSWTR_val).init(base_address + 0x24);
-
-    /// DMACHTDR
-    const DMACHTDR_val = packed struct {
-        /// HTDAP [0:31]
-        /// HTDAP
-        HTDAP: u32 = 0,
-    };
-    /// Ethernet DMA current host transmit
-    pub const DMACHTDR = Register(DMACHTDR_val).init(base_address + 0x48);
-
-    /// DMACHRDR
-    const DMACHRDR_val = packed struct {
-        /// HRDAP [0:31]
-        /// HRDAP
-        HRDAP: u32 = 0,
-    };
-    /// Ethernet DMA current host receive descriptor
-    pub const DMACHRDR = Register(DMACHRDR_val).init(base_address + 0x4c);
-
-    /// DMACHTBAR
-    const DMACHTBAR_val = packed struct {
-        /// HTBAP [0:31]
-        /// HTBAP
-        HTBAP: u32 = 0,
-    };
-    /// Ethernet DMA current host transmit buffer
-    pub const DMACHTBAR = Register(DMACHTBAR_val).init(base_address + 0x50);
-
-    /// DMACHRBAR
-    const DMACHRBAR_val = packed struct {
-        /// HRBAP [0:31]
-        /// HRBAP
-        HRBAP: u32 = 0,
-    };
-    /// Ethernet DMA current host receive buffer
-    pub const DMACHRBAR = Register(DMACHRBAR_val).init(base_address + 0x54);
+    pub const ARR = MMIO(ARR_val).init(base_address + 0x2c);
 };
 
 /// Cryptographic processor
@@ -24824,7 +20479,7 @@ pub const CRC = struct {
         DR: u32 = 4294967295,
     };
     /// Data register
-    pub const DR = Register(DR_val).init(base_address + 0x0);
+    pub const DR = MMIO(DR_val).init(base_address + 0x0);
 
     /// IDR
     const IDR_val = packed struct {
@@ -24837,7 +20492,7 @@ pub const CRC = struct {
         _unused24: u8 = 0,
     };
     /// Independent Data register
-    pub const IDR = Register(IDR_val).init(base_address + 0x4);
+    pub const IDR = MMIO(IDR_val).init(base_address + 0x4);
 
     /// CR
     const CR_val = packed struct {
@@ -24851,7 +20506,7 @@ pub const CRC = struct {
         _unused24: u8 = 0,
     };
     /// Control register
-    pub const CR = Register(CR_val).init(base_address + 0x8);
+    pub const CR = MMIO(CR_val).init(base_address + 0x8);
 };
 
 /// USB on the go full speed
@@ -24898,7 +20553,7 @@ pub const OTG_FS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS control and status register
-    pub const FS_GOTGCTL = Register(FS_GOTGCTL_val).init(base_address + 0x0);
+    pub const FS_GOTGCTL = MMIO(FS_GOTGCTL_val).init(base_address + 0x0);
 
     /// FS_GOTGINT
     const FS_GOTGINT_val = packed struct {
@@ -24932,7 +20587,7 @@ pub const OTG_FS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS interrupt register
-    pub const FS_GOTGINT = Register(FS_GOTGINT_val).init(base_address + 0x4);
+    pub const FS_GOTGINT = MMIO(FS_GOTGINT_val).init(base_address + 0x4);
 
     /// FS_GAHBCFG
     const FS_GAHBCFG_val = packed struct {
@@ -24953,7 +20608,7 @@ pub const OTG_FS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS AHB configuration register
-    pub const FS_GAHBCFG = Register(FS_GAHBCFG_val).init(base_address + 0x8);
+    pub const FS_GAHBCFG = MMIO(FS_GAHBCFG_val).init(base_address + 0x8);
 
     /// FS_GUSBCFG
     const FS_GUSBCFG_val = packed struct {
@@ -24991,7 +20646,7 @@ pub const OTG_FS_GLOBAL = struct {
         CTXPKT: u1 = 0,
     };
     /// OTG_FS USB configuration register
-    pub const FS_GUSBCFG = Register(FS_GUSBCFG_val).init(base_address + 0xc);
+    pub const FS_GUSBCFG = MMIO(FS_GUSBCFG_val).init(base_address + 0xc);
 
     /// FS_GRSTCTL
     const FS_GRSTCTL_val = packed struct {
@@ -25024,7 +20679,7 @@ pub const OTG_FS_GLOBAL = struct {
         AHBIDL: u1 = 0,
     };
     /// OTG_FS reset register
-    pub const FS_GRSTCTL = Register(FS_GRSTCTL_val).init(base_address + 0x10);
+    pub const FS_GRSTCTL = MMIO(FS_GRSTCTL_val).init(base_address + 0x10);
 
     /// FS_GINTSTS
     const FS_GINTSTS_val = packed struct {
@@ -25113,7 +20768,7 @@ pub const OTG_FS_GLOBAL = struct {
         WKUPINT: u1 = 0,
     };
     /// OTG_FS core interrupt register
-    pub const FS_GINTSTS = Register(FS_GINTSTS_val).init(base_address + 0x14);
+    pub const FS_GINTSTS = MMIO(FS_GINTSTS_val).init(base_address + 0x14);
 
     /// FS_GINTMSK
     const FS_GINTMSK_val = packed struct {
@@ -25204,7 +20859,7 @@ pub const OTG_FS_GLOBAL = struct {
         WUIM: u1 = 0,
     };
     /// OTG_FS interrupt mask register
-    pub const FS_GINTMSK = Register(FS_GINTMSK_val).init(base_address + 0x18);
+    pub const FS_GINTMSK = MMIO(FS_GINTMSK_val).init(base_address + 0x18);
 
     /// FS_GRXSTSR_Device
     const FS_GRXSTSR_Device_val = packed struct {
@@ -25227,7 +20882,7 @@ pub const OTG_FS_GLOBAL = struct {
         _unused25: u7 = 0,
     };
     /// OTG_FS Receive status debug read(Device
-    pub const FS_GRXSTSR_Device = Register(FS_GRXSTSR_Device_val).init(base_address + 0x1c);
+    pub const FS_GRXSTSR_Device = MMIO(FS_GRXSTSR_Device_val).init(base_address + 0x1c);
 
     /// FS_GRXSTSR_Host
     const FS_GRXSTSR_Host_val = packed struct {
@@ -25250,7 +20905,7 @@ pub const OTG_FS_GLOBAL = struct {
         _unused25: u7 = 0,
     };
     /// OTG_FS Receive status debug read(Host
-    pub const FS_GRXSTSR_Host = Register(FS_GRXSTSR_Host_val).init(base_address + 0x1c);
+    pub const FS_GRXSTSR_Host = MMIO(FS_GRXSTSR_Host_val).init(base_address + 0x1c);
 
     /// FS_GRXFSIZ
     const FS_GRXFSIZ_val = packed struct {
@@ -25262,7 +20917,7 @@ pub const OTG_FS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS Receive FIFO size register
-    pub const FS_GRXFSIZ = Register(FS_GRXFSIZ_val).init(base_address + 0x24);
+    pub const FS_GRXFSIZ = MMIO(FS_GRXFSIZ_val).init(base_address + 0x24);
 
     /// FS_GNPTXFSIZ_Device
     const FS_GNPTXFSIZ_Device_val = packed struct {
@@ -25274,7 +20929,7 @@ pub const OTG_FS_GLOBAL = struct {
         TX0FD: u16 = 0,
     };
     /// OTG_FS non-periodic transmit FIFO size
-    pub const FS_GNPTXFSIZ_Device = Register(FS_GNPTXFSIZ_Device_val).init(base_address + 0x28);
+    pub const FS_GNPTXFSIZ_Device = MMIO(FS_GNPTXFSIZ_Device_val).init(base_address + 0x28);
 
     /// FS_GNPTXFSIZ_Host
     const FS_GNPTXFSIZ_Host_val = packed struct {
@@ -25286,7 +20941,7 @@ pub const OTG_FS_GLOBAL = struct {
         NPTXFD: u16 = 0,
     };
     /// OTG_FS non-periodic transmit FIFO size
-    pub const FS_GNPTXFSIZ_Host = Register(FS_GNPTXFSIZ_Host_val).init(base_address + 0x28);
+    pub const FS_GNPTXFSIZ_Host = MMIO(FS_GNPTXFSIZ_Host_val).init(base_address + 0x28);
 
     /// FS_GNPTXSTS
     const FS_GNPTXSTS_val = packed struct {
@@ -25303,7 +20958,7 @@ pub const OTG_FS_GLOBAL = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS non-periodic transmit FIFO/queue
-    pub const FS_GNPTXSTS = Register(FS_GNPTXSTS_val).init(base_address + 0x2c);
+    pub const FS_GNPTXSTS = MMIO(FS_GNPTXSTS_val).init(base_address + 0x2c);
 
     /// FS_GCCFG
     const FS_GCCFG_val = packed struct {
@@ -25329,7 +20984,7 @@ pub const OTG_FS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS general core configuration register
-    pub const FS_GCCFG = Register(FS_GCCFG_val).init(base_address + 0x38);
+    pub const FS_GCCFG = MMIO(FS_GCCFG_val).init(base_address + 0x38);
 
     /// FS_CID
     const FS_CID_val = packed struct {
@@ -25338,7 +20993,7 @@ pub const OTG_FS_GLOBAL = struct {
         PRODUCT_ID: u32 = 4096,
     };
     /// core ID register
-    pub const FS_CID = Register(FS_CID_val).init(base_address + 0x3c);
+    pub const FS_CID = MMIO(FS_CID_val).init(base_address + 0x3c);
 
     /// FS_HPTXFSIZ
     const FS_HPTXFSIZ_val = packed struct {
@@ -25350,7 +21005,7 @@ pub const OTG_FS_GLOBAL = struct {
         PTXFSIZ: u16 = 512,
     };
     /// OTG_FS Host periodic transmit FIFO size
-    pub const FS_HPTXFSIZ = Register(FS_HPTXFSIZ_val).init(base_address + 0x100);
+    pub const FS_HPTXFSIZ = MMIO(FS_HPTXFSIZ_val).init(base_address + 0x100);
 
     /// FS_DIEPTXF1
     const FS_DIEPTXF1_val = packed struct {
@@ -25362,7 +21017,7 @@ pub const OTG_FS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_FS device IN endpoint transmit FIFO size
-    pub const FS_DIEPTXF1 = Register(FS_DIEPTXF1_val).init(base_address + 0x104);
+    pub const FS_DIEPTXF1 = MMIO(FS_DIEPTXF1_val).init(base_address + 0x104);
 
     /// FS_DIEPTXF2
     const FS_DIEPTXF2_val = packed struct {
@@ -25374,7 +21029,7 @@ pub const OTG_FS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_FS device IN endpoint transmit FIFO size
-    pub const FS_DIEPTXF2 = Register(FS_DIEPTXF2_val).init(base_address + 0x108);
+    pub const FS_DIEPTXF2 = MMIO(FS_DIEPTXF2_val).init(base_address + 0x108);
 
     /// FS_DIEPTXF3
     const FS_DIEPTXF3_val = packed struct {
@@ -25386,7 +21041,7 @@ pub const OTG_FS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_FS device IN endpoint transmit FIFO size
-    pub const FS_DIEPTXF3 = Register(FS_DIEPTXF3_val).init(base_address + 0x10c);
+    pub const FS_DIEPTXF3 = MMIO(FS_DIEPTXF3_val).init(base_address + 0x10c);
 };
 
 /// USB on the go full speed
@@ -25407,7 +21062,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host configuration register
-    pub const FS_HCFG = Register(FS_HCFG_val).init(base_address + 0x0);
+    pub const FS_HCFG = MMIO(FS_HCFG_val).init(base_address + 0x0);
 
     /// HFIR
     const HFIR_val = packed struct {
@@ -25419,7 +21074,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS Host frame interval
-    pub const HFIR = Register(HFIR_val).init(base_address + 0x4);
+    pub const HFIR = MMIO(HFIR_val).init(base_address + 0x4);
 
     /// FS_HFNUM
     const FS_HFNUM_val = packed struct {
@@ -25431,7 +21086,7 @@ pub const OTG_FS_HOST = struct {
         FTREM: u16 = 0,
     };
     /// OTG_FS host frame number/frame time
-    pub const FS_HFNUM = Register(FS_HFNUM_val).init(base_address + 0x8);
+    pub const FS_HFNUM = MMIO(FS_HFNUM_val).init(base_address + 0x8);
 
     /// FS_HPTXSTS
     const FS_HPTXSTS_val = packed struct {
@@ -25446,7 +21101,7 @@ pub const OTG_FS_HOST = struct {
         PTXQTOP: u8 = 0,
     };
     /// OTG_FS_Host periodic transmit FIFO/queue
-    pub const FS_HPTXSTS = Register(FS_HPTXSTS_val).init(base_address + 0x10);
+    pub const FS_HPTXSTS = MMIO(FS_HPTXSTS_val).init(base_address + 0x10);
 
     /// HAINT
     const HAINT_val = packed struct {
@@ -25458,7 +21113,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS Host all channels interrupt
-    pub const HAINT = Register(HAINT_val).init(base_address + 0x14);
+    pub const HAINT = MMIO(HAINT_val).init(base_address + 0x14);
 
     /// HAINTMSK
     const HAINTMSK_val = packed struct {
@@ -25470,7 +21125,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host all channels interrupt mask
-    pub const HAINTMSK = Register(HAINTMSK_val).init(base_address + 0x18);
+    pub const HAINTMSK = MMIO(HAINTMSK_val).init(base_address + 0x18);
 
     /// FS_HPRT
     const FS_HPRT_val = packed struct {
@@ -25520,7 +21175,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host port control and status register
-    pub const FS_HPRT = Register(FS_HPRT_val).init(base_address + 0x40);
+    pub const FS_HPRT = MMIO(FS_HPRT_val).init(base_address + 0x40);
 
     /// FS_HCCHAR0
     const FS_HCCHAR0_val = packed struct {
@@ -25558,7 +21213,7 @@ pub const OTG_FS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_FS host channel-0 characteristics
-    pub const FS_HCCHAR0 = Register(FS_HCCHAR0_val).init(base_address + 0x100);
+    pub const FS_HCCHAR0 = MMIO(FS_HCCHAR0_val).init(base_address + 0x100);
 
     /// FS_HCCHAR1
     const FS_HCCHAR1_val = packed struct {
@@ -25596,7 +21251,7 @@ pub const OTG_FS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_FS host channel-1 characteristics
-    pub const FS_HCCHAR1 = Register(FS_HCCHAR1_val).init(base_address + 0x120);
+    pub const FS_HCCHAR1 = MMIO(FS_HCCHAR1_val).init(base_address + 0x120);
 
     /// FS_HCCHAR2
     const FS_HCCHAR2_val = packed struct {
@@ -25634,7 +21289,7 @@ pub const OTG_FS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_FS host channel-2 characteristics
-    pub const FS_HCCHAR2 = Register(FS_HCCHAR2_val).init(base_address + 0x140);
+    pub const FS_HCCHAR2 = MMIO(FS_HCCHAR2_val).init(base_address + 0x140);
 
     /// FS_HCCHAR3
     const FS_HCCHAR3_val = packed struct {
@@ -25672,7 +21327,7 @@ pub const OTG_FS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_FS host channel-3 characteristics
-    pub const FS_HCCHAR3 = Register(FS_HCCHAR3_val).init(base_address + 0x160);
+    pub const FS_HCCHAR3 = MMIO(FS_HCCHAR3_val).init(base_address + 0x160);
 
     /// FS_HCCHAR4
     const FS_HCCHAR4_val = packed struct {
@@ -25710,7 +21365,7 @@ pub const OTG_FS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_FS host channel-4 characteristics
-    pub const FS_HCCHAR4 = Register(FS_HCCHAR4_val).init(base_address + 0x180);
+    pub const FS_HCCHAR4 = MMIO(FS_HCCHAR4_val).init(base_address + 0x180);
 
     /// FS_HCCHAR5
     const FS_HCCHAR5_val = packed struct {
@@ -25748,7 +21403,7 @@ pub const OTG_FS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_FS host channel-5 characteristics
-    pub const FS_HCCHAR5 = Register(FS_HCCHAR5_val).init(base_address + 0x1a0);
+    pub const FS_HCCHAR5 = MMIO(FS_HCCHAR5_val).init(base_address + 0x1a0);
 
     /// FS_HCCHAR6
     const FS_HCCHAR6_val = packed struct {
@@ -25786,7 +21441,7 @@ pub const OTG_FS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_FS host channel-6 characteristics
-    pub const FS_HCCHAR6 = Register(FS_HCCHAR6_val).init(base_address + 0x1c0);
+    pub const FS_HCCHAR6 = MMIO(FS_HCCHAR6_val).init(base_address + 0x1c0);
 
     /// FS_HCCHAR7
     const FS_HCCHAR7_val = packed struct {
@@ -25824,7 +21479,7 @@ pub const OTG_FS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_FS host channel-7 characteristics
-    pub const FS_HCCHAR7 = Register(FS_HCCHAR7_val).init(base_address + 0x1e0);
+    pub const FS_HCCHAR7 = MMIO(FS_HCCHAR7_val).init(base_address + 0x1e0);
 
     /// FS_HCINT0
     const FS_HCINT0_val = packed struct {
@@ -25865,7 +21520,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-0 interrupt register
-    pub const FS_HCINT0 = Register(FS_HCINT0_val).init(base_address + 0x108);
+    pub const FS_HCINT0 = MMIO(FS_HCINT0_val).init(base_address + 0x108);
 
     /// FS_HCINT1
     const FS_HCINT1_val = packed struct {
@@ -25906,7 +21561,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-1 interrupt register
-    pub const FS_HCINT1 = Register(FS_HCINT1_val).init(base_address + 0x128);
+    pub const FS_HCINT1 = MMIO(FS_HCINT1_val).init(base_address + 0x128);
 
     /// FS_HCINT2
     const FS_HCINT2_val = packed struct {
@@ -25947,7 +21602,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-2 interrupt register
-    pub const FS_HCINT2 = Register(FS_HCINT2_val).init(base_address + 0x148);
+    pub const FS_HCINT2 = MMIO(FS_HCINT2_val).init(base_address + 0x148);
 
     /// FS_HCINT3
     const FS_HCINT3_val = packed struct {
@@ -25988,7 +21643,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-3 interrupt register
-    pub const FS_HCINT3 = Register(FS_HCINT3_val).init(base_address + 0x168);
+    pub const FS_HCINT3 = MMIO(FS_HCINT3_val).init(base_address + 0x168);
 
     /// FS_HCINT4
     const FS_HCINT4_val = packed struct {
@@ -26029,7 +21684,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-4 interrupt register
-    pub const FS_HCINT4 = Register(FS_HCINT4_val).init(base_address + 0x188);
+    pub const FS_HCINT4 = MMIO(FS_HCINT4_val).init(base_address + 0x188);
 
     /// FS_HCINT5
     const FS_HCINT5_val = packed struct {
@@ -26070,7 +21725,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-5 interrupt register
-    pub const FS_HCINT5 = Register(FS_HCINT5_val).init(base_address + 0x1a8);
+    pub const FS_HCINT5 = MMIO(FS_HCINT5_val).init(base_address + 0x1a8);
 
     /// FS_HCINT6
     const FS_HCINT6_val = packed struct {
@@ -26111,7 +21766,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-6 interrupt register
-    pub const FS_HCINT6 = Register(FS_HCINT6_val).init(base_address + 0x1c8);
+    pub const FS_HCINT6 = MMIO(FS_HCINT6_val).init(base_address + 0x1c8);
 
     /// FS_HCINT7
     const FS_HCINT7_val = packed struct {
@@ -26152,7 +21807,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-7 interrupt register
-    pub const FS_HCINT7 = Register(FS_HCINT7_val).init(base_address + 0x1e8);
+    pub const FS_HCINT7 = MMIO(FS_HCINT7_val).init(base_address + 0x1e8);
 
     /// FS_HCINTMSK0
     const FS_HCINTMSK0_val = packed struct {
@@ -26194,7 +21849,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-0 mask register
-    pub const FS_HCINTMSK0 = Register(FS_HCINTMSK0_val).init(base_address + 0x10c);
+    pub const FS_HCINTMSK0 = MMIO(FS_HCINTMSK0_val).init(base_address + 0x10c);
 
     /// FS_HCINTMSK1
     const FS_HCINTMSK1_val = packed struct {
@@ -26236,7 +21891,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-1 mask register
-    pub const FS_HCINTMSK1 = Register(FS_HCINTMSK1_val).init(base_address + 0x12c);
+    pub const FS_HCINTMSK1 = MMIO(FS_HCINTMSK1_val).init(base_address + 0x12c);
 
     /// FS_HCINTMSK2
     const FS_HCINTMSK2_val = packed struct {
@@ -26278,7 +21933,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-2 mask register
-    pub const FS_HCINTMSK2 = Register(FS_HCINTMSK2_val).init(base_address + 0x14c);
+    pub const FS_HCINTMSK2 = MMIO(FS_HCINTMSK2_val).init(base_address + 0x14c);
 
     /// FS_HCINTMSK3
     const FS_HCINTMSK3_val = packed struct {
@@ -26320,7 +21975,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-3 mask register
-    pub const FS_HCINTMSK3 = Register(FS_HCINTMSK3_val).init(base_address + 0x16c);
+    pub const FS_HCINTMSK3 = MMIO(FS_HCINTMSK3_val).init(base_address + 0x16c);
 
     /// FS_HCINTMSK4
     const FS_HCINTMSK4_val = packed struct {
@@ -26362,7 +22017,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-4 mask register
-    pub const FS_HCINTMSK4 = Register(FS_HCINTMSK4_val).init(base_address + 0x18c);
+    pub const FS_HCINTMSK4 = MMIO(FS_HCINTMSK4_val).init(base_address + 0x18c);
 
     /// FS_HCINTMSK5
     const FS_HCINTMSK5_val = packed struct {
@@ -26404,7 +22059,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-5 mask register
-    pub const FS_HCINTMSK5 = Register(FS_HCINTMSK5_val).init(base_address + 0x1ac);
+    pub const FS_HCINTMSK5 = MMIO(FS_HCINTMSK5_val).init(base_address + 0x1ac);
 
     /// FS_HCINTMSK6
     const FS_HCINTMSK6_val = packed struct {
@@ -26446,7 +22101,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-6 mask register
-    pub const FS_HCINTMSK6 = Register(FS_HCINTMSK6_val).init(base_address + 0x1cc);
+    pub const FS_HCINTMSK6 = MMIO(FS_HCINTMSK6_val).init(base_address + 0x1cc);
 
     /// FS_HCINTMSK7
     const FS_HCINTMSK7_val = packed struct {
@@ -26488,7 +22143,7 @@ pub const OTG_FS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS host channel-7 mask register
-    pub const FS_HCINTMSK7 = Register(FS_HCINTMSK7_val).init(base_address + 0x1ec);
+    pub const FS_HCINTMSK7 = MMIO(FS_HCINTMSK7_val).init(base_address + 0x1ec);
 
     /// FS_HCTSIZ0
     const FS_HCTSIZ0_val = packed struct {
@@ -26505,7 +22160,7 @@ pub const OTG_FS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS host channel-0 transfer size
-    pub const FS_HCTSIZ0 = Register(FS_HCTSIZ0_val).init(base_address + 0x110);
+    pub const FS_HCTSIZ0 = MMIO(FS_HCTSIZ0_val).init(base_address + 0x110);
 
     /// FS_HCTSIZ1
     const FS_HCTSIZ1_val = packed struct {
@@ -26522,7 +22177,7 @@ pub const OTG_FS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS host channel-1 transfer size
-    pub const FS_HCTSIZ1 = Register(FS_HCTSIZ1_val).init(base_address + 0x130);
+    pub const FS_HCTSIZ1 = MMIO(FS_HCTSIZ1_val).init(base_address + 0x130);
 
     /// FS_HCTSIZ2
     const FS_HCTSIZ2_val = packed struct {
@@ -26539,7 +22194,7 @@ pub const OTG_FS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS host channel-2 transfer size
-    pub const FS_HCTSIZ2 = Register(FS_HCTSIZ2_val).init(base_address + 0x150);
+    pub const FS_HCTSIZ2 = MMIO(FS_HCTSIZ2_val).init(base_address + 0x150);
 
     /// FS_HCTSIZ3
     const FS_HCTSIZ3_val = packed struct {
@@ -26556,7 +22211,7 @@ pub const OTG_FS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS host channel-3 transfer size
-    pub const FS_HCTSIZ3 = Register(FS_HCTSIZ3_val).init(base_address + 0x170);
+    pub const FS_HCTSIZ3 = MMIO(FS_HCTSIZ3_val).init(base_address + 0x170);
 
     /// FS_HCTSIZ4
     const FS_HCTSIZ4_val = packed struct {
@@ -26573,7 +22228,7 @@ pub const OTG_FS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS host channel-x transfer size
-    pub const FS_HCTSIZ4 = Register(FS_HCTSIZ4_val).init(base_address + 0x190);
+    pub const FS_HCTSIZ4 = MMIO(FS_HCTSIZ4_val).init(base_address + 0x190);
 
     /// FS_HCTSIZ5
     const FS_HCTSIZ5_val = packed struct {
@@ -26590,7 +22245,7 @@ pub const OTG_FS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS host channel-5 transfer size
-    pub const FS_HCTSIZ5 = Register(FS_HCTSIZ5_val).init(base_address + 0x1b0);
+    pub const FS_HCTSIZ5 = MMIO(FS_HCTSIZ5_val).init(base_address + 0x1b0);
 
     /// FS_HCTSIZ6
     const FS_HCTSIZ6_val = packed struct {
@@ -26607,7 +22262,7 @@ pub const OTG_FS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS host channel-6 transfer size
-    pub const FS_HCTSIZ6 = Register(FS_HCTSIZ6_val).init(base_address + 0x1d0);
+    pub const FS_HCTSIZ6 = MMIO(FS_HCTSIZ6_val).init(base_address + 0x1d0);
 
     /// FS_HCTSIZ7
     const FS_HCTSIZ7_val = packed struct {
@@ -26624,7 +22279,7 @@ pub const OTG_FS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_FS host channel-7 transfer size
-    pub const FS_HCTSIZ7 = Register(FS_HCTSIZ7_val).init(base_address + 0x1f0);
+    pub const FS_HCTSIZ7 = MMIO(FS_HCTSIZ7_val).init(base_address + 0x1f0);
 };
 
 /// USB on the go full speed
@@ -26652,7 +22307,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 2,
     };
     /// OTG_FS device configuration register
-    pub const FS_DCFG = Register(FS_DCFG_val).init(base_address + 0x0);
+    pub const FS_DCFG = MMIO(FS_DCFG_val).init(base_address + 0x0);
 
     /// FS_DCTL
     const FS_DCTL_val = packed struct {
@@ -26692,7 +22347,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device control register
-    pub const FS_DCTL = Register(FS_DCTL_val).init(base_address + 0x4);
+    pub const FS_DCTL = MMIO(FS_DCTL_val).init(base_address + 0x4);
 
     /// FS_DSTS
     const FS_DSTS_val = packed struct {
@@ -26715,7 +22370,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device status register
-    pub const FS_DSTS = Register(FS_DSTS_val).init(base_address + 0x8);
+    pub const FS_DSTS = MMIO(FS_DSTS_val).init(base_address + 0x8);
 
     /// FS_DIEPMSK
     const FS_DIEPMSK_val = packed struct {
@@ -26746,7 +22401,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device IN endpoint common interrupt
-    pub const FS_DIEPMSK = Register(FS_DIEPMSK_val).init(base_address + 0x10);
+    pub const FS_DIEPMSK = MMIO(FS_DIEPMSK_val).init(base_address + 0x10);
 
     /// FS_DOEPMSK
     const FS_DOEPMSK_val = packed struct {
@@ -26771,7 +22426,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device OUT endpoint common interrupt
-    pub const FS_DOEPMSK = Register(FS_DOEPMSK_val).init(base_address + 0x14);
+    pub const FS_DOEPMSK = MMIO(FS_DOEPMSK_val).init(base_address + 0x14);
 
     /// FS_DAINT
     const FS_DAINT_val = packed struct {
@@ -26783,7 +22438,7 @@ pub const OTG_FS_DEVICE = struct {
         OEPINT: u16 = 0,
     };
     /// OTG_FS device all endpoints interrupt
-    pub const FS_DAINT = Register(FS_DAINT_val).init(base_address + 0x18);
+    pub const FS_DAINT = MMIO(FS_DAINT_val).init(base_address + 0x18);
 
     /// FS_DAINTMSK
     const FS_DAINTMSK_val = packed struct {
@@ -26795,7 +22450,7 @@ pub const OTG_FS_DEVICE = struct {
         OEPINT: u16 = 0,
     };
     /// OTG_FS all endpoints interrupt mask register
-    pub const FS_DAINTMSK = Register(FS_DAINTMSK_val).init(base_address + 0x1c);
+    pub const FS_DAINTMSK = MMIO(FS_DAINTMSK_val).init(base_address + 0x1c);
 
     /// DVBUSDIS
     const DVBUSDIS_val = packed struct {
@@ -26807,7 +22462,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device VBUS discharge time
-    pub const DVBUSDIS = Register(DVBUSDIS_val).init(base_address + 0x28);
+    pub const DVBUSDIS = MMIO(DVBUSDIS_val).init(base_address + 0x28);
 
     /// DVBUSPULSE
     const DVBUSPULSE_val = packed struct {
@@ -26820,7 +22475,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device VBUS pulsing time
-    pub const DVBUSPULSE = Register(DVBUSPULSE_val).init(base_address + 0x2c);
+    pub const DVBUSPULSE = MMIO(DVBUSPULSE_val).init(base_address + 0x2c);
 
     /// DIEPEMPMSK
     const DIEPEMPMSK_val = packed struct {
@@ -26832,7 +22487,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device IN endpoint FIFO empty
-    pub const DIEPEMPMSK = Register(DIEPEMPMSK_val).init(base_address + 0x34);
+    pub const DIEPEMPMSK = MMIO(DIEPEMPMSK_val).init(base_address + 0x34);
 
     /// FS_DIEPCTL0
     const FS_DIEPCTL0_val = packed struct {
@@ -26877,7 +22532,7 @@ pub const OTG_FS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG_FS device control IN endpoint 0 control
-    pub const FS_DIEPCTL0 = Register(FS_DIEPCTL0_val).init(base_address + 0x100);
+    pub const FS_DIEPCTL0 = MMIO(FS_DIEPCTL0_val).init(base_address + 0x100);
 
     /// DIEPCTL1
     const DIEPCTL1_val = packed struct {
@@ -26926,7 +22581,7 @@ pub const OTG_FS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-1 control
-    pub const DIEPCTL1 = Register(DIEPCTL1_val).init(base_address + 0x120);
+    pub const DIEPCTL1 = MMIO(DIEPCTL1_val).init(base_address + 0x120);
 
     /// DIEPCTL2
     const DIEPCTL2_val = packed struct {
@@ -26975,7 +22630,7 @@ pub const OTG_FS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-2 control
-    pub const DIEPCTL2 = Register(DIEPCTL2_val).init(base_address + 0x140);
+    pub const DIEPCTL2 = MMIO(DIEPCTL2_val).init(base_address + 0x140);
 
     /// DIEPCTL3
     const DIEPCTL3_val = packed struct {
@@ -27024,7 +22679,7 @@ pub const OTG_FS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-3 control
-    pub const DIEPCTL3 = Register(DIEPCTL3_val).init(base_address + 0x160);
+    pub const DIEPCTL3 = MMIO(DIEPCTL3_val).init(base_address + 0x160);
 
     /// DOEPCTL0
     const DOEPCTL0_val = packed struct {
@@ -27070,7 +22725,7 @@ pub const OTG_FS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// device endpoint-0 control
-    pub const DOEPCTL0 = Register(DOEPCTL0_val).init(base_address + 0x300);
+    pub const DOEPCTL0 = MMIO(DOEPCTL0_val).init(base_address + 0x300);
 
     /// DOEPCTL1
     const DOEPCTL1_val = packed struct {
@@ -27120,7 +22775,7 @@ pub const OTG_FS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// device endpoint-1 control
-    pub const DOEPCTL1 = Register(DOEPCTL1_val).init(base_address + 0x320);
+    pub const DOEPCTL1 = MMIO(DOEPCTL1_val).init(base_address + 0x320);
 
     /// DOEPCTL2
     const DOEPCTL2_val = packed struct {
@@ -27170,7 +22825,7 @@ pub const OTG_FS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// device endpoint-2 control
-    pub const DOEPCTL2 = Register(DOEPCTL2_val).init(base_address + 0x340);
+    pub const DOEPCTL2 = MMIO(DOEPCTL2_val).init(base_address + 0x340);
 
     /// DOEPCTL3
     const DOEPCTL3_val = packed struct {
@@ -27220,7 +22875,7 @@ pub const OTG_FS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// device endpoint-3 control
-    pub const DOEPCTL3 = Register(DOEPCTL3_val).init(base_address + 0x360);
+    pub const DOEPCTL3 = MMIO(DOEPCTL3_val).init(base_address + 0x360);
 
     /// DIEPINT0
     const DIEPINT0_val = packed struct {
@@ -27252,7 +22907,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-x interrupt
-    pub const DIEPINT0 = Register(DIEPINT0_val).init(base_address + 0x108);
+    pub const DIEPINT0 = MMIO(DIEPINT0_val).init(base_address + 0x108);
 
     /// DIEPINT1
     const DIEPINT1_val = packed struct {
@@ -27284,7 +22939,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-1 interrupt
-    pub const DIEPINT1 = Register(DIEPINT1_val).init(base_address + 0x128);
+    pub const DIEPINT1 = MMIO(DIEPINT1_val).init(base_address + 0x128);
 
     /// DIEPINT2
     const DIEPINT2_val = packed struct {
@@ -27316,7 +22971,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-2 interrupt
-    pub const DIEPINT2 = Register(DIEPINT2_val).init(base_address + 0x148);
+    pub const DIEPINT2 = MMIO(DIEPINT2_val).init(base_address + 0x148);
 
     /// DIEPINT3
     const DIEPINT3_val = packed struct {
@@ -27348,7 +23003,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-3 interrupt
-    pub const DIEPINT3 = Register(DIEPINT3_val).init(base_address + 0x168);
+    pub const DIEPINT3 = MMIO(DIEPINT3_val).init(base_address + 0x168);
 
     /// DOEPINT0
     const DOEPINT0_val = packed struct {
@@ -27378,7 +23033,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-0 interrupt
-    pub const DOEPINT0 = Register(DOEPINT0_val).init(base_address + 0x308);
+    pub const DOEPINT0 = MMIO(DOEPINT0_val).init(base_address + 0x308);
 
     /// DOEPINT1
     const DOEPINT1_val = packed struct {
@@ -27408,7 +23063,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-1 interrupt
-    pub const DOEPINT1 = Register(DOEPINT1_val).init(base_address + 0x328);
+    pub const DOEPINT1 = MMIO(DOEPINT1_val).init(base_address + 0x328);
 
     /// DOEPINT2
     const DOEPINT2_val = packed struct {
@@ -27438,7 +23093,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-2 interrupt
-    pub const DOEPINT2 = Register(DOEPINT2_val).init(base_address + 0x348);
+    pub const DOEPINT2 = MMIO(DOEPINT2_val).init(base_address + 0x348);
 
     /// DOEPINT3
     const DOEPINT3_val = packed struct {
@@ -27468,7 +23123,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-3 interrupt
-    pub const DOEPINT3 = Register(DOEPINT3_val).init(base_address + 0x368);
+    pub const DOEPINT3 = MMIO(DOEPINT3_val).init(base_address + 0x368);
 
     /// DIEPTSIZ0
     const DIEPTSIZ0_val = packed struct {
@@ -27487,7 +23142,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// device endpoint-0 transfer size
-    pub const DIEPTSIZ0 = Register(DIEPTSIZ0_val).init(base_address + 0x110);
+    pub const DIEPTSIZ0 = MMIO(DIEPTSIZ0_val).init(base_address + 0x110);
 
     /// DOEPTSIZ0
     const DOEPTSIZ0_val = packed struct {
@@ -27511,7 +23166,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// device OUT endpoint-0 transfer size
-    pub const DOEPTSIZ0 = Register(DOEPTSIZ0_val).init(base_address + 0x310);
+    pub const DOEPTSIZ0 = MMIO(DOEPTSIZ0_val).init(base_address + 0x310);
 
     /// DIEPTSIZ1
     const DIEPTSIZ1_val = packed struct {
@@ -27528,7 +23183,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// device endpoint-1 transfer size
-    pub const DIEPTSIZ1 = Register(DIEPTSIZ1_val).init(base_address + 0x130);
+    pub const DIEPTSIZ1 = MMIO(DIEPTSIZ1_val).init(base_address + 0x130);
 
     /// DIEPTSIZ2
     const DIEPTSIZ2_val = packed struct {
@@ -27545,7 +23200,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// device endpoint-2 transfer size
-    pub const DIEPTSIZ2 = Register(DIEPTSIZ2_val).init(base_address + 0x150);
+    pub const DIEPTSIZ2 = MMIO(DIEPTSIZ2_val).init(base_address + 0x150);
 
     /// DIEPTSIZ3
     const DIEPTSIZ3_val = packed struct {
@@ -27562,7 +23217,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// device endpoint-3 transfer size
-    pub const DIEPTSIZ3 = Register(DIEPTSIZ3_val).init(base_address + 0x170);
+    pub const DIEPTSIZ3 = MMIO(DIEPTSIZ3_val).init(base_address + 0x170);
 
     /// DTXFSTS0
     const DTXFSTS0_val = packed struct {
@@ -27574,7 +23229,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device IN endpoint transmit FIFO
-    pub const DTXFSTS0 = Register(DTXFSTS0_val).init(base_address + 0x118);
+    pub const DTXFSTS0 = MMIO(DTXFSTS0_val).init(base_address + 0x118);
 
     /// DTXFSTS1
     const DTXFSTS1_val = packed struct {
@@ -27586,7 +23241,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device IN endpoint transmit FIFO
-    pub const DTXFSTS1 = Register(DTXFSTS1_val).init(base_address + 0x138);
+    pub const DTXFSTS1 = MMIO(DTXFSTS1_val).init(base_address + 0x138);
 
     /// DTXFSTS2
     const DTXFSTS2_val = packed struct {
@@ -27598,7 +23253,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device IN endpoint transmit FIFO
-    pub const DTXFSTS2 = Register(DTXFSTS2_val).init(base_address + 0x158);
+    pub const DTXFSTS2 = MMIO(DTXFSTS2_val).init(base_address + 0x158);
 
     /// DTXFSTS3
     const DTXFSTS3_val = packed struct {
@@ -27610,7 +23265,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS device IN endpoint transmit FIFO
-    pub const DTXFSTS3 = Register(DTXFSTS3_val).init(base_address + 0x178);
+    pub const DTXFSTS3 = MMIO(DTXFSTS3_val).init(base_address + 0x178);
 
     /// DOEPTSIZ1
     const DOEPTSIZ1_val = packed struct {
@@ -27627,7 +23282,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// device OUT endpoint-1 transfer size
-    pub const DOEPTSIZ1 = Register(DOEPTSIZ1_val).init(base_address + 0x330);
+    pub const DOEPTSIZ1 = MMIO(DOEPTSIZ1_val).init(base_address + 0x330);
 
     /// DOEPTSIZ2
     const DOEPTSIZ2_val = packed struct {
@@ -27644,7 +23299,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// device OUT endpoint-2 transfer size
-    pub const DOEPTSIZ2 = Register(DOEPTSIZ2_val).init(base_address + 0x350);
+    pub const DOEPTSIZ2 = MMIO(DOEPTSIZ2_val).init(base_address + 0x350);
 
     /// DOEPTSIZ3
     const DOEPTSIZ3_val = packed struct {
@@ -27661,7 +23316,7 @@ pub const OTG_FS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// device OUT endpoint-3 transfer size
-    pub const DOEPTSIZ3 = Register(DOEPTSIZ3_val).init(base_address + 0x370);
+    pub const DOEPTSIZ3 = MMIO(DOEPTSIZ3_val).init(base_address + 0x370);
 };
 
 /// USB on the go full speed
@@ -27687,7 +23342,7 @@ pub const OTG_FS_PWRCLK = struct {
         _unused24: u8 = 0,
     };
     /// OTG_FS power and clock gating control
-    pub const FS_PCGCCTL = Register(FS_PCGCCTL_val).init(base_address + 0x0);
+    pub const FS_PCGCCTL = MMIO(FS_PCGCCTL_val).init(base_address + 0x0);
 };
 
 /// Controller area network
@@ -27732,7 +23387,7 @@ pub const CAN1 = struct {
         _unused24: u8 = 0,
     };
     /// master control register
-    pub const MCR = Register(MCR_val).init(base_address + 0x0);
+    pub const MCR = MMIO(MCR_val).init(base_address + 0x0);
 
     /// MSR
     const MSR_val = packed struct {
@@ -27771,7 +23426,7 @@ pub const CAN1 = struct {
         _unused24: u8 = 0,
     };
     /// master status register
-    pub const MSR = Register(MSR_val).init(base_address + 0x4);
+    pub const MSR = MMIO(MSR_val).init(base_address + 0x4);
 
     /// TSR
     const TSR_val = packed struct {
@@ -27849,7 +23504,7 @@ pub const CAN1 = struct {
         LOW2: u1 = 0,
     };
     /// transmit status register
-    pub const TSR = Register(TSR_val).init(base_address + 0x8);
+    pub const TSR = MMIO(TSR_val).init(base_address + 0x8);
 
     /// RF0R
     const RF0R_val = packed struct {
@@ -27874,7 +23529,7 @@ pub const CAN1 = struct {
         _unused24: u8 = 0,
     };
     /// receive FIFO 0 register
-    pub const RF0R = Register(RF0R_val).init(base_address + 0xc);
+    pub const RF0R = MMIO(RF0R_val).init(base_address + 0xc);
 
     /// RF1R
     const RF1R_val = packed struct {
@@ -27899,7 +23554,7 @@ pub const CAN1 = struct {
         _unused24: u8 = 0,
     };
     /// receive FIFO 1 register
-    pub const RF1R = Register(RF1R_val).init(base_address + 0x10);
+    pub const RF1R = MMIO(RF1R_val).init(base_address + 0x10);
 
     /// IER
     const IER_val = packed struct {
@@ -27954,7 +23609,7 @@ pub const CAN1 = struct {
         _unused24: u8 = 0,
     };
     /// interrupt enable register
-    pub const IER = Register(IER_val).init(base_address + 0x14);
+    pub const IER = MMIO(IER_val).init(base_address + 0x14);
 
     /// ESR
     const ESR_val = packed struct {
@@ -27983,7 +23638,7 @@ pub const CAN1 = struct {
         REC: u8 = 0,
     };
     /// interrupt enable register
-    pub const ESR = Register(ESR_val).init(base_address + 0x18);
+    pub const ESR = MMIO(ESR_val).init(base_address + 0x18);
 
     /// BTR
     const BTR_val = packed struct {
@@ -28013,7 +23668,7 @@ pub const CAN1 = struct {
         SILM: u1 = 0,
     };
     /// bit timing register
-    pub const BTR = Register(BTR_val).init(base_address + 0x1c);
+    pub const BTR = MMIO(BTR_val).init(base_address + 0x1c);
 
     /// TI0R
     const TI0R_val = packed struct {
@@ -28034,7 +23689,7 @@ pub const CAN1 = struct {
         STID: u11 = 0,
     };
     /// TX mailbox identifier register
-    pub const TI0R = Register(TI0R_val).init(base_address + 0x180);
+    pub const TI0R = MMIO(TI0R_val).init(base_address + 0x180);
 
     /// TDT0R
     const TDT0R_val = packed struct {
@@ -28053,7 +23708,7 @@ pub const CAN1 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data length control and time stamp
-    pub const TDT0R = Register(TDT0R_val).init(base_address + 0x184);
+    pub const TDT0R = MMIO(TDT0R_val).init(base_address + 0x184);
 
     /// TDL0R
     const TDL0R_val = packed struct {
@@ -28071,7 +23726,7 @@ pub const CAN1 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data low register
-    pub const TDL0R = Register(TDL0R_val).init(base_address + 0x188);
+    pub const TDL0R = MMIO(TDL0R_val).init(base_address + 0x188);
 
     /// TDH0R
     const TDH0R_val = packed struct {
@@ -28089,7 +23744,7 @@ pub const CAN1 = struct {
         DATA7: u8 = 0,
     };
     /// mailbox data high register
-    pub const TDH0R = Register(TDH0R_val).init(base_address + 0x18c);
+    pub const TDH0R = MMIO(TDH0R_val).init(base_address + 0x18c);
 
     /// TI1R
     const TI1R_val = packed struct {
@@ -28110,7 +23765,7 @@ pub const CAN1 = struct {
         STID: u11 = 0,
     };
     /// mailbox identifier register
-    pub const TI1R = Register(TI1R_val).init(base_address + 0x190);
+    pub const TI1R = MMIO(TI1R_val).init(base_address + 0x190);
 
     /// TDT1R
     const TDT1R_val = packed struct {
@@ -28129,7 +23784,7 @@ pub const CAN1 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data length control and time stamp
-    pub const TDT1R = Register(TDT1R_val).init(base_address + 0x194);
+    pub const TDT1R = MMIO(TDT1R_val).init(base_address + 0x194);
 
     /// TDL1R
     const TDL1R_val = packed struct {
@@ -28147,7 +23802,7 @@ pub const CAN1 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data low register
-    pub const TDL1R = Register(TDL1R_val).init(base_address + 0x198);
+    pub const TDL1R = MMIO(TDL1R_val).init(base_address + 0x198);
 
     /// TDH1R
     const TDH1R_val = packed struct {
@@ -28165,7 +23820,7 @@ pub const CAN1 = struct {
         DATA7: u8 = 0,
     };
     /// mailbox data high register
-    pub const TDH1R = Register(TDH1R_val).init(base_address + 0x19c);
+    pub const TDH1R = MMIO(TDH1R_val).init(base_address + 0x19c);
 
     /// TI2R
     const TI2R_val = packed struct {
@@ -28186,7 +23841,7 @@ pub const CAN1 = struct {
         STID: u11 = 0,
     };
     /// mailbox identifier register
-    pub const TI2R = Register(TI2R_val).init(base_address + 0x1a0);
+    pub const TI2R = MMIO(TI2R_val).init(base_address + 0x1a0);
 
     /// TDT2R
     const TDT2R_val = packed struct {
@@ -28205,7 +23860,7 @@ pub const CAN1 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data length control and time stamp
-    pub const TDT2R = Register(TDT2R_val).init(base_address + 0x1a4);
+    pub const TDT2R = MMIO(TDT2R_val).init(base_address + 0x1a4);
 
     /// TDL2R
     const TDL2R_val = packed struct {
@@ -28223,7 +23878,7 @@ pub const CAN1 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data low register
-    pub const TDL2R = Register(TDL2R_val).init(base_address + 0x1a8);
+    pub const TDL2R = MMIO(TDL2R_val).init(base_address + 0x1a8);
 
     /// TDH2R
     const TDH2R_val = packed struct {
@@ -28241,7 +23896,7 @@ pub const CAN1 = struct {
         DATA7: u8 = 0,
     };
     /// mailbox data high register
-    pub const TDH2R = Register(TDH2R_val).init(base_address + 0x1ac);
+    pub const TDH2R = MMIO(TDH2R_val).init(base_address + 0x1ac);
 
     /// RI0R
     const RI0R_val = packed struct {
@@ -28261,7 +23916,7 @@ pub const CAN1 = struct {
         STID: u11 = 0,
     };
     /// receive FIFO mailbox identifier
-    pub const RI0R = Register(RI0R_val).init(base_address + 0x1b0);
+    pub const RI0R = MMIO(RI0R_val).init(base_address + 0x1b0);
 
     /// RDT0R
     const RDT0R_val = packed struct {
@@ -28278,7 +23933,7 @@ pub const CAN1 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data high register
-    pub const RDT0R = Register(RDT0R_val).init(base_address + 0x1b4);
+    pub const RDT0R = MMIO(RDT0R_val).init(base_address + 0x1b4);
 
     /// RDL0R
     const RDL0R_val = packed struct {
@@ -28296,7 +23951,7 @@ pub const CAN1 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data high register
-    pub const RDL0R = Register(RDL0R_val).init(base_address + 0x1b8);
+    pub const RDL0R = MMIO(RDL0R_val).init(base_address + 0x1b8);
 
     /// RDH0R
     const RDH0R_val = packed struct {
@@ -28314,7 +23969,7 @@ pub const CAN1 = struct {
         DATA7: u8 = 0,
     };
     /// receive FIFO mailbox data high
-    pub const RDH0R = Register(RDH0R_val).init(base_address + 0x1bc);
+    pub const RDH0R = MMIO(RDH0R_val).init(base_address + 0x1bc);
 
     /// RI1R
     const RI1R_val = packed struct {
@@ -28334,7 +23989,7 @@ pub const CAN1 = struct {
         STID: u11 = 0,
     };
     /// mailbox data high register
-    pub const RI1R = Register(RI1R_val).init(base_address + 0x1c0);
+    pub const RI1R = MMIO(RI1R_val).init(base_address + 0x1c0);
 
     /// RDT1R
     const RDT1R_val = packed struct {
@@ -28351,7 +24006,7 @@ pub const CAN1 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data high register
-    pub const RDT1R = Register(RDT1R_val).init(base_address + 0x1c4);
+    pub const RDT1R = MMIO(RDT1R_val).init(base_address + 0x1c4);
 
     /// RDL1R
     const RDL1R_val = packed struct {
@@ -28369,7 +24024,7 @@ pub const CAN1 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data high register
-    pub const RDL1R = Register(RDL1R_val).init(base_address + 0x1c8);
+    pub const RDL1R = MMIO(RDL1R_val).init(base_address + 0x1c8);
 
     /// RDH1R
     const RDH1R_val = packed struct {
@@ -28387,7 +24042,7 @@ pub const CAN1 = struct {
         DATA7: u8 = 0,
     };
     /// mailbox data high register
-    pub const RDH1R = Register(RDH1R_val).init(base_address + 0x1cc);
+    pub const RDH1R = MMIO(RDH1R_val).init(base_address + 0x1cc);
 
     /// FMR
     const FMR_val = packed struct {
@@ -28405,7 +24060,7 @@ pub const CAN1 = struct {
         _unused24: u8 = 42,
     };
     /// filter master register
-    pub const FMR = Register(FMR_val).init(base_address + 0x200);
+    pub const FMR = MMIO(FMR_val).init(base_address + 0x200);
 
     /// FM1R
     const FM1R_val = packed struct {
@@ -28497,7 +24152,7 @@ pub const CAN1 = struct {
         _unused28: u4 = 0,
     };
     /// filter mode register
-    pub const FM1R = Register(FM1R_val).init(base_address + 0x204);
+    pub const FM1R = MMIO(FM1R_val).init(base_address + 0x204);
 
     /// FS1R
     const FS1R_val = packed struct {
@@ -28589,7 +24244,7 @@ pub const CAN1 = struct {
         _unused28: u4 = 0,
     };
     /// filter scale register
-    pub const FS1R = Register(FS1R_val).init(base_address + 0x20c);
+    pub const FS1R = MMIO(FS1R_val).init(base_address + 0x20c);
 
     /// FFA1R
     const FFA1R_val = packed struct {
@@ -28681,7 +24336,7 @@ pub const CAN1 = struct {
         _unused28: u4 = 0,
     };
     /// filter FIFO assignment
-    pub const FFA1R = Register(FFA1R_val).init(base_address + 0x214);
+    pub const FFA1R = MMIO(FFA1R_val).init(base_address + 0x214);
 
     /// FA1R
     const FA1R_val = packed struct {
@@ -28773,7 +24428,7 @@ pub const CAN1 = struct {
         _unused28: u4 = 0,
     };
     /// filter activation register
-    pub const FA1R = Register(FA1R_val).init(base_address + 0x21c);
+    pub const FA1R = MMIO(FA1R_val).init(base_address + 0x21c);
 
     /// F0R1
     const F0R1_val = packed struct {
@@ -28875,7 +24530,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 0 register 1
-    pub const F0R1 = Register(F0R1_val).init(base_address + 0x240);
+    pub const F0R1 = MMIO(F0R1_val).init(base_address + 0x240);
 
     /// F0R2
     const F0R2_val = packed struct {
@@ -28977,7 +24632,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 0 register 2
-    pub const F0R2 = Register(F0R2_val).init(base_address + 0x244);
+    pub const F0R2 = MMIO(F0R2_val).init(base_address + 0x244);
 
     /// F1R1
     const F1R1_val = packed struct {
@@ -29079,7 +24734,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 1 register 1
-    pub const F1R1 = Register(F1R1_val).init(base_address + 0x248);
+    pub const F1R1 = MMIO(F1R1_val).init(base_address + 0x248);
 
     /// F1R2
     const F1R2_val = packed struct {
@@ -29181,7 +24836,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 1 register 2
-    pub const F1R2 = Register(F1R2_val).init(base_address + 0x24c);
+    pub const F1R2 = MMIO(F1R2_val).init(base_address + 0x24c);
 
     /// F2R1
     const F2R1_val = packed struct {
@@ -29283,7 +24938,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 2 register 1
-    pub const F2R1 = Register(F2R1_val).init(base_address + 0x250);
+    pub const F2R1 = MMIO(F2R1_val).init(base_address + 0x250);
 
     /// F2R2
     const F2R2_val = packed struct {
@@ -29385,7 +25040,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 2 register 2
-    pub const F2R2 = Register(F2R2_val).init(base_address + 0x254);
+    pub const F2R2 = MMIO(F2R2_val).init(base_address + 0x254);
 
     /// F3R1
     const F3R1_val = packed struct {
@@ -29487,7 +25142,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 3 register 1
-    pub const F3R1 = Register(F3R1_val).init(base_address + 0x258);
+    pub const F3R1 = MMIO(F3R1_val).init(base_address + 0x258);
 
     /// F3R2
     const F3R2_val = packed struct {
@@ -29589,7 +25244,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 3 register 2
-    pub const F3R2 = Register(F3R2_val).init(base_address + 0x25c);
+    pub const F3R2 = MMIO(F3R2_val).init(base_address + 0x25c);
 
     /// F4R1
     const F4R1_val = packed struct {
@@ -29691,7 +25346,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 4 register 1
-    pub const F4R1 = Register(F4R1_val).init(base_address + 0x260);
+    pub const F4R1 = MMIO(F4R1_val).init(base_address + 0x260);
 
     /// F4R2
     const F4R2_val = packed struct {
@@ -29793,7 +25448,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 4 register 2
-    pub const F4R2 = Register(F4R2_val).init(base_address + 0x264);
+    pub const F4R2 = MMIO(F4R2_val).init(base_address + 0x264);
 
     /// F5R1
     const F5R1_val = packed struct {
@@ -29895,7 +25550,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 5 register 1
-    pub const F5R1 = Register(F5R1_val).init(base_address + 0x268);
+    pub const F5R1 = MMIO(F5R1_val).init(base_address + 0x268);
 
     /// F5R2
     const F5R2_val = packed struct {
@@ -29997,7 +25652,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 5 register 2
-    pub const F5R2 = Register(F5R2_val).init(base_address + 0x26c);
+    pub const F5R2 = MMIO(F5R2_val).init(base_address + 0x26c);
 
     /// F6R1
     const F6R1_val = packed struct {
@@ -30099,7 +25754,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 6 register 1
-    pub const F6R1 = Register(F6R1_val).init(base_address + 0x270);
+    pub const F6R1 = MMIO(F6R1_val).init(base_address + 0x270);
 
     /// F6R2
     const F6R2_val = packed struct {
@@ -30201,7 +25856,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 6 register 2
-    pub const F6R2 = Register(F6R2_val).init(base_address + 0x274);
+    pub const F6R2 = MMIO(F6R2_val).init(base_address + 0x274);
 
     /// F7R1
     const F7R1_val = packed struct {
@@ -30303,7 +25958,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 7 register 1
-    pub const F7R1 = Register(F7R1_val).init(base_address + 0x278);
+    pub const F7R1 = MMIO(F7R1_val).init(base_address + 0x278);
 
     /// F7R2
     const F7R2_val = packed struct {
@@ -30405,7 +26060,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 7 register 2
-    pub const F7R2 = Register(F7R2_val).init(base_address + 0x27c);
+    pub const F7R2 = MMIO(F7R2_val).init(base_address + 0x27c);
 
     /// F8R1
     const F8R1_val = packed struct {
@@ -30507,7 +26162,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 8 register 1
-    pub const F8R1 = Register(F8R1_val).init(base_address + 0x280);
+    pub const F8R1 = MMIO(F8R1_val).init(base_address + 0x280);
 
     /// F8R2
     const F8R2_val = packed struct {
@@ -30609,7 +26264,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 8 register 2
-    pub const F8R2 = Register(F8R2_val).init(base_address + 0x284);
+    pub const F8R2 = MMIO(F8R2_val).init(base_address + 0x284);
 
     /// F9R1
     const F9R1_val = packed struct {
@@ -30711,7 +26366,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 9 register 1
-    pub const F9R1 = Register(F9R1_val).init(base_address + 0x288);
+    pub const F9R1 = MMIO(F9R1_val).init(base_address + 0x288);
 
     /// F9R2
     const F9R2_val = packed struct {
@@ -30813,7 +26468,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 9 register 2
-    pub const F9R2 = Register(F9R2_val).init(base_address + 0x28c);
+    pub const F9R2 = MMIO(F9R2_val).init(base_address + 0x28c);
 
     /// F10R1
     const F10R1_val = packed struct {
@@ -30915,7 +26570,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 10 register 1
-    pub const F10R1 = Register(F10R1_val).init(base_address + 0x290);
+    pub const F10R1 = MMIO(F10R1_val).init(base_address + 0x290);
 
     /// F10R2
     const F10R2_val = packed struct {
@@ -31017,7 +26672,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 10 register 2
-    pub const F10R2 = Register(F10R2_val).init(base_address + 0x294);
+    pub const F10R2 = MMIO(F10R2_val).init(base_address + 0x294);
 
     /// F11R1
     const F11R1_val = packed struct {
@@ -31119,7 +26774,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 11 register 1
-    pub const F11R1 = Register(F11R1_val).init(base_address + 0x298);
+    pub const F11R1 = MMIO(F11R1_val).init(base_address + 0x298);
 
     /// F11R2
     const F11R2_val = packed struct {
@@ -31221,7 +26876,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 11 register 2
-    pub const F11R2 = Register(F11R2_val).init(base_address + 0x29c);
+    pub const F11R2 = MMIO(F11R2_val).init(base_address + 0x29c);
 
     /// F12R1
     const F12R1_val = packed struct {
@@ -31323,7 +26978,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 4 register 1
-    pub const F12R1 = Register(F12R1_val).init(base_address + 0x2a0);
+    pub const F12R1 = MMIO(F12R1_val).init(base_address + 0x2a0);
 
     /// F12R2
     const F12R2_val = packed struct {
@@ -31425,7 +27080,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 12 register 2
-    pub const F12R2 = Register(F12R2_val).init(base_address + 0x2a4);
+    pub const F12R2 = MMIO(F12R2_val).init(base_address + 0x2a4);
 
     /// F13R1
     const F13R1_val = packed struct {
@@ -31527,7 +27182,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 13 register 1
-    pub const F13R1 = Register(F13R1_val).init(base_address + 0x2a8);
+    pub const F13R1 = MMIO(F13R1_val).init(base_address + 0x2a8);
 
     /// F13R2
     const F13R2_val = packed struct {
@@ -31629,7 +27284,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 13 register 2
-    pub const F13R2 = Register(F13R2_val).init(base_address + 0x2ac);
+    pub const F13R2 = MMIO(F13R2_val).init(base_address + 0x2ac);
 
     /// F14R1
     const F14R1_val = packed struct {
@@ -31731,7 +27386,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 14 register 1
-    pub const F14R1 = Register(F14R1_val).init(base_address + 0x2b0);
+    pub const F14R1 = MMIO(F14R1_val).init(base_address + 0x2b0);
 
     /// F14R2
     const F14R2_val = packed struct {
@@ -31833,7 +27488,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 14 register 2
-    pub const F14R2 = Register(F14R2_val).init(base_address + 0x2b4);
+    pub const F14R2 = MMIO(F14R2_val).init(base_address + 0x2b4);
 
     /// F15R1
     const F15R1_val = packed struct {
@@ -31935,7 +27590,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 15 register 1
-    pub const F15R1 = Register(F15R1_val).init(base_address + 0x2b8);
+    pub const F15R1 = MMIO(F15R1_val).init(base_address + 0x2b8);
 
     /// F15R2
     const F15R2_val = packed struct {
@@ -32037,7 +27692,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 15 register 2
-    pub const F15R2 = Register(F15R2_val).init(base_address + 0x2bc);
+    pub const F15R2 = MMIO(F15R2_val).init(base_address + 0x2bc);
 
     /// F16R1
     const F16R1_val = packed struct {
@@ -32139,7 +27794,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 16 register 1
-    pub const F16R1 = Register(F16R1_val).init(base_address + 0x2c0);
+    pub const F16R1 = MMIO(F16R1_val).init(base_address + 0x2c0);
 
     /// F16R2
     const F16R2_val = packed struct {
@@ -32241,7 +27896,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 16 register 2
-    pub const F16R2 = Register(F16R2_val).init(base_address + 0x2c4);
+    pub const F16R2 = MMIO(F16R2_val).init(base_address + 0x2c4);
 
     /// F17R1
     const F17R1_val = packed struct {
@@ -32343,7 +27998,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 17 register 1
-    pub const F17R1 = Register(F17R1_val).init(base_address + 0x2c8);
+    pub const F17R1 = MMIO(F17R1_val).init(base_address + 0x2c8);
 
     /// F17R2
     const F17R2_val = packed struct {
@@ -32445,7 +28100,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 17 register 2
-    pub const F17R2 = Register(F17R2_val).init(base_address + 0x2cc);
+    pub const F17R2 = MMIO(F17R2_val).init(base_address + 0x2cc);
 
     /// F18R1
     const F18R1_val = packed struct {
@@ -32547,7 +28202,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 18 register 1
-    pub const F18R1 = Register(F18R1_val).init(base_address + 0x2d0);
+    pub const F18R1 = MMIO(F18R1_val).init(base_address + 0x2d0);
 
     /// F18R2
     const F18R2_val = packed struct {
@@ -32649,7 +28304,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 18 register 2
-    pub const F18R2 = Register(F18R2_val).init(base_address + 0x2d4);
+    pub const F18R2 = MMIO(F18R2_val).init(base_address + 0x2d4);
 
     /// F19R1
     const F19R1_val = packed struct {
@@ -32751,7 +28406,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 19 register 1
-    pub const F19R1 = Register(F19R1_val).init(base_address + 0x2d8);
+    pub const F19R1 = MMIO(F19R1_val).init(base_address + 0x2d8);
 
     /// F19R2
     const F19R2_val = packed struct {
@@ -32853,7 +28508,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 19 register 2
-    pub const F19R2 = Register(F19R2_val).init(base_address + 0x2dc);
+    pub const F19R2 = MMIO(F19R2_val).init(base_address + 0x2dc);
 
     /// F20R1
     const F20R1_val = packed struct {
@@ -32955,7 +28610,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 20 register 1
-    pub const F20R1 = Register(F20R1_val).init(base_address + 0x2e0);
+    pub const F20R1 = MMIO(F20R1_val).init(base_address + 0x2e0);
 
     /// F20R2
     const F20R2_val = packed struct {
@@ -33057,7 +28712,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 20 register 2
-    pub const F20R2 = Register(F20R2_val).init(base_address + 0x2e4);
+    pub const F20R2 = MMIO(F20R2_val).init(base_address + 0x2e4);
 
     /// F21R1
     const F21R1_val = packed struct {
@@ -33159,7 +28814,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 21 register 1
-    pub const F21R1 = Register(F21R1_val).init(base_address + 0x2e8);
+    pub const F21R1 = MMIO(F21R1_val).init(base_address + 0x2e8);
 
     /// F21R2
     const F21R2_val = packed struct {
@@ -33261,7 +28916,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 21 register 2
-    pub const F21R2 = Register(F21R2_val).init(base_address + 0x2ec);
+    pub const F21R2 = MMIO(F21R2_val).init(base_address + 0x2ec);
 
     /// F22R1
     const F22R1_val = packed struct {
@@ -33363,7 +29018,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 22 register 1
-    pub const F22R1 = Register(F22R1_val).init(base_address + 0x2f0);
+    pub const F22R1 = MMIO(F22R1_val).init(base_address + 0x2f0);
 
     /// F22R2
     const F22R2_val = packed struct {
@@ -33465,7 +29120,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 22 register 2
-    pub const F22R2 = Register(F22R2_val).init(base_address + 0x2f4);
+    pub const F22R2 = MMIO(F22R2_val).init(base_address + 0x2f4);
 
     /// F23R1
     const F23R1_val = packed struct {
@@ -33567,7 +29222,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 23 register 1
-    pub const F23R1 = Register(F23R1_val).init(base_address + 0x2f8);
+    pub const F23R1 = MMIO(F23R1_val).init(base_address + 0x2f8);
 
     /// F23R2
     const F23R2_val = packed struct {
@@ -33669,7 +29324,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 23 register 2
-    pub const F23R2 = Register(F23R2_val).init(base_address + 0x2fc);
+    pub const F23R2 = MMIO(F23R2_val).init(base_address + 0x2fc);
 
     /// F24R1
     const F24R1_val = packed struct {
@@ -33771,7 +29426,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 24 register 1
-    pub const F24R1 = Register(F24R1_val).init(base_address + 0x300);
+    pub const F24R1 = MMIO(F24R1_val).init(base_address + 0x300);
 
     /// F24R2
     const F24R2_val = packed struct {
@@ -33873,7 +29528,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 24 register 2
-    pub const F24R2 = Register(F24R2_val).init(base_address + 0x304);
+    pub const F24R2 = MMIO(F24R2_val).init(base_address + 0x304);
 
     /// F25R1
     const F25R1_val = packed struct {
@@ -33975,7 +29630,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 25 register 1
-    pub const F25R1 = Register(F25R1_val).init(base_address + 0x308);
+    pub const F25R1 = MMIO(F25R1_val).init(base_address + 0x308);
 
     /// F25R2
     const F25R2_val = packed struct {
@@ -34077,7 +29732,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 25 register 2
-    pub const F25R2 = Register(F25R2_val).init(base_address + 0x30c);
+    pub const F25R2 = MMIO(F25R2_val).init(base_address + 0x30c);
 
     /// F26R1
     const F26R1_val = packed struct {
@@ -34179,7 +29834,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 26 register 1
-    pub const F26R1 = Register(F26R1_val).init(base_address + 0x310);
+    pub const F26R1 = MMIO(F26R1_val).init(base_address + 0x310);
 
     /// F26R2
     const F26R2_val = packed struct {
@@ -34281,7 +29936,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 26 register 2
-    pub const F26R2 = Register(F26R2_val).init(base_address + 0x314);
+    pub const F26R2 = MMIO(F26R2_val).init(base_address + 0x314);
 
     /// F27R1
     const F27R1_val = packed struct {
@@ -34383,7 +30038,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 27 register 1
-    pub const F27R1 = Register(F27R1_val).init(base_address + 0x318);
+    pub const F27R1 = MMIO(F27R1_val).init(base_address + 0x318);
 
     /// F27R2
     const F27R2_val = packed struct {
@@ -34485,7 +30140,7 @@ pub const CAN1 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 27 register 2
-    pub const F27R2 = Register(F27R2_val).init(base_address + 0x31c);
+    pub const F27R2 = MMIO(F27R2_val).init(base_address + 0x31c);
 };
 
 /// Controller area network
@@ -34530,7 +30185,7 @@ pub const CAN2 = struct {
         _unused24: u8 = 0,
     };
     /// master control register
-    pub const MCR = Register(MCR_val).init(base_address + 0x0);
+    pub const MCR = MMIO(MCR_val).init(base_address + 0x0);
 
     /// MSR
     const MSR_val = packed struct {
@@ -34569,7 +30224,7 @@ pub const CAN2 = struct {
         _unused24: u8 = 0,
     };
     /// master status register
-    pub const MSR = Register(MSR_val).init(base_address + 0x4);
+    pub const MSR = MMIO(MSR_val).init(base_address + 0x4);
 
     /// TSR
     const TSR_val = packed struct {
@@ -34647,7 +30302,7 @@ pub const CAN2 = struct {
         LOW2: u1 = 0,
     };
     /// transmit status register
-    pub const TSR = Register(TSR_val).init(base_address + 0x8);
+    pub const TSR = MMIO(TSR_val).init(base_address + 0x8);
 
     /// RF0R
     const RF0R_val = packed struct {
@@ -34672,7 +30327,7 @@ pub const CAN2 = struct {
         _unused24: u8 = 0,
     };
     /// receive FIFO 0 register
-    pub const RF0R = Register(RF0R_val).init(base_address + 0xc);
+    pub const RF0R = MMIO(RF0R_val).init(base_address + 0xc);
 
     /// RF1R
     const RF1R_val = packed struct {
@@ -34697,7 +30352,7 @@ pub const CAN2 = struct {
         _unused24: u8 = 0,
     };
     /// receive FIFO 1 register
-    pub const RF1R = Register(RF1R_val).init(base_address + 0x10);
+    pub const RF1R = MMIO(RF1R_val).init(base_address + 0x10);
 
     /// IER
     const IER_val = packed struct {
@@ -34752,7 +30407,7 @@ pub const CAN2 = struct {
         _unused24: u8 = 0,
     };
     /// interrupt enable register
-    pub const IER = Register(IER_val).init(base_address + 0x14);
+    pub const IER = MMIO(IER_val).init(base_address + 0x14);
 
     /// ESR
     const ESR_val = packed struct {
@@ -34781,7 +30436,7 @@ pub const CAN2 = struct {
         REC: u8 = 0,
     };
     /// interrupt enable register
-    pub const ESR = Register(ESR_val).init(base_address + 0x18);
+    pub const ESR = MMIO(ESR_val).init(base_address + 0x18);
 
     /// BTR
     const BTR_val = packed struct {
@@ -34811,7 +30466,7 @@ pub const CAN2 = struct {
         SILM: u1 = 0,
     };
     /// bit timing register
-    pub const BTR = Register(BTR_val).init(base_address + 0x1c);
+    pub const BTR = MMIO(BTR_val).init(base_address + 0x1c);
 
     /// TI0R
     const TI0R_val = packed struct {
@@ -34832,7 +30487,7 @@ pub const CAN2 = struct {
         STID: u11 = 0,
     };
     /// TX mailbox identifier register
-    pub const TI0R = Register(TI0R_val).init(base_address + 0x180);
+    pub const TI0R = MMIO(TI0R_val).init(base_address + 0x180);
 
     /// TDT0R
     const TDT0R_val = packed struct {
@@ -34851,7 +30506,7 @@ pub const CAN2 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data length control and time stamp
-    pub const TDT0R = Register(TDT0R_val).init(base_address + 0x184);
+    pub const TDT0R = MMIO(TDT0R_val).init(base_address + 0x184);
 
     /// TDL0R
     const TDL0R_val = packed struct {
@@ -34869,7 +30524,7 @@ pub const CAN2 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data low register
-    pub const TDL0R = Register(TDL0R_val).init(base_address + 0x188);
+    pub const TDL0R = MMIO(TDL0R_val).init(base_address + 0x188);
 
     /// TDH0R
     const TDH0R_val = packed struct {
@@ -34887,7 +30542,7 @@ pub const CAN2 = struct {
         DATA7: u8 = 0,
     };
     /// mailbox data high register
-    pub const TDH0R = Register(TDH0R_val).init(base_address + 0x18c);
+    pub const TDH0R = MMIO(TDH0R_val).init(base_address + 0x18c);
 
     /// TI1R
     const TI1R_val = packed struct {
@@ -34908,7 +30563,7 @@ pub const CAN2 = struct {
         STID: u11 = 0,
     };
     /// mailbox identifier register
-    pub const TI1R = Register(TI1R_val).init(base_address + 0x190);
+    pub const TI1R = MMIO(TI1R_val).init(base_address + 0x190);
 
     /// TDT1R
     const TDT1R_val = packed struct {
@@ -34927,7 +30582,7 @@ pub const CAN2 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data length control and time stamp
-    pub const TDT1R = Register(TDT1R_val).init(base_address + 0x194);
+    pub const TDT1R = MMIO(TDT1R_val).init(base_address + 0x194);
 
     /// TDL1R
     const TDL1R_val = packed struct {
@@ -34945,7 +30600,7 @@ pub const CAN2 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data low register
-    pub const TDL1R = Register(TDL1R_val).init(base_address + 0x198);
+    pub const TDL1R = MMIO(TDL1R_val).init(base_address + 0x198);
 
     /// TDH1R
     const TDH1R_val = packed struct {
@@ -34963,7 +30618,7 @@ pub const CAN2 = struct {
         DATA7: u8 = 0,
     };
     /// mailbox data high register
-    pub const TDH1R = Register(TDH1R_val).init(base_address + 0x19c);
+    pub const TDH1R = MMIO(TDH1R_val).init(base_address + 0x19c);
 
     /// TI2R
     const TI2R_val = packed struct {
@@ -34984,7 +30639,7 @@ pub const CAN2 = struct {
         STID: u11 = 0,
     };
     /// mailbox identifier register
-    pub const TI2R = Register(TI2R_val).init(base_address + 0x1a0);
+    pub const TI2R = MMIO(TI2R_val).init(base_address + 0x1a0);
 
     /// TDT2R
     const TDT2R_val = packed struct {
@@ -35003,7 +30658,7 @@ pub const CAN2 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data length control and time stamp
-    pub const TDT2R = Register(TDT2R_val).init(base_address + 0x1a4);
+    pub const TDT2R = MMIO(TDT2R_val).init(base_address + 0x1a4);
 
     /// TDL2R
     const TDL2R_val = packed struct {
@@ -35021,7 +30676,7 @@ pub const CAN2 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data low register
-    pub const TDL2R = Register(TDL2R_val).init(base_address + 0x1a8);
+    pub const TDL2R = MMIO(TDL2R_val).init(base_address + 0x1a8);
 
     /// TDH2R
     const TDH2R_val = packed struct {
@@ -35039,7 +30694,7 @@ pub const CAN2 = struct {
         DATA7: u8 = 0,
     };
     /// mailbox data high register
-    pub const TDH2R = Register(TDH2R_val).init(base_address + 0x1ac);
+    pub const TDH2R = MMIO(TDH2R_val).init(base_address + 0x1ac);
 
     /// RI0R
     const RI0R_val = packed struct {
@@ -35059,7 +30714,7 @@ pub const CAN2 = struct {
         STID: u11 = 0,
     };
     /// receive FIFO mailbox identifier
-    pub const RI0R = Register(RI0R_val).init(base_address + 0x1b0);
+    pub const RI0R = MMIO(RI0R_val).init(base_address + 0x1b0);
 
     /// RDT0R
     const RDT0R_val = packed struct {
@@ -35076,7 +30731,7 @@ pub const CAN2 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data high register
-    pub const RDT0R = Register(RDT0R_val).init(base_address + 0x1b4);
+    pub const RDT0R = MMIO(RDT0R_val).init(base_address + 0x1b4);
 
     /// RDL0R
     const RDL0R_val = packed struct {
@@ -35094,7 +30749,7 @@ pub const CAN2 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data high register
-    pub const RDL0R = Register(RDL0R_val).init(base_address + 0x1b8);
+    pub const RDL0R = MMIO(RDL0R_val).init(base_address + 0x1b8);
 
     /// RDH0R
     const RDH0R_val = packed struct {
@@ -35112,7 +30767,7 @@ pub const CAN2 = struct {
         DATA7: u8 = 0,
     };
     /// receive FIFO mailbox data high
-    pub const RDH0R = Register(RDH0R_val).init(base_address + 0x1bc);
+    pub const RDH0R = MMIO(RDH0R_val).init(base_address + 0x1bc);
 
     /// RI1R
     const RI1R_val = packed struct {
@@ -35132,7 +30787,7 @@ pub const CAN2 = struct {
         STID: u11 = 0,
     };
     /// mailbox data high register
-    pub const RI1R = Register(RI1R_val).init(base_address + 0x1c0);
+    pub const RI1R = MMIO(RI1R_val).init(base_address + 0x1c0);
 
     /// RDT1R
     const RDT1R_val = packed struct {
@@ -35149,7 +30804,7 @@ pub const CAN2 = struct {
         TIME: u16 = 0,
     };
     /// mailbox data high register
-    pub const RDT1R = Register(RDT1R_val).init(base_address + 0x1c4);
+    pub const RDT1R = MMIO(RDT1R_val).init(base_address + 0x1c4);
 
     /// RDL1R
     const RDL1R_val = packed struct {
@@ -35167,7 +30822,7 @@ pub const CAN2 = struct {
         DATA3: u8 = 0,
     };
     /// mailbox data high register
-    pub const RDL1R = Register(RDL1R_val).init(base_address + 0x1c8);
+    pub const RDL1R = MMIO(RDL1R_val).init(base_address + 0x1c8);
 
     /// RDH1R
     const RDH1R_val = packed struct {
@@ -35185,7 +30840,7 @@ pub const CAN2 = struct {
         DATA7: u8 = 0,
     };
     /// mailbox data high register
-    pub const RDH1R = Register(RDH1R_val).init(base_address + 0x1cc);
+    pub const RDH1R = MMIO(RDH1R_val).init(base_address + 0x1cc);
 
     /// FMR
     const FMR_val = packed struct {
@@ -35203,7 +30858,7 @@ pub const CAN2 = struct {
         _unused24: u8 = 42,
     };
     /// filter master register
-    pub const FMR = Register(FMR_val).init(base_address + 0x200);
+    pub const FMR = MMIO(FMR_val).init(base_address + 0x200);
 
     /// FM1R
     const FM1R_val = packed struct {
@@ -35295,7 +30950,7 @@ pub const CAN2 = struct {
         _unused28: u4 = 0,
     };
     /// filter mode register
-    pub const FM1R = Register(FM1R_val).init(base_address + 0x204);
+    pub const FM1R = MMIO(FM1R_val).init(base_address + 0x204);
 
     /// FS1R
     const FS1R_val = packed struct {
@@ -35387,7 +31042,7 @@ pub const CAN2 = struct {
         _unused28: u4 = 0,
     };
     /// filter scale register
-    pub const FS1R = Register(FS1R_val).init(base_address + 0x20c);
+    pub const FS1R = MMIO(FS1R_val).init(base_address + 0x20c);
 
     /// FFA1R
     const FFA1R_val = packed struct {
@@ -35479,7 +31134,7 @@ pub const CAN2 = struct {
         _unused28: u4 = 0,
     };
     /// filter FIFO assignment
-    pub const FFA1R = Register(FFA1R_val).init(base_address + 0x214);
+    pub const FFA1R = MMIO(FFA1R_val).init(base_address + 0x214);
 
     /// FA1R
     const FA1R_val = packed struct {
@@ -35571,7 +31226,7 @@ pub const CAN2 = struct {
         _unused28: u4 = 0,
     };
     /// filter activation register
-    pub const FA1R = Register(FA1R_val).init(base_address + 0x21c);
+    pub const FA1R = MMIO(FA1R_val).init(base_address + 0x21c);
 
     /// F0R1
     const F0R1_val = packed struct {
@@ -35673,7 +31328,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 0 register 1
-    pub const F0R1 = Register(F0R1_val).init(base_address + 0x240);
+    pub const F0R1 = MMIO(F0R1_val).init(base_address + 0x240);
 
     /// F0R2
     const F0R2_val = packed struct {
@@ -35775,7 +31430,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 0 register 2
-    pub const F0R2 = Register(F0R2_val).init(base_address + 0x244);
+    pub const F0R2 = MMIO(F0R2_val).init(base_address + 0x244);
 
     /// F1R1
     const F1R1_val = packed struct {
@@ -35877,7 +31532,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 1 register 1
-    pub const F1R1 = Register(F1R1_val).init(base_address + 0x248);
+    pub const F1R1 = MMIO(F1R1_val).init(base_address + 0x248);
 
     /// F1R2
     const F1R2_val = packed struct {
@@ -35979,7 +31634,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 1 register 2
-    pub const F1R2 = Register(F1R2_val).init(base_address + 0x24c);
+    pub const F1R2 = MMIO(F1R2_val).init(base_address + 0x24c);
 
     /// F2R1
     const F2R1_val = packed struct {
@@ -36081,7 +31736,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 2 register 1
-    pub const F2R1 = Register(F2R1_val).init(base_address + 0x250);
+    pub const F2R1 = MMIO(F2R1_val).init(base_address + 0x250);
 
     /// F2R2
     const F2R2_val = packed struct {
@@ -36183,7 +31838,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 2 register 2
-    pub const F2R2 = Register(F2R2_val).init(base_address + 0x254);
+    pub const F2R2 = MMIO(F2R2_val).init(base_address + 0x254);
 
     /// F3R1
     const F3R1_val = packed struct {
@@ -36285,7 +31940,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 3 register 1
-    pub const F3R1 = Register(F3R1_val).init(base_address + 0x258);
+    pub const F3R1 = MMIO(F3R1_val).init(base_address + 0x258);
 
     /// F3R2
     const F3R2_val = packed struct {
@@ -36387,7 +32042,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 3 register 2
-    pub const F3R2 = Register(F3R2_val).init(base_address + 0x25c);
+    pub const F3R2 = MMIO(F3R2_val).init(base_address + 0x25c);
 
     /// F4R1
     const F4R1_val = packed struct {
@@ -36489,7 +32144,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 4 register 1
-    pub const F4R1 = Register(F4R1_val).init(base_address + 0x260);
+    pub const F4R1 = MMIO(F4R1_val).init(base_address + 0x260);
 
     /// F4R2
     const F4R2_val = packed struct {
@@ -36591,7 +32246,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 4 register 2
-    pub const F4R2 = Register(F4R2_val).init(base_address + 0x264);
+    pub const F4R2 = MMIO(F4R2_val).init(base_address + 0x264);
 
     /// F5R1
     const F5R1_val = packed struct {
@@ -36693,7 +32348,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 5 register 1
-    pub const F5R1 = Register(F5R1_val).init(base_address + 0x268);
+    pub const F5R1 = MMIO(F5R1_val).init(base_address + 0x268);
 
     /// F5R2
     const F5R2_val = packed struct {
@@ -36795,7 +32450,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 5 register 2
-    pub const F5R2 = Register(F5R2_val).init(base_address + 0x26c);
+    pub const F5R2 = MMIO(F5R2_val).init(base_address + 0x26c);
 
     /// F6R1
     const F6R1_val = packed struct {
@@ -36897,7 +32552,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 6 register 1
-    pub const F6R1 = Register(F6R1_val).init(base_address + 0x270);
+    pub const F6R1 = MMIO(F6R1_val).init(base_address + 0x270);
 
     /// F6R2
     const F6R2_val = packed struct {
@@ -36999,7 +32654,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 6 register 2
-    pub const F6R2 = Register(F6R2_val).init(base_address + 0x274);
+    pub const F6R2 = MMIO(F6R2_val).init(base_address + 0x274);
 
     /// F7R1
     const F7R1_val = packed struct {
@@ -37101,7 +32756,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 7 register 1
-    pub const F7R1 = Register(F7R1_val).init(base_address + 0x278);
+    pub const F7R1 = MMIO(F7R1_val).init(base_address + 0x278);
 
     /// F7R2
     const F7R2_val = packed struct {
@@ -37203,7 +32858,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 7 register 2
-    pub const F7R2 = Register(F7R2_val).init(base_address + 0x27c);
+    pub const F7R2 = MMIO(F7R2_val).init(base_address + 0x27c);
 
     /// F8R1
     const F8R1_val = packed struct {
@@ -37305,7 +32960,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 8 register 1
-    pub const F8R1 = Register(F8R1_val).init(base_address + 0x280);
+    pub const F8R1 = MMIO(F8R1_val).init(base_address + 0x280);
 
     /// F8R2
     const F8R2_val = packed struct {
@@ -37407,7 +33062,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 8 register 2
-    pub const F8R2 = Register(F8R2_val).init(base_address + 0x284);
+    pub const F8R2 = MMIO(F8R2_val).init(base_address + 0x284);
 
     /// F9R1
     const F9R1_val = packed struct {
@@ -37509,7 +33164,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 9 register 1
-    pub const F9R1 = Register(F9R1_val).init(base_address + 0x288);
+    pub const F9R1 = MMIO(F9R1_val).init(base_address + 0x288);
 
     /// F9R2
     const F9R2_val = packed struct {
@@ -37611,7 +33266,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 9 register 2
-    pub const F9R2 = Register(F9R2_val).init(base_address + 0x28c);
+    pub const F9R2 = MMIO(F9R2_val).init(base_address + 0x28c);
 
     /// F10R1
     const F10R1_val = packed struct {
@@ -37713,7 +33368,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 10 register 1
-    pub const F10R1 = Register(F10R1_val).init(base_address + 0x290);
+    pub const F10R1 = MMIO(F10R1_val).init(base_address + 0x290);
 
     /// F10R2
     const F10R2_val = packed struct {
@@ -37815,7 +33470,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 10 register 2
-    pub const F10R2 = Register(F10R2_val).init(base_address + 0x294);
+    pub const F10R2 = MMIO(F10R2_val).init(base_address + 0x294);
 
     /// F11R1
     const F11R1_val = packed struct {
@@ -37917,7 +33572,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 11 register 1
-    pub const F11R1 = Register(F11R1_val).init(base_address + 0x298);
+    pub const F11R1 = MMIO(F11R1_val).init(base_address + 0x298);
 
     /// F11R2
     const F11R2_val = packed struct {
@@ -38019,7 +33674,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 11 register 2
-    pub const F11R2 = Register(F11R2_val).init(base_address + 0x29c);
+    pub const F11R2 = MMIO(F11R2_val).init(base_address + 0x29c);
 
     /// F12R1
     const F12R1_val = packed struct {
@@ -38121,7 +33776,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 4 register 1
-    pub const F12R1 = Register(F12R1_val).init(base_address + 0x2a0);
+    pub const F12R1 = MMIO(F12R1_val).init(base_address + 0x2a0);
 
     /// F12R2
     const F12R2_val = packed struct {
@@ -38223,7 +33878,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 12 register 2
-    pub const F12R2 = Register(F12R2_val).init(base_address + 0x2a4);
+    pub const F12R2 = MMIO(F12R2_val).init(base_address + 0x2a4);
 
     /// F13R1
     const F13R1_val = packed struct {
@@ -38325,7 +33980,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 13 register 1
-    pub const F13R1 = Register(F13R1_val).init(base_address + 0x2a8);
+    pub const F13R1 = MMIO(F13R1_val).init(base_address + 0x2a8);
 
     /// F13R2
     const F13R2_val = packed struct {
@@ -38427,7 +34082,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 13 register 2
-    pub const F13R2 = Register(F13R2_val).init(base_address + 0x2ac);
+    pub const F13R2 = MMIO(F13R2_val).init(base_address + 0x2ac);
 
     /// F14R1
     const F14R1_val = packed struct {
@@ -38529,7 +34184,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 14 register 1
-    pub const F14R1 = Register(F14R1_val).init(base_address + 0x2b0);
+    pub const F14R1 = MMIO(F14R1_val).init(base_address + 0x2b0);
 
     /// F14R2
     const F14R2_val = packed struct {
@@ -38631,7 +34286,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 14 register 2
-    pub const F14R2 = Register(F14R2_val).init(base_address + 0x2b4);
+    pub const F14R2 = MMIO(F14R2_val).init(base_address + 0x2b4);
 
     /// F15R1
     const F15R1_val = packed struct {
@@ -38733,7 +34388,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 15 register 1
-    pub const F15R1 = Register(F15R1_val).init(base_address + 0x2b8);
+    pub const F15R1 = MMIO(F15R1_val).init(base_address + 0x2b8);
 
     /// F15R2
     const F15R2_val = packed struct {
@@ -38835,7 +34490,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 15 register 2
-    pub const F15R2 = Register(F15R2_val).init(base_address + 0x2bc);
+    pub const F15R2 = MMIO(F15R2_val).init(base_address + 0x2bc);
 
     /// F16R1
     const F16R1_val = packed struct {
@@ -38937,7 +34592,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 16 register 1
-    pub const F16R1 = Register(F16R1_val).init(base_address + 0x2c0);
+    pub const F16R1 = MMIO(F16R1_val).init(base_address + 0x2c0);
 
     /// F16R2
     const F16R2_val = packed struct {
@@ -39039,7 +34694,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 16 register 2
-    pub const F16R2 = Register(F16R2_val).init(base_address + 0x2c4);
+    pub const F16R2 = MMIO(F16R2_val).init(base_address + 0x2c4);
 
     /// F17R1
     const F17R1_val = packed struct {
@@ -39141,7 +34796,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 17 register 1
-    pub const F17R1 = Register(F17R1_val).init(base_address + 0x2c8);
+    pub const F17R1 = MMIO(F17R1_val).init(base_address + 0x2c8);
 
     /// F17R2
     const F17R2_val = packed struct {
@@ -39243,7 +34898,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 17 register 2
-    pub const F17R2 = Register(F17R2_val).init(base_address + 0x2cc);
+    pub const F17R2 = MMIO(F17R2_val).init(base_address + 0x2cc);
 
     /// F18R1
     const F18R1_val = packed struct {
@@ -39345,7 +35000,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 18 register 1
-    pub const F18R1 = Register(F18R1_val).init(base_address + 0x2d0);
+    pub const F18R1 = MMIO(F18R1_val).init(base_address + 0x2d0);
 
     /// F18R2
     const F18R2_val = packed struct {
@@ -39447,7 +35102,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 18 register 2
-    pub const F18R2 = Register(F18R2_val).init(base_address + 0x2d4);
+    pub const F18R2 = MMIO(F18R2_val).init(base_address + 0x2d4);
 
     /// F19R1
     const F19R1_val = packed struct {
@@ -39549,7 +35204,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 19 register 1
-    pub const F19R1 = Register(F19R1_val).init(base_address + 0x2d8);
+    pub const F19R1 = MMIO(F19R1_val).init(base_address + 0x2d8);
 
     /// F19R2
     const F19R2_val = packed struct {
@@ -39651,7 +35306,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 19 register 2
-    pub const F19R2 = Register(F19R2_val).init(base_address + 0x2dc);
+    pub const F19R2 = MMIO(F19R2_val).init(base_address + 0x2dc);
 
     /// F20R1
     const F20R1_val = packed struct {
@@ -39753,7 +35408,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 20 register 1
-    pub const F20R1 = Register(F20R1_val).init(base_address + 0x2e0);
+    pub const F20R1 = MMIO(F20R1_val).init(base_address + 0x2e0);
 
     /// F20R2
     const F20R2_val = packed struct {
@@ -39855,7 +35510,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 20 register 2
-    pub const F20R2 = Register(F20R2_val).init(base_address + 0x2e4);
+    pub const F20R2 = MMIO(F20R2_val).init(base_address + 0x2e4);
 
     /// F21R1
     const F21R1_val = packed struct {
@@ -39957,7 +35612,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 21 register 1
-    pub const F21R1 = Register(F21R1_val).init(base_address + 0x2e8);
+    pub const F21R1 = MMIO(F21R1_val).init(base_address + 0x2e8);
 
     /// F21R2
     const F21R2_val = packed struct {
@@ -40059,7 +35714,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 21 register 2
-    pub const F21R2 = Register(F21R2_val).init(base_address + 0x2ec);
+    pub const F21R2 = MMIO(F21R2_val).init(base_address + 0x2ec);
 
     /// F22R1
     const F22R1_val = packed struct {
@@ -40161,7 +35816,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 22 register 1
-    pub const F22R1 = Register(F22R1_val).init(base_address + 0x2f0);
+    pub const F22R1 = MMIO(F22R1_val).init(base_address + 0x2f0);
 
     /// F22R2
     const F22R2_val = packed struct {
@@ -40263,7 +35918,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 22 register 2
-    pub const F22R2 = Register(F22R2_val).init(base_address + 0x2f4);
+    pub const F22R2 = MMIO(F22R2_val).init(base_address + 0x2f4);
 
     /// F23R1
     const F23R1_val = packed struct {
@@ -40365,7 +36020,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 23 register 1
-    pub const F23R1 = Register(F23R1_val).init(base_address + 0x2f8);
+    pub const F23R1 = MMIO(F23R1_val).init(base_address + 0x2f8);
 
     /// F23R2
     const F23R2_val = packed struct {
@@ -40467,7 +36122,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 23 register 2
-    pub const F23R2 = Register(F23R2_val).init(base_address + 0x2fc);
+    pub const F23R2 = MMIO(F23R2_val).init(base_address + 0x2fc);
 
     /// F24R1
     const F24R1_val = packed struct {
@@ -40569,7 +36224,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 24 register 1
-    pub const F24R1 = Register(F24R1_val).init(base_address + 0x300);
+    pub const F24R1 = MMIO(F24R1_val).init(base_address + 0x300);
 
     /// F24R2
     const F24R2_val = packed struct {
@@ -40671,7 +36326,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 24 register 2
-    pub const F24R2 = Register(F24R2_val).init(base_address + 0x304);
+    pub const F24R2 = MMIO(F24R2_val).init(base_address + 0x304);
 
     /// F25R1
     const F25R1_val = packed struct {
@@ -40773,7 +36428,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 25 register 1
-    pub const F25R1 = Register(F25R1_val).init(base_address + 0x308);
+    pub const F25R1 = MMIO(F25R1_val).init(base_address + 0x308);
 
     /// F25R2
     const F25R2_val = packed struct {
@@ -40875,7 +36530,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 25 register 2
-    pub const F25R2 = Register(F25R2_val).init(base_address + 0x30c);
+    pub const F25R2 = MMIO(F25R2_val).init(base_address + 0x30c);
 
     /// F26R1
     const F26R1_val = packed struct {
@@ -40977,7 +36632,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 26 register 1
-    pub const F26R1 = Register(F26R1_val).init(base_address + 0x310);
+    pub const F26R1 = MMIO(F26R1_val).init(base_address + 0x310);
 
     /// F26R2
     const F26R2_val = packed struct {
@@ -41079,7 +36734,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 26 register 2
-    pub const F26R2 = Register(F26R2_val).init(base_address + 0x314);
+    pub const F26R2 = MMIO(F26R2_val).init(base_address + 0x314);
 
     /// F27R1
     const F27R1_val = packed struct {
@@ -41181,7 +36836,7 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 27 register 1
-    pub const F27R1 = Register(F27R1_val).init(base_address + 0x318);
+    pub const F27R1 = MMIO(F27R1_val).init(base_address + 0x318);
 
     /// F27R2
     const F27R2_val = packed struct {
@@ -41283,7 +36938,524 @@ pub const CAN2 = struct {
         FB31: u1 = 0,
     };
     /// Filter bank 27 register 2
-    pub const F27R2 = Register(F27R2_val).init(base_address + 0x31c);
+    pub const F27R2 = MMIO(F27R2_val).init(base_address + 0x31c);
+};
+
+/// Nested Vectored Interrupt
+pub const NVIC = struct {
+    const base_address = 0xe000e100;
+    /// ISER0
+    const ISER0_val = packed struct {
+        /// SETENA [0:31]
+        /// SETENA
+        SETENA: u32 = 0,
+    };
+    /// Interrupt Set-Enable Register
+    pub const ISER0 = MMIO(ISER0_val).init(base_address + 0x0);
+
+    /// ISER1
+    const ISER1_val = packed struct {
+        /// SETENA [0:31]
+        /// SETENA
+        SETENA: u32 = 0,
+    };
+    /// Interrupt Set-Enable Register
+    pub const ISER1 = MMIO(ISER1_val).init(base_address + 0x4);
+
+    /// ISER2
+    const ISER2_val = packed struct {
+        /// SETENA [0:31]
+        /// SETENA
+        SETENA: u32 = 0,
+    };
+    /// Interrupt Set-Enable Register
+    pub const ISER2 = MMIO(ISER2_val).init(base_address + 0x8);
+
+    /// ICER0
+    const ICER0_val = packed struct {
+        /// CLRENA [0:31]
+        /// CLRENA
+        CLRENA: u32 = 0,
+    };
+    /// Interrupt Clear-Enable
+    pub const ICER0 = MMIO(ICER0_val).init(base_address + 0x80);
+
+    /// ICER1
+    const ICER1_val = packed struct {
+        /// CLRENA [0:31]
+        /// CLRENA
+        CLRENA: u32 = 0,
+    };
+    /// Interrupt Clear-Enable
+    pub const ICER1 = MMIO(ICER1_val).init(base_address + 0x84);
+
+    /// ICER2
+    const ICER2_val = packed struct {
+        /// CLRENA [0:31]
+        /// CLRENA
+        CLRENA: u32 = 0,
+    };
+    /// Interrupt Clear-Enable
+    pub const ICER2 = MMIO(ICER2_val).init(base_address + 0x88);
+
+    /// ISPR0
+    const ISPR0_val = packed struct {
+        /// SETPEND [0:31]
+        /// SETPEND
+        SETPEND: u32 = 0,
+    };
+    /// Interrupt Set-Pending Register
+    pub const ISPR0 = MMIO(ISPR0_val).init(base_address + 0x100);
+
+    /// ISPR1
+    const ISPR1_val = packed struct {
+        /// SETPEND [0:31]
+        /// SETPEND
+        SETPEND: u32 = 0,
+    };
+    /// Interrupt Set-Pending Register
+    pub const ISPR1 = MMIO(ISPR1_val).init(base_address + 0x104);
+
+    /// ISPR2
+    const ISPR2_val = packed struct {
+        /// SETPEND [0:31]
+        /// SETPEND
+        SETPEND: u32 = 0,
+    };
+    /// Interrupt Set-Pending Register
+    pub const ISPR2 = MMIO(ISPR2_val).init(base_address + 0x108);
+
+    /// ICPR0
+    const ICPR0_val = packed struct {
+        /// CLRPEND [0:31]
+        /// CLRPEND
+        CLRPEND: u32 = 0,
+    };
+    /// Interrupt Clear-Pending
+    pub const ICPR0 = MMIO(ICPR0_val).init(base_address + 0x180);
+
+    /// ICPR1
+    const ICPR1_val = packed struct {
+        /// CLRPEND [0:31]
+        /// CLRPEND
+        CLRPEND: u32 = 0,
+    };
+    /// Interrupt Clear-Pending
+    pub const ICPR1 = MMIO(ICPR1_val).init(base_address + 0x184);
+
+    /// ICPR2
+    const ICPR2_val = packed struct {
+        /// CLRPEND [0:31]
+        /// CLRPEND
+        CLRPEND: u32 = 0,
+    };
+    /// Interrupt Clear-Pending
+    pub const ICPR2 = MMIO(ICPR2_val).init(base_address + 0x188);
+
+    /// IABR0
+    const IABR0_val = packed struct {
+        /// ACTIVE [0:31]
+        /// ACTIVE
+        ACTIVE: u32 = 0,
+    };
+    /// Interrupt Active Bit Register
+    pub const IABR0 = MMIO(IABR0_val).init(base_address + 0x200);
+
+    /// IABR1
+    const IABR1_val = packed struct {
+        /// ACTIVE [0:31]
+        /// ACTIVE
+        ACTIVE: u32 = 0,
+    };
+    /// Interrupt Active Bit Register
+    pub const IABR1 = MMIO(IABR1_val).init(base_address + 0x204);
+
+    /// IABR2
+    const IABR2_val = packed struct {
+        /// ACTIVE [0:31]
+        /// ACTIVE
+        ACTIVE: u32 = 0,
+    };
+    /// Interrupt Active Bit Register
+    pub const IABR2 = MMIO(IABR2_val).init(base_address + 0x208);
+
+    /// IPR0
+    const IPR0_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR0 = MMIO(IPR0_val).init(base_address + 0x300);
+
+    /// IPR1
+    const IPR1_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR1 = MMIO(IPR1_val).init(base_address + 0x304);
+
+    /// IPR2
+    const IPR2_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR2 = MMIO(IPR2_val).init(base_address + 0x308);
+
+    /// IPR3
+    const IPR3_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR3 = MMIO(IPR3_val).init(base_address + 0x30c);
+
+    /// IPR4
+    const IPR4_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR4 = MMIO(IPR4_val).init(base_address + 0x310);
+
+    /// IPR5
+    const IPR5_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR5 = MMIO(IPR5_val).init(base_address + 0x314);
+
+    /// IPR6
+    const IPR6_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR6 = MMIO(IPR6_val).init(base_address + 0x318);
+
+    /// IPR7
+    const IPR7_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR7 = MMIO(IPR7_val).init(base_address + 0x31c);
+
+    /// IPR8
+    const IPR8_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR8 = MMIO(IPR8_val).init(base_address + 0x320);
+
+    /// IPR9
+    const IPR9_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR9 = MMIO(IPR9_val).init(base_address + 0x324);
+
+    /// IPR10
+    const IPR10_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR10 = MMIO(IPR10_val).init(base_address + 0x328);
+
+    /// IPR11
+    const IPR11_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR11 = MMIO(IPR11_val).init(base_address + 0x32c);
+
+    /// IPR12
+    const IPR12_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR12 = MMIO(IPR12_val).init(base_address + 0x330);
+
+    /// IPR13
+    const IPR13_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR13 = MMIO(IPR13_val).init(base_address + 0x334);
+
+    /// IPR14
+    const IPR14_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR14 = MMIO(IPR14_val).init(base_address + 0x338);
+
+    /// IPR15
+    const IPR15_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR15 = MMIO(IPR15_val).init(base_address + 0x33c);
+
+    /// IPR16
+    const IPR16_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR16 = MMIO(IPR16_val).init(base_address + 0x340);
+
+    /// IPR17
+    const IPR17_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR17 = MMIO(IPR17_val).init(base_address + 0x344);
+
+    /// IPR18
+    const IPR18_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR18 = MMIO(IPR18_val).init(base_address + 0x348);
+
+    /// IPR19
+    const IPR19_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR19 = MMIO(IPR19_val).init(base_address + 0x34c);
+
+    /// IPR20
+    const IPR20_val = packed struct {
+        /// IPR_N0 [0:7]
+        /// IPR_N0
+        IPR_N0: u8 = 0,
+        /// IPR_N1 [8:15]
+        /// IPR_N1
+        IPR_N1: u8 = 0,
+        /// IPR_N2 [16:23]
+        /// IPR_N2
+        IPR_N2: u8 = 0,
+        /// IPR_N3 [24:31]
+        /// IPR_N3
+        IPR_N3: u8 = 0,
+    };
+    /// Interrupt Priority Register
+    pub const IPR20 = MMIO(IPR20_val).init(base_address + 0x350);
 };
 
 /// FLASH
@@ -41317,7 +37489,7 @@ pub const FLASH = struct {
         _unused24: u8 = 0,
     };
     /// Flash access control register
-    pub const ACR = Register(ACR_val).init(base_address + 0x0);
+    pub const ACR = MMIO(ACR_val).init(base_address + 0x0);
 
     /// KEYR
     const KEYR_val = packed struct {
@@ -41326,7 +37498,7 @@ pub const FLASH = struct {
         KEY: u32 = 0,
     };
     /// Flash key register
-    pub const KEYR = Register(KEYR_val).init(base_address + 0x4);
+    pub const KEYR = MMIO(KEYR_val).init(base_address + 0x4);
 
     /// OPTKEYR
     const OPTKEYR_val = packed struct {
@@ -41335,7 +37507,7 @@ pub const FLASH = struct {
         OPTKEY: u32 = 0,
     };
     /// Flash option key register
-    pub const OPTKEYR = Register(OPTKEYR_val).init(base_address + 0x8);
+    pub const OPTKEYR = MMIO(OPTKEYR_val).init(base_address + 0x8);
 
     /// SR
     const SR_val = packed struct {
@@ -41359,8 +37531,11 @@ pub const FLASH = struct {
         /// PGSERR [7:7]
         /// Programming sequence error
         PGSERR: u1 = 0,
-        /// unused [8:15]
-        _unused8: u8 = 0,
+        /// RDERR [8:8]
+        /// Read Protection Error
+        RDERR: u1 = 0,
+        /// unused [9:15]
+        _unused9: u7 = 0,
         /// BSY [16:16]
         /// Busy
         BSY: u1 = 0,
@@ -41369,7 +37544,7 @@ pub const FLASH = struct {
         _unused24: u8 = 0,
     };
     /// Status register
-    pub const SR = Register(SR_val).init(base_address + 0xc);
+    pub const SR = MMIO(SR_val).init(base_address + 0xc);
 
     /// CR
     const CR_val = packed struct {
@@ -41380,7 +37555,7 @@ pub const FLASH = struct {
         /// Sector Erase
         SER: u1 = 0,
         /// MER [2:2]
-        /// Mass Erase
+        /// Mass Erase of sectors 0 to
         MER: u1 = 0,
         /// SNB [3:6]
         /// Sector number
@@ -41410,41 +37585,44 @@ pub const FLASH = struct {
         LOCK: u1 = 1,
     };
     /// Control register
-    pub const CR = Register(CR_val).init(base_address + 0x10);
+    pub const CR = MMIO(CR_val).init(base_address + 0x10);
 
     /// OPTCR
     const OPTCR_val = packed struct {
         /// OPTLOCK [0:0]
         /// Option lock
-        OPTLOCK: u1 = 0,
+        OPTLOCK: u1 = 1,
         /// OPTSTRT [1:1]
         /// Option start
         OPTSTRT: u1 = 0,
         /// BOR_LEV [2:3]
         /// BOR reset Level
-        BOR_LEV: u2 = 1,
+        BOR_LEV: u2 = 3,
         /// unused [4:4]
-        _unused4: u1 = 1,
+        _unused4: u1 = 0,
         /// WDG_SW [5:5]
         /// WDG_SW User option bytes
-        WDG_SW: u1 = 0,
+        WDG_SW: u1 = 1,
         /// nRST_STOP [6:6]
         /// nRST_STOP User option
-        nRST_STOP: u1 = 0,
+        nRST_STOP: u1 = 1,
         /// nRST_STDBY [7:7]
         /// nRST_STDBY User option
-        nRST_STDBY: u1 = 0,
+        nRST_STDBY: u1 = 1,
         /// RDP [8:15]
         /// Read protect
-        RDP: u8 = 0,
-        /// nWRP [16:27]
+        RDP: u8 = 170,
+        /// nWRP [16:23]
         /// Not write protect
-        nWRP: u12 = 0,
-        /// unused [28:31]
-        _unused28: u4 = 0,
+        nWRP: u8 = 255,
+        /// unused [24:30]
+        _unused24: u7 = 15,
+        /// SPRMOD [31:31]
+        /// Selection of Protection Mode of nWPRi
+        SPRMOD: u1 = 0,
     };
     /// Flash option control register
-    pub const OPTCR = Register(OPTCR_val).init(base_address + 0x14);
+    pub const OPTCR = MMIO(OPTCR_val).init(base_address + 0x14);
 };
 
 /// External interrupt/event
@@ -41526,7 +37704,7 @@ pub const EXTI = struct {
         _unused24: u8 = 0,
     };
     /// Interrupt mask register
-    pub const IMR = Register(IMR_val).init(base_address + 0x0);
+    pub const IMR = MMIO(IMR_val).init(base_address + 0x0);
 
     /// EMR
     const EMR_val = packed struct {
@@ -41604,7 +37782,7 @@ pub const EXTI = struct {
         _unused24: u8 = 0,
     };
     /// Event mask register (EXTI_EMR)
-    pub const EMR = Register(EMR_val).init(base_address + 0x4);
+    pub const EMR = MMIO(EMR_val).init(base_address + 0x4);
 
     /// RTSR
     const RTSR_val = packed struct {
@@ -41682,7 +37860,7 @@ pub const EXTI = struct {
         _unused24: u8 = 0,
     };
     /// Rising Trigger selection register
-    pub const RTSR = Register(RTSR_val).init(base_address + 0x8);
+    pub const RTSR = MMIO(RTSR_val).init(base_address + 0x8);
 
     /// FTSR
     const FTSR_val = packed struct {
@@ -41760,7 +37938,7 @@ pub const EXTI = struct {
         _unused24: u8 = 0,
     };
     /// Falling Trigger selection register
-    pub const FTSR = Register(FTSR_val).init(base_address + 0xc);
+    pub const FTSR = MMIO(FTSR_val).init(base_address + 0xc);
 
     /// SWIER
     const SWIER_val = packed struct {
@@ -41838,7 +38016,7 @@ pub const EXTI = struct {
         _unused24: u8 = 0,
     };
     /// Software interrupt event register
-    pub const SWIER = Register(SWIER_val).init(base_address + 0x10);
+    pub const SWIER = MMIO(SWIER_val).init(base_address + 0x10);
 
     /// PR
     const PR_val = packed struct {
@@ -41916,7 +38094,7 @@ pub const EXTI = struct {
         _unused24: u8 = 0,
     };
     /// Pending register (EXTI_PR)
-    pub const PR = Register(PR_val).init(base_address + 0x14);
+    pub const PR = MMIO(PR_val).init(base_address + 0x14);
 };
 
 /// USB on the go high speed
@@ -41963,7 +38141,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS control and status
-    pub const OTG_HS_GOTGCTL = Register(OTG_HS_GOTGCTL_val).init(base_address + 0x0);
+    pub const OTG_HS_GOTGCTL = MMIO(OTG_HS_GOTGCTL_val).init(base_address + 0x0);
 
     /// OTG_HS_GOTGINT
     const OTG_HS_GOTGINT_val = packed struct {
@@ -41997,7 +38175,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS interrupt register
-    pub const OTG_HS_GOTGINT = Register(OTG_HS_GOTGINT_val).init(base_address + 0x4);
+    pub const OTG_HS_GOTGINT = MMIO(OTG_HS_GOTGINT_val).init(base_address + 0x4);
 
     /// OTG_HS_GAHBCFG
     const OTG_HS_GAHBCFG_val = packed struct {
@@ -42024,7 +38202,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS AHB configuration
-    pub const OTG_HS_GAHBCFG = Register(OTG_HS_GAHBCFG_val).init(base_address + 0x8);
+    pub const OTG_HS_GAHBCFG = MMIO(OTG_HS_GAHBCFG_val).init(base_address + 0x8);
 
     /// OTG_HS_GUSBCFG
     const OTG_HS_GUSBCFG_val = packed struct {
@@ -42094,7 +38272,7 @@ pub const OTG_HS_GLOBAL = struct {
         CTXPKT: u1 = 0,
     };
     /// OTG_HS USB configuration
-    pub const OTG_HS_GUSBCFG = Register(OTG_HS_GUSBCFG_val).init(base_address + 0xc);
+    pub const OTG_HS_GUSBCFG = MMIO(OTG_HS_GUSBCFG_val).init(base_address + 0xc);
 
     /// OTG_HS_GRSTCTL
     const OTG_HS_GRSTCTL_val = packed struct {
@@ -42130,7 +38308,7 @@ pub const OTG_HS_GLOBAL = struct {
         AHBIDL: u1 = 0,
     };
     /// OTG_HS reset register
-    pub const OTG_HS_GRSTCTL = Register(OTG_HS_GRSTCTL_val).init(base_address + 0x10);
+    pub const OTG_HS_GRSTCTL = MMIO(OTG_HS_GRSTCTL_val).init(base_address + 0x10);
 
     /// OTG_HS_GINTSTS
     const OTG_HS_GINTSTS_val = packed struct {
@@ -42222,7 +38400,7 @@ pub const OTG_HS_GLOBAL = struct {
         WKUINT: u1 = 0,
     };
     /// OTG_HS core interrupt register
-    pub const OTG_HS_GINTSTS = Register(OTG_HS_GINTSTS_val).init(base_address + 0x14);
+    pub const OTG_HS_GINTSTS = MMIO(OTG_HS_GINTSTS_val).init(base_address + 0x14);
 
     /// OTG_HS_GINTMSK
     const OTG_HS_GINTMSK_val = packed struct {
@@ -42316,7 +38494,7 @@ pub const OTG_HS_GLOBAL = struct {
         WUIM: u1 = 0,
     };
     /// OTG_HS interrupt mask register
-    pub const OTG_HS_GINTMSK = Register(OTG_HS_GINTMSK_val).init(base_address + 0x18);
+    pub const OTG_HS_GINTMSK = MMIO(OTG_HS_GINTMSK_val).init(base_address + 0x18);
 
     /// OTG_HS_GRXSTSR_Host
     const OTG_HS_GRXSTSR_Host_val = packed struct {
@@ -42337,7 +38515,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS Receive status debug read register
-    pub const OTG_HS_GRXSTSR_Host = Register(OTG_HS_GRXSTSR_Host_val).init(base_address + 0x1c);
+    pub const OTG_HS_GRXSTSR_Host = MMIO(OTG_HS_GRXSTSR_Host_val).init(base_address + 0x1c);
 
     /// OTG_HS_GRXSTSP_Host
     const OTG_HS_GRXSTSP_Host_val = packed struct {
@@ -42358,7 +38536,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS status read and pop register (host
-    pub const OTG_HS_GRXSTSP_Host = Register(OTG_HS_GRXSTSP_Host_val).init(base_address + 0x20);
+    pub const OTG_HS_GRXSTSP_Host = MMIO(OTG_HS_GRXSTSP_Host_val).init(base_address + 0x20);
 
     /// OTG_HS_GRXFSIZ
     const OTG_HS_GRXFSIZ_val = packed struct {
@@ -42370,7 +38548,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS Receive FIFO size
-    pub const OTG_HS_GRXFSIZ = Register(OTG_HS_GRXFSIZ_val).init(base_address + 0x24);
+    pub const OTG_HS_GRXFSIZ = MMIO(OTG_HS_GRXFSIZ_val).init(base_address + 0x24);
 
     /// OTG_HS_GNPTXFSIZ_Host
     const OTG_HS_GNPTXFSIZ_Host_val = packed struct {
@@ -42382,7 +38560,7 @@ pub const OTG_HS_GLOBAL = struct {
         NPTXFD: u16 = 0,
     };
     /// OTG_HS nonperiodic transmit FIFO size
-    pub const OTG_HS_GNPTXFSIZ_Host = Register(OTG_HS_GNPTXFSIZ_Host_val).init(base_address + 0x28);
+    pub const OTG_HS_GNPTXFSIZ_Host = MMIO(OTG_HS_GNPTXFSIZ_Host_val).init(base_address + 0x28);
 
     /// OTG_HS_TX0FSIZ_Peripheral
     const OTG_HS_TX0FSIZ_Peripheral_val = packed struct {
@@ -42394,7 +38572,7 @@ pub const OTG_HS_GLOBAL = struct {
         TX0FD: u16 = 0,
     };
     /// Endpoint 0 transmit FIFO size (peripheral
-    pub const OTG_HS_TX0FSIZ_Peripheral = Register(OTG_HS_TX0FSIZ_Peripheral_val).init(base_address + 0x28);
+    pub const OTG_HS_TX0FSIZ_Peripheral = MMIO(OTG_HS_TX0FSIZ_Peripheral_val).init(base_address + 0x28);
 
     /// OTG_HS_GNPTXSTS
     const OTG_HS_GNPTXSTS_val = packed struct {
@@ -42411,7 +38589,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS nonperiodic transmit FIFO/queue
-    pub const OTG_HS_GNPTXSTS = Register(OTG_HS_GNPTXSTS_val).init(base_address + 0x2c);
+    pub const OTG_HS_GNPTXSTS = MMIO(OTG_HS_GNPTXSTS_val).init(base_address + 0x2c);
 
     /// OTG_HS_GCCFG
     const OTG_HS_GCCFG_val = packed struct {
@@ -42441,7 +38619,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS general core configuration
-    pub const OTG_HS_GCCFG = Register(OTG_HS_GCCFG_val).init(base_address + 0x38);
+    pub const OTG_HS_GCCFG = MMIO(OTG_HS_GCCFG_val).init(base_address + 0x38);
 
     /// OTG_HS_CID
     const OTG_HS_CID_val = packed struct {
@@ -42450,7 +38628,7 @@ pub const OTG_HS_GLOBAL = struct {
         PRODUCT_ID: u32 = 4608,
     };
     /// OTG_HS core ID register
-    pub const OTG_HS_CID = Register(OTG_HS_CID_val).init(base_address + 0x3c);
+    pub const OTG_HS_CID = MMIO(OTG_HS_CID_val).init(base_address + 0x3c);
 
     /// OTG_HS_HPTXFSIZ
     const OTG_HS_HPTXFSIZ_val = packed struct {
@@ -42462,7 +38640,7 @@ pub const OTG_HS_GLOBAL = struct {
         PTXFD: u16 = 512,
     };
     /// OTG_HS Host periodic transmit FIFO size
-    pub const OTG_HS_HPTXFSIZ = Register(OTG_HS_HPTXFSIZ_val).init(base_address + 0x100);
+    pub const OTG_HS_HPTXFSIZ = MMIO(OTG_HS_HPTXFSIZ_val).init(base_address + 0x100);
 
     /// OTG_HS_DIEPTXF1
     const OTG_HS_DIEPTXF1_val = packed struct {
@@ -42474,7 +38652,7 @@ pub const OTG_HS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_HS device IN endpoint transmit FIFO size
-    pub const OTG_HS_DIEPTXF1 = Register(OTG_HS_DIEPTXF1_val).init(base_address + 0x104);
+    pub const OTG_HS_DIEPTXF1 = MMIO(OTG_HS_DIEPTXF1_val).init(base_address + 0x104);
 
     /// OTG_HS_DIEPTXF2
     const OTG_HS_DIEPTXF2_val = packed struct {
@@ -42486,7 +38664,7 @@ pub const OTG_HS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_HS device IN endpoint transmit FIFO size
-    pub const OTG_HS_DIEPTXF2 = Register(OTG_HS_DIEPTXF2_val).init(base_address + 0x108);
+    pub const OTG_HS_DIEPTXF2 = MMIO(OTG_HS_DIEPTXF2_val).init(base_address + 0x108);
 
     /// OTG_HS_DIEPTXF3
     const OTG_HS_DIEPTXF3_val = packed struct {
@@ -42498,7 +38676,7 @@ pub const OTG_HS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_HS device IN endpoint transmit FIFO size
-    pub const OTG_HS_DIEPTXF3 = Register(OTG_HS_DIEPTXF3_val).init(base_address + 0x11c);
+    pub const OTG_HS_DIEPTXF3 = MMIO(OTG_HS_DIEPTXF3_val).init(base_address + 0x11c);
 
     /// OTG_HS_DIEPTXF4
     const OTG_HS_DIEPTXF4_val = packed struct {
@@ -42510,7 +38688,7 @@ pub const OTG_HS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_HS device IN endpoint transmit FIFO size
-    pub const OTG_HS_DIEPTXF4 = Register(OTG_HS_DIEPTXF4_val).init(base_address + 0x120);
+    pub const OTG_HS_DIEPTXF4 = MMIO(OTG_HS_DIEPTXF4_val).init(base_address + 0x120);
 
     /// OTG_HS_DIEPTXF5
     const OTG_HS_DIEPTXF5_val = packed struct {
@@ -42522,7 +38700,7 @@ pub const OTG_HS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_HS device IN endpoint transmit FIFO size
-    pub const OTG_HS_DIEPTXF5 = Register(OTG_HS_DIEPTXF5_val).init(base_address + 0x124);
+    pub const OTG_HS_DIEPTXF5 = MMIO(OTG_HS_DIEPTXF5_val).init(base_address + 0x124);
 
     /// OTG_HS_DIEPTXF6
     const OTG_HS_DIEPTXF6_val = packed struct {
@@ -42534,7 +38712,7 @@ pub const OTG_HS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_HS device IN endpoint transmit FIFO size
-    pub const OTG_HS_DIEPTXF6 = Register(OTG_HS_DIEPTXF6_val).init(base_address + 0x128);
+    pub const OTG_HS_DIEPTXF6 = MMIO(OTG_HS_DIEPTXF6_val).init(base_address + 0x128);
 
     /// OTG_HS_DIEPTXF7
     const OTG_HS_DIEPTXF7_val = packed struct {
@@ -42546,7 +38724,7 @@ pub const OTG_HS_GLOBAL = struct {
         INEPTXFD: u16 = 512,
     };
     /// OTG_HS device IN endpoint transmit FIFO size
-    pub const OTG_HS_DIEPTXF7 = Register(OTG_HS_DIEPTXF7_val).init(base_address + 0x12c);
+    pub const OTG_HS_DIEPTXF7 = MMIO(OTG_HS_DIEPTXF7_val).init(base_address + 0x12c);
 
     /// OTG_HS_GRXSTSR_Peripheral
     const OTG_HS_GRXSTSR_Peripheral_val = packed struct {
@@ -42569,7 +38747,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused25: u7 = 0,
     };
     /// OTG_HS Receive status debug read register
-    pub const OTG_HS_GRXSTSR_Peripheral = Register(OTG_HS_GRXSTSR_Peripheral_val).init(base_address + 0x1c);
+    pub const OTG_HS_GRXSTSR_Peripheral = MMIO(OTG_HS_GRXSTSR_Peripheral_val).init(base_address + 0x1c);
 
     /// OTG_HS_GRXSTSP_Peripheral
     const OTG_HS_GRXSTSP_Peripheral_val = packed struct {
@@ -42592,7 +38770,7 @@ pub const OTG_HS_GLOBAL = struct {
         _unused25: u7 = 0,
     };
     /// OTG_HS status read and pop register
-    pub const OTG_HS_GRXSTSP_Peripheral = Register(OTG_HS_GRXSTSP_Peripheral_val).init(base_address + 0x20);
+    pub const OTG_HS_GRXSTSP_Peripheral = MMIO(OTG_HS_GRXSTSP_Peripheral_val).init(base_address + 0x20);
 };
 
 /// USB on the go high speed
@@ -42613,7 +38791,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host configuration
-    pub const OTG_HS_HCFG = Register(OTG_HS_HCFG_val).init(base_address + 0x0);
+    pub const OTG_HS_HCFG = MMIO(OTG_HS_HCFG_val).init(base_address + 0x0);
 
     /// OTG_HS_HFIR
     const OTG_HS_HFIR_val = packed struct {
@@ -42625,7 +38803,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS Host frame interval
-    pub const OTG_HS_HFIR = Register(OTG_HS_HFIR_val).init(base_address + 0x4);
+    pub const OTG_HS_HFIR = MMIO(OTG_HS_HFIR_val).init(base_address + 0x4);
 
     /// OTG_HS_HFNUM
     const OTG_HS_HFNUM_val = packed struct {
@@ -42637,7 +38815,7 @@ pub const OTG_HS_HOST = struct {
         FTREM: u16 = 0,
     };
     /// OTG_HS host frame number/frame time
-    pub const OTG_HS_HFNUM = Register(OTG_HS_HFNUM_val).init(base_address + 0x8);
+    pub const OTG_HS_HFNUM = MMIO(OTG_HS_HFNUM_val).init(base_address + 0x8);
 
     /// OTG_HS_HPTXSTS
     const OTG_HS_HPTXSTS_val = packed struct {
@@ -42652,7 +38830,7 @@ pub const OTG_HS_HOST = struct {
         PTXQTOP: u8 = 0,
     };
     /// OTG_HS_Host periodic transmit FIFO/queue
-    pub const OTG_HS_HPTXSTS = Register(OTG_HS_HPTXSTS_val).init(base_address + 0x10);
+    pub const OTG_HS_HPTXSTS = MMIO(OTG_HS_HPTXSTS_val).init(base_address + 0x10);
 
     /// OTG_HS_HAINT
     const OTG_HS_HAINT_val = packed struct {
@@ -42664,7 +38842,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS Host all channels interrupt
-    pub const OTG_HS_HAINT = Register(OTG_HS_HAINT_val).init(base_address + 0x14);
+    pub const OTG_HS_HAINT = MMIO(OTG_HS_HAINT_val).init(base_address + 0x14);
 
     /// OTG_HS_HAINTMSK
     const OTG_HS_HAINTMSK_val = packed struct {
@@ -42676,7 +38854,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host all channels interrupt mask
-    pub const OTG_HS_HAINTMSK = Register(OTG_HS_HAINTMSK_val).init(base_address + 0x18);
+    pub const OTG_HS_HAINTMSK = MMIO(OTG_HS_HAINTMSK_val).init(base_address + 0x18);
 
     /// OTG_HS_HPRT
     const OTG_HS_HPRT_val = packed struct {
@@ -42726,7 +38904,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host port control and status
-    pub const OTG_HS_HPRT = Register(OTG_HS_HPRT_val).init(base_address + 0x40);
+    pub const OTG_HS_HPRT = MMIO(OTG_HS_HPRT_val).init(base_address + 0x40);
 
     /// OTG_HS_HCCHAR0
     const OTG_HS_HCCHAR0_val = packed struct {
@@ -42764,7 +38942,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-0 characteristics
-    pub const OTG_HS_HCCHAR0 = Register(OTG_HS_HCCHAR0_val).init(base_address + 0x100);
+    pub const OTG_HS_HCCHAR0 = MMIO(OTG_HS_HCCHAR0_val).init(base_address + 0x100);
 
     /// OTG_HS_HCCHAR1
     const OTG_HS_HCCHAR1_val = packed struct {
@@ -42802,7 +38980,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-1 characteristics
-    pub const OTG_HS_HCCHAR1 = Register(OTG_HS_HCCHAR1_val).init(base_address + 0x120);
+    pub const OTG_HS_HCCHAR1 = MMIO(OTG_HS_HCCHAR1_val).init(base_address + 0x120);
 
     /// OTG_HS_HCCHAR2
     const OTG_HS_HCCHAR2_val = packed struct {
@@ -42840,7 +39018,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-2 characteristics
-    pub const OTG_HS_HCCHAR2 = Register(OTG_HS_HCCHAR2_val).init(base_address + 0x140);
+    pub const OTG_HS_HCCHAR2 = MMIO(OTG_HS_HCCHAR2_val).init(base_address + 0x140);
 
     /// OTG_HS_HCCHAR3
     const OTG_HS_HCCHAR3_val = packed struct {
@@ -42878,7 +39056,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-3 characteristics
-    pub const OTG_HS_HCCHAR3 = Register(OTG_HS_HCCHAR3_val).init(base_address + 0x160);
+    pub const OTG_HS_HCCHAR3 = MMIO(OTG_HS_HCCHAR3_val).init(base_address + 0x160);
 
     /// OTG_HS_HCCHAR4
     const OTG_HS_HCCHAR4_val = packed struct {
@@ -42916,7 +39094,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-4 characteristics
-    pub const OTG_HS_HCCHAR4 = Register(OTG_HS_HCCHAR4_val).init(base_address + 0x180);
+    pub const OTG_HS_HCCHAR4 = MMIO(OTG_HS_HCCHAR4_val).init(base_address + 0x180);
 
     /// OTG_HS_HCCHAR5
     const OTG_HS_HCCHAR5_val = packed struct {
@@ -42954,7 +39132,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-5 characteristics
-    pub const OTG_HS_HCCHAR5 = Register(OTG_HS_HCCHAR5_val).init(base_address + 0x1a0);
+    pub const OTG_HS_HCCHAR5 = MMIO(OTG_HS_HCCHAR5_val).init(base_address + 0x1a0);
 
     /// OTG_HS_HCCHAR6
     const OTG_HS_HCCHAR6_val = packed struct {
@@ -42992,7 +39170,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-6 characteristics
-    pub const OTG_HS_HCCHAR6 = Register(OTG_HS_HCCHAR6_val).init(base_address + 0x1c0);
+    pub const OTG_HS_HCCHAR6 = MMIO(OTG_HS_HCCHAR6_val).init(base_address + 0x1c0);
 
     /// OTG_HS_HCCHAR7
     const OTG_HS_HCCHAR7_val = packed struct {
@@ -43030,7 +39208,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-7 characteristics
-    pub const OTG_HS_HCCHAR7 = Register(OTG_HS_HCCHAR7_val).init(base_address + 0x1e0);
+    pub const OTG_HS_HCCHAR7 = MMIO(OTG_HS_HCCHAR7_val).init(base_address + 0x1e0);
 
     /// OTG_HS_HCCHAR8
     const OTG_HS_HCCHAR8_val = packed struct {
@@ -43068,7 +39246,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-8 characteristics
-    pub const OTG_HS_HCCHAR8 = Register(OTG_HS_HCCHAR8_val).init(base_address + 0x200);
+    pub const OTG_HS_HCCHAR8 = MMIO(OTG_HS_HCCHAR8_val).init(base_address + 0x200);
 
     /// OTG_HS_HCCHAR9
     const OTG_HS_HCCHAR9_val = packed struct {
@@ -43106,7 +39284,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-9 characteristics
-    pub const OTG_HS_HCCHAR9 = Register(OTG_HS_HCCHAR9_val).init(base_address + 0x220);
+    pub const OTG_HS_HCCHAR9 = MMIO(OTG_HS_HCCHAR9_val).init(base_address + 0x220);
 
     /// OTG_HS_HCCHAR10
     const OTG_HS_HCCHAR10_val = packed struct {
@@ -43144,7 +39322,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-10 characteristics
-    pub const OTG_HS_HCCHAR10 = Register(OTG_HS_HCCHAR10_val).init(base_address + 0x240);
+    pub const OTG_HS_HCCHAR10 = MMIO(OTG_HS_HCCHAR10_val).init(base_address + 0x240);
 
     /// OTG_HS_HCCHAR11
     const OTG_HS_HCCHAR11_val = packed struct {
@@ -43182,7 +39360,7 @@ pub const OTG_HS_HOST = struct {
         CHENA: u1 = 0,
     };
     /// OTG_HS host channel-11 characteristics
-    pub const OTG_HS_HCCHAR11 = Register(OTG_HS_HCCHAR11_val).init(base_address + 0x260);
+    pub const OTG_HS_HCCHAR11 = MMIO(OTG_HS_HCCHAR11_val).init(base_address + 0x260);
 
     /// OTG_HS_HCSPLT0
     const OTG_HS_HCSPLT0_val = packed struct {
@@ -43206,7 +39384,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-0 split control
-    pub const OTG_HS_HCSPLT0 = Register(OTG_HS_HCSPLT0_val).init(base_address + 0x104);
+    pub const OTG_HS_HCSPLT0 = MMIO(OTG_HS_HCSPLT0_val).init(base_address + 0x104);
 
     /// OTG_HS_HCSPLT1
     const OTG_HS_HCSPLT1_val = packed struct {
@@ -43230,7 +39408,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-1 split control
-    pub const OTG_HS_HCSPLT1 = Register(OTG_HS_HCSPLT1_val).init(base_address + 0x124);
+    pub const OTG_HS_HCSPLT1 = MMIO(OTG_HS_HCSPLT1_val).init(base_address + 0x124);
 
     /// OTG_HS_HCSPLT2
     const OTG_HS_HCSPLT2_val = packed struct {
@@ -43254,7 +39432,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-2 split control
-    pub const OTG_HS_HCSPLT2 = Register(OTG_HS_HCSPLT2_val).init(base_address + 0x144);
+    pub const OTG_HS_HCSPLT2 = MMIO(OTG_HS_HCSPLT2_val).init(base_address + 0x144);
 
     /// OTG_HS_HCSPLT3
     const OTG_HS_HCSPLT3_val = packed struct {
@@ -43278,7 +39456,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-3 split control
-    pub const OTG_HS_HCSPLT3 = Register(OTG_HS_HCSPLT3_val).init(base_address + 0x164);
+    pub const OTG_HS_HCSPLT3 = MMIO(OTG_HS_HCSPLT3_val).init(base_address + 0x164);
 
     /// OTG_HS_HCSPLT4
     const OTG_HS_HCSPLT4_val = packed struct {
@@ -43302,7 +39480,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-4 split control
-    pub const OTG_HS_HCSPLT4 = Register(OTG_HS_HCSPLT4_val).init(base_address + 0x184);
+    pub const OTG_HS_HCSPLT4 = MMIO(OTG_HS_HCSPLT4_val).init(base_address + 0x184);
 
     /// OTG_HS_HCSPLT5
     const OTG_HS_HCSPLT5_val = packed struct {
@@ -43326,7 +39504,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-5 split control
-    pub const OTG_HS_HCSPLT5 = Register(OTG_HS_HCSPLT5_val).init(base_address + 0x1a4);
+    pub const OTG_HS_HCSPLT5 = MMIO(OTG_HS_HCSPLT5_val).init(base_address + 0x1a4);
 
     /// OTG_HS_HCSPLT6
     const OTG_HS_HCSPLT6_val = packed struct {
@@ -43350,7 +39528,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-6 split control
-    pub const OTG_HS_HCSPLT6 = Register(OTG_HS_HCSPLT6_val).init(base_address + 0x1c4);
+    pub const OTG_HS_HCSPLT6 = MMIO(OTG_HS_HCSPLT6_val).init(base_address + 0x1c4);
 
     /// OTG_HS_HCSPLT7
     const OTG_HS_HCSPLT7_val = packed struct {
@@ -43374,7 +39552,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-7 split control
-    pub const OTG_HS_HCSPLT7 = Register(OTG_HS_HCSPLT7_val).init(base_address + 0x1e4);
+    pub const OTG_HS_HCSPLT7 = MMIO(OTG_HS_HCSPLT7_val).init(base_address + 0x1e4);
 
     /// OTG_HS_HCSPLT8
     const OTG_HS_HCSPLT8_val = packed struct {
@@ -43398,7 +39576,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-8 split control
-    pub const OTG_HS_HCSPLT8 = Register(OTG_HS_HCSPLT8_val).init(base_address + 0x204);
+    pub const OTG_HS_HCSPLT8 = MMIO(OTG_HS_HCSPLT8_val).init(base_address + 0x204);
 
     /// OTG_HS_HCSPLT9
     const OTG_HS_HCSPLT9_val = packed struct {
@@ -43422,7 +39600,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-9 split control
-    pub const OTG_HS_HCSPLT9 = Register(OTG_HS_HCSPLT9_val).init(base_address + 0x224);
+    pub const OTG_HS_HCSPLT9 = MMIO(OTG_HS_HCSPLT9_val).init(base_address + 0x224);
 
     /// OTG_HS_HCSPLT10
     const OTG_HS_HCSPLT10_val = packed struct {
@@ -43446,7 +39624,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-10 split control
-    pub const OTG_HS_HCSPLT10 = Register(OTG_HS_HCSPLT10_val).init(base_address + 0x244);
+    pub const OTG_HS_HCSPLT10 = MMIO(OTG_HS_HCSPLT10_val).init(base_address + 0x244);
 
     /// OTG_HS_HCSPLT11
     const OTG_HS_HCSPLT11_val = packed struct {
@@ -43470,7 +39648,7 @@ pub const OTG_HS_HOST = struct {
         SPLITEN: u1 = 0,
     };
     /// OTG_HS host channel-11 split control
-    pub const OTG_HS_HCSPLT11 = Register(OTG_HS_HCSPLT11_val).init(base_address + 0x264);
+    pub const OTG_HS_HCSPLT11 = MMIO(OTG_HS_HCSPLT11_val).init(base_address + 0x264);
 
     /// OTG_HS_HCINT0
     const OTG_HS_HCINT0_val = packed struct {
@@ -43513,7 +39691,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-11 interrupt
-    pub const OTG_HS_HCINT0 = Register(OTG_HS_HCINT0_val).init(base_address + 0x108);
+    pub const OTG_HS_HCINT0 = MMIO(OTG_HS_HCINT0_val).init(base_address + 0x108);
 
     /// OTG_HS_HCINT1
     const OTG_HS_HCINT1_val = packed struct {
@@ -43556,7 +39734,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-1 interrupt
-    pub const OTG_HS_HCINT1 = Register(OTG_HS_HCINT1_val).init(base_address + 0x128);
+    pub const OTG_HS_HCINT1 = MMIO(OTG_HS_HCINT1_val).init(base_address + 0x128);
 
     /// OTG_HS_HCINT2
     const OTG_HS_HCINT2_val = packed struct {
@@ -43599,7 +39777,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-2 interrupt
-    pub const OTG_HS_HCINT2 = Register(OTG_HS_HCINT2_val).init(base_address + 0x148);
+    pub const OTG_HS_HCINT2 = MMIO(OTG_HS_HCINT2_val).init(base_address + 0x148);
 
     /// OTG_HS_HCINT3
     const OTG_HS_HCINT3_val = packed struct {
@@ -43642,7 +39820,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-3 interrupt
-    pub const OTG_HS_HCINT3 = Register(OTG_HS_HCINT3_val).init(base_address + 0x168);
+    pub const OTG_HS_HCINT3 = MMIO(OTG_HS_HCINT3_val).init(base_address + 0x168);
 
     /// OTG_HS_HCINT4
     const OTG_HS_HCINT4_val = packed struct {
@@ -43685,7 +39863,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-4 interrupt
-    pub const OTG_HS_HCINT4 = Register(OTG_HS_HCINT4_val).init(base_address + 0x188);
+    pub const OTG_HS_HCINT4 = MMIO(OTG_HS_HCINT4_val).init(base_address + 0x188);
 
     /// OTG_HS_HCINT5
     const OTG_HS_HCINT5_val = packed struct {
@@ -43728,7 +39906,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-5 interrupt
-    pub const OTG_HS_HCINT5 = Register(OTG_HS_HCINT5_val).init(base_address + 0x1a8);
+    pub const OTG_HS_HCINT5 = MMIO(OTG_HS_HCINT5_val).init(base_address + 0x1a8);
 
     /// OTG_HS_HCINT6
     const OTG_HS_HCINT6_val = packed struct {
@@ -43771,7 +39949,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-6 interrupt
-    pub const OTG_HS_HCINT6 = Register(OTG_HS_HCINT6_val).init(base_address + 0x1c8);
+    pub const OTG_HS_HCINT6 = MMIO(OTG_HS_HCINT6_val).init(base_address + 0x1c8);
 
     /// OTG_HS_HCINT7
     const OTG_HS_HCINT7_val = packed struct {
@@ -43814,7 +39992,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-7 interrupt
-    pub const OTG_HS_HCINT7 = Register(OTG_HS_HCINT7_val).init(base_address + 0x1e8);
+    pub const OTG_HS_HCINT7 = MMIO(OTG_HS_HCINT7_val).init(base_address + 0x1e8);
 
     /// OTG_HS_HCINT8
     const OTG_HS_HCINT8_val = packed struct {
@@ -43857,7 +40035,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-8 interrupt
-    pub const OTG_HS_HCINT8 = Register(OTG_HS_HCINT8_val).init(base_address + 0x208);
+    pub const OTG_HS_HCINT8 = MMIO(OTG_HS_HCINT8_val).init(base_address + 0x208);
 
     /// OTG_HS_HCINT9
     const OTG_HS_HCINT9_val = packed struct {
@@ -43900,7 +40078,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-9 interrupt
-    pub const OTG_HS_HCINT9 = Register(OTG_HS_HCINT9_val).init(base_address + 0x228);
+    pub const OTG_HS_HCINT9 = MMIO(OTG_HS_HCINT9_val).init(base_address + 0x228);
 
     /// OTG_HS_HCINT10
     const OTG_HS_HCINT10_val = packed struct {
@@ -43943,7 +40121,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-10 interrupt
-    pub const OTG_HS_HCINT10 = Register(OTG_HS_HCINT10_val).init(base_address + 0x248);
+    pub const OTG_HS_HCINT10 = MMIO(OTG_HS_HCINT10_val).init(base_address + 0x248);
 
     /// OTG_HS_HCINT11
     const OTG_HS_HCINT11_val = packed struct {
@@ -43986,7 +40164,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-11 interrupt
-    pub const OTG_HS_HCINT11 = Register(OTG_HS_HCINT11_val).init(base_address + 0x268);
+    pub const OTG_HS_HCINT11 = MMIO(OTG_HS_HCINT11_val).init(base_address + 0x268);
 
     /// OTG_HS_HCINTMSK0
     const OTG_HS_HCINTMSK0_val = packed struct {
@@ -44029,7 +40207,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-11 interrupt mask
-    pub const OTG_HS_HCINTMSK0 = Register(OTG_HS_HCINTMSK0_val).init(base_address + 0x10c);
+    pub const OTG_HS_HCINTMSK0 = MMIO(OTG_HS_HCINTMSK0_val).init(base_address + 0x10c);
 
     /// OTG_HS_HCINTMSK1
     const OTG_HS_HCINTMSK1_val = packed struct {
@@ -44072,7 +40250,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-1 interrupt mask
-    pub const OTG_HS_HCINTMSK1 = Register(OTG_HS_HCINTMSK1_val).init(base_address + 0x12c);
+    pub const OTG_HS_HCINTMSK1 = MMIO(OTG_HS_HCINTMSK1_val).init(base_address + 0x12c);
 
     /// OTG_HS_HCINTMSK2
     const OTG_HS_HCINTMSK2_val = packed struct {
@@ -44115,7 +40293,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-2 interrupt mask
-    pub const OTG_HS_HCINTMSK2 = Register(OTG_HS_HCINTMSK2_val).init(base_address + 0x14c);
+    pub const OTG_HS_HCINTMSK2 = MMIO(OTG_HS_HCINTMSK2_val).init(base_address + 0x14c);
 
     /// OTG_HS_HCINTMSK3
     const OTG_HS_HCINTMSK3_val = packed struct {
@@ -44158,7 +40336,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-3 interrupt mask
-    pub const OTG_HS_HCINTMSK3 = Register(OTG_HS_HCINTMSK3_val).init(base_address + 0x16c);
+    pub const OTG_HS_HCINTMSK3 = MMIO(OTG_HS_HCINTMSK3_val).init(base_address + 0x16c);
 
     /// OTG_HS_HCINTMSK4
     const OTG_HS_HCINTMSK4_val = packed struct {
@@ -44201,7 +40379,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-4 interrupt mask
-    pub const OTG_HS_HCINTMSK4 = Register(OTG_HS_HCINTMSK4_val).init(base_address + 0x18c);
+    pub const OTG_HS_HCINTMSK4 = MMIO(OTG_HS_HCINTMSK4_val).init(base_address + 0x18c);
 
     /// OTG_HS_HCINTMSK5
     const OTG_HS_HCINTMSK5_val = packed struct {
@@ -44244,7 +40422,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-5 interrupt mask
-    pub const OTG_HS_HCINTMSK5 = Register(OTG_HS_HCINTMSK5_val).init(base_address + 0x1ac);
+    pub const OTG_HS_HCINTMSK5 = MMIO(OTG_HS_HCINTMSK5_val).init(base_address + 0x1ac);
 
     /// OTG_HS_HCINTMSK6
     const OTG_HS_HCINTMSK6_val = packed struct {
@@ -44287,7 +40465,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-6 interrupt mask
-    pub const OTG_HS_HCINTMSK6 = Register(OTG_HS_HCINTMSK6_val).init(base_address + 0x1cc);
+    pub const OTG_HS_HCINTMSK6 = MMIO(OTG_HS_HCINTMSK6_val).init(base_address + 0x1cc);
 
     /// OTG_HS_HCINTMSK7
     const OTG_HS_HCINTMSK7_val = packed struct {
@@ -44330,7 +40508,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-7 interrupt mask
-    pub const OTG_HS_HCINTMSK7 = Register(OTG_HS_HCINTMSK7_val).init(base_address + 0x1ec);
+    pub const OTG_HS_HCINTMSK7 = MMIO(OTG_HS_HCINTMSK7_val).init(base_address + 0x1ec);
 
     /// OTG_HS_HCINTMSK8
     const OTG_HS_HCINTMSK8_val = packed struct {
@@ -44373,7 +40551,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-8 interrupt mask
-    pub const OTG_HS_HCINTMSK8 = Register(OTG_HS_HCINTMSK8_val).init(base_address + 0x20c);
+    pub const OTG_HS_HCINTMSK8 = MMIO(OTG_HS_HCINTMSK8_val).init(base_address + 0x20c);
 
     /// OTG_HS_HCINTMSK9
     const OTG_HS_HCINTMSK9_val = packed struct {
@@ -44416,7 +40594,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-9 interrupt mask
-    pub const OTG_HS_HCINTMSK9 = Register(OTG_HS_HCINTMSK9_val).init(base_address + 0x22c);
+    pub const OTG_HS_HCINTMSK9 = MMIO(OTG_HS_HCINTMSK9_val).init(base_address + 0x22c);
 
     /// OTG_HS_HCINTMSK10
     const OTG_HS_HCINTMSK10_val = packed struct {
@@ -44459,7 +40637,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-10 interrupt mask
-    pub const OTG_HS_HCINTMSK10 = Register(OTG_HS_HCINTMSK10_val).init(base_address + 0x24c);
+    pub const OTG_HS_HCINTMSK10 = MMIO(OTG_HS_HCINTMSK10_val).init(base_address + 0x24c);
 
     /// OTG_HS_HCINTMSK11
     const OTG_HS_HCINTMSK11_val = packed struct {
@@ -44502,7 +40680,7 @@ pub const OTG_HS_HOST = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS host channel-11 interrupt mask
-    pub const OTG_HS_HCINTMSK11 = Register(OTG_HS_HCINTMSK11_val).init(base_address + 0x26c);
+    pub const OTG_HS_HCINTMSK11 = MMIO(OTG_HS_HCINTMSK11_val).init(base_address + 0x26c);
 
     /// OTG_HS_HCTSIZ0
     const OTG_HS_HCTSIZ0_val = packed struct {
@@ -44519,7 +40697,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-11 transfer size
-    pub const OTG_HS_HCTSIZ0 = Register(OTG_HS_HCTSIZ0_val).init(base_address + 0x110);
+    pub const OTG_HS_HCTSIZ0 = MMIO(OTG_HS_HCTSIZ0_val).init(base_address + 0x110);
 
     /// OTG_HS_HCTSIZ1
     const OTG_HS_HCTSIZ1_val = packed struct {
@@ -44536,7 +40714,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-1 transfer size
-    pub const OTG_HS_HCTSIZ1 = Register(OTG_HS_HCTSIZ1_val).init(base_address + 0x130);
+    pub const OTG_HS_HCTSIZ1 = MMIO(OTG_HS_HCTSIZ1_val).init(base_address + 0x130);
 
     /// OTG_HS_HCTSIZ2
     const OTG_HS_HCTSIZ2_val = packed struct {
@@ -44553,7 +40731,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-2 transfer size
-    pub const OTG_HS_HCTSIZ2 = Register(OTG_HS_HCTSIZ2_val).init(base_address + 0x150);
+    pub const OTG_HS_HCTSIZ2 = MMIO(OTG_HS_HCTSIZ2_val).init(base_address + 0x150);
 
     /// OTG_HS_HCTSIZ3
     const OTG_HS_HCTSIZ3_val = packed struct {
@@ -44570,7 +40748,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-3 transfer size
-    pub const OTG_HS_HCTSIZ3 = Register(OTG_HS_HCTSIZ3_val).init(base_address + 0x170);
+    pub const OTG_HS_HCTSIZ3 = MMIO(OTG_HS_HCTSIZ3_val).init(base_address + 0x170);
 
     /// OTG_HS_HCTSIZ4
     const OTG_HS_HCTSIZ4_val = packed struct {
@@ -44587,7 +40765,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-4 transfer size
-    pub const OTG_HS_HCTSIZ4 = Register(OTG_HS_HCTSIZ4_val).init(base_address + 0x190);
+    pub const OTG_HS_HCTSIZ4 = MMIO(OTG_HS_HCTSIZ4_val).init(base_address + 0x190);
 
     /// OTG_HS_HCTSIZ5
     const OTG_HS_HCTSIZ5_val = packed struct {
@@ -44604,7 +40782,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-5 transfer size
-    pub const OTG_HS_HCTSIZ5 = Register(OTG_HS_HCTSIZ5_val).init(base_address + 0x1b0);
+    pub const OTG_HS_HCTSIZ5 = MMIO(OTG_HS_HCTSIZ5_val).init(base_address + 0x1b0);
 
     /// OTG_HS_HCTSIZ6
     const OTG_HS_HCTSIZ6_val = packed struct {
@@ -44621,7 +40799,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-6 transfer size
-    pub const OTG_HS_HCTSIZ6 = Register(OTG_HS_HCTSIZ6_val).init(base_address + 0x1d0);
+    pub const OTG_HS_HCTSIZ6 = MMIO(OTG_HS_HCTSIZ6_val).init(base_address + 0x1d0);
 
     /// OTG_HS_HCTSIZ7
     const OTG_HS_HCTSIZ7_val = packed struct {
@@ -44638,7 +40816,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-7 transfer size
-    pub const OTG_HS_HCTSIZ7 = Register(OTG_HS_HCTSIZ7_val).init(base_address + 0x1f0);
+    pub const OTG_HS_HCTSIZ7 = MMIO(OTG_HS_HCTSIZ7_val).init(base_address + 0x1f0);
 
     /// OTG_HS_HCTSIZ8
     const OTG_HS_HCTSIZ8_val = packed struct {
@@ -44655,7 +40833,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-8 transfer size
-    pub const OTG_HS_HCTSIZ8 = Register(OTG_HS_HCTSIZ8_val).init(base_address + 0x210);
+    pub const OTG_HS_HCTSIZ8 = MMIO(OTG_HS_HCTSIZ8_val).init(base_address + 0x210);
 
     /// OTG_HS_HCTSIZ9
     const OTG_HS_HCTSIZ9_val = packed struct {
@@ -44672,7 +40850,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-9 transfer size
-    pub const OTG_HS_HCTSIZ9 = Register(OTG_HS_HCTSIZ9_val).init(base_address + 0x230);
+    pub const OTG_HS_HCTSIZ9 = MMIO(OTG_HS_HCTSIZ9_val).init(base_address + 0x230);
 
     /// OTG_HS_HCTSIZ10
     const OTG_HS_HCTSIZ10_val = packed struct {
@@ -44689,7 +40867,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-10 transfer size
-    pub const OTG_HS_HCTSIZ10 = Register(OTG_HS_HCTSIZ10_val).init(base_address + 0x250);
+    pub const OTG_HS_HCTSIZ10 = MMIO(OTG_HS_HCTSIZ10_val).init(base_address + 0x250);
 
     /// OTG_HS_HCTSIZ11
     const OTG_HS_HCTSIZ11_val = packed struct {
@@ -44706,7 +40884,7 @@ pub const OTG_HS_HOST = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS host channel-11 transfer size
-    pub const OTG_HS_HCTSIZ11 = Register(OTG_HS_HCTSIZ11_val).init(base_address + 0x270);
+    pub const OTG_HS_HCTSIZ11 = MMIO(OTG_HS_HCTSIZ11_val).init(base_address + 0x270);
 
     /// OTG_HS_HCDMA0
     const OTG_HS_HCDMA0_val = packed struct {
@@ -44715,7 +40893,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-0 DMA address
-    pub const OTG_HS_HCDMA0 = Register(OTG_HS_HCDMA0_val).init(base_address + 0x114);
+    pub const OTG_HS_HCDMA0 = MMIO(OTG_HS_HCDMA0_val).init(base_address + 0x114);
 
     /// OTG_HS_HCDMA1
     const OTG_HS_HCDMA1_val = packed struct {
@@ -44724,7 +40902,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-1 DMA address
-    pub const OTG_HS_HCDMA1 = Register(OTG_HS_HCDMA1_val).init(base_address + 0x134);
+    pub const OTG_HS_HCDMA1 = MMIO(OTG_HS_HCDMA1_val).init(base_address + 0x134);
 
     /// OTG_HS_HCDMA2
     const OTG_HS_HCDMA2_val = packed struct {
@@ -44733,7 +40911,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-2 DMA address
-    pub const OTG_HS_HCDMA2 = Register(OTG_HS_HCDMA2_val).init(base_address + 0x154);
+    pub const OTG_HS_HCDMA2 = MMIO(OTG_HS_HCDMA2_val).init(base_address + 0x154);
 
     /// OTG_HS_HCDMA3
     const OTG_HS_HCDMA3_val = packed struct {
@@ -44742,7 +40920,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-3 DMA address
-    pub const OTG_HS_HCDMA3 = Register(OTG_HS_HCDMA3_val).init(base_address + 0x174);
+    pub const OTG_HS_HCDMA3 = MMIO(OTG_HS_HCDMA3_val).init(base_address + 0x174);
 
     /// OTG_HS_HCDMA4
     const OTG_HS_HCDMA4_val = packed struct {
@@ -44751,7 +40929,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-4 DMA address
-    pub const OTG_HS_HCDMA4 = Register(OTG_HS_HCDMA4_val).init(base_address + 0x194);
+    pub const OTG_HS_HCDMA4 = MMIO(OTG_HS_HCDMA4_val).init(base_address + 0x194);
 
     /// OTG_HS_HCDMA5
     const OTG_HS_HCDMA5_val = packed struct {
@@ -44760,7 +40938,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-5 DMA address
-    pub const OTG_HS_HCDMA5 = Register(OTG_HS_HCDMA5_val).init(base_address + 0x1b4);
+    pub const OTG_HS_HCDMA5 = MMIO(OTG_HS_HCDMA5_val).init(base_address + 0x1b4);
 
     /// OTG_HS_HCDMA6
     const OTG_HS_HCDMA6_val = packed struct {
@@ -44769,7 +40947,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-6 DMA address
-    pub const OTG_HS_HCDMA6 = Register(OTG_HS_HCDMA6_val).init(base_address + 0x1d4);
+    pub const OTG_HS_HCDMA6 = MMIO(OTG_HS_HCDMA6_val).init(base_address + 0x1d4);
 
     /// OTG_HS_HCDMA7
     const OTG_HS_HCDMA7_val = packed struct {
@@ -44778,7 +40956,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-7 DMA address
-    pub const OTG_HS_HCDMA7 = Register(OTG_HS_HCDMA7_val).init(base_address + 0x1f4);
+    pub const OTG_HS_HCDMA7 = MMIO(OTG_HS_HCDMA7_val).init(base_address + 0x1f4);
 
     /// OTG_HS_HCDMA8
     const OTG_HS_HCDMA8_val = packed struct {
@@ -44787,7 +40965,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-8 DMA address
-    pub const OTG_HS_HCDMA8 = Register(OTG_HS_HCDMA8_val).init(base_address + 0x214);
+    pub const OTG_HS_HCDMA8 = MMIO(OTG_HS_HCDMA8_val).init(base_address + 0x214);
 
     /// OTG_HS_HCDMA9
     const OTG_HS_HCDMA9_val = packed struct {
@@ -44796,7 +40974,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-9 DMA address
-    pub const OTG_HS_HCDMA9 = Register(OTG_HS_HCDMA9_val).init(base_address + 0x234);
+    pub const OTG_HS_HCDMA9 = MMIO(OTG_HS_HCDMA9_val).init(base_address + 0x234);
 
     /// OTG_HS_HCDMA10
     const OTG_HS_HCDMA10_val = packed struct {
@@ -44805,7 +40983,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-10 DMA address
-    pub const OTG_HS_HCDMA10 = Register(OTG_HS_HCDMA10_val).init(base_address + 0x254);
+    pub const OTG_HS_HCDMA10 = MMIO(OTG_HS_HCDMA10_val).init(base_address + 0x254);
 
     /// OTG_HS_HCDMA11
     const OTG_HS_HCDMA11_val = packed struct {
@@ -44814,7 +40992,7 @@ pub const OTG_HS_HOST = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS host channel-11 DMA address
-    pub const OTG_HS_HCDMA11 = Register(OTG_HS_HCDMA11_val).init(base_address + 0x274);
+    pub const OTG_HS_HCDMA11 = MMIO(OTG_HS_HCDMA11_val).init(base_address + 0x274);
 };
 
 /// USB on the go high speed
@@ -44846,7 +41024,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused26: u6 = 0,
     };
     /// OTG_HS device configuration
-    pub const OTG_HS_DCFG = Register(OTG_HS_DCFG_val).init(base_address + 0x0);
+    pub const OTG_HS_DCFG = MMIO(OTG_HS_DCFG_val).init(base_address + 0x0);
 
     /// OTG_HS_DCTL
     const OTG_HS_DCTL_val = packed struct {
@@ -44886,7 +41064,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device control register
-    pub const OTG_HS_DCTL = Register(OTG_HS_DCTL_val).init(base_address + 0x4);
+    pub const OTG_HS_DCTL = MMIO(OTG_HS_DCTL_val).init(base_address + 0x4);
 
     /// OTG_HS_DSTS
     const OTG_HS_DSTS_val = packed struct {
@@ -44909,7 +41087,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device status register
-    pub const OTG_HS_DSTS = Register(OTG_HS_DSTS_val).init(base_address + 0x8);
+    pub const OTG_HS_DSTS = MMIO(OTG_HS_DSTS_val).init(base_address + 0x8);
 
     /// OTG_HS_DIEPMSK
     const OTG_HS_DIEPMSK_val = packed struct {
@@ -44947,7 +41125,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint common interrupt
-    pub const OTG_HS_DIEPMSK = Register(OTG_HS_DIEPMSK_val).init(base_address + 0x10);
+    pub const OTG_HS_DIEPMSK = MMIO(OTG_HS_DIEPMSK_val).init(base_address + 0x10);
 
     /// OTG_HS_DOEPMSK
     const OTG_HS_DOEPMSK_val = packed struct {
@@ -44984,7 +41162,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device OUT endpoint common interrupt
-    pub const OTG_HS_DOEPMSK = Register(OTG_HS_DOEPMSK_val).init(base_address + 0x14);
+    pub const OTG_HS_DOEPMSK = MMIO(OTG_HS_DOEPMSK_val).init(base_address + 0x14);
 
     /// OTG_HS_DAINT
     const OTG_HS_DAINT_val = packed struct {
@@ -44996,7 +41174,7 @@ pub const OTG_HS_DEVICE = struct {
         OEPINT: u16 = 0,
     };
     /// OTG_HS device all endpoints interrupt
-    pub const OTG_HS_DAINT = Register(OTG_HS_DAINT_val).init(base_address + 0x18);
+    pub const OTG_HS_DAINT = MMIO(OTG_HS_DAINT_val).init(base_address + 0x18);
 
     /// OTG_HS_DAINTMSK
     const OTG_HS_DAINTMSK_val = packed struct {
@@ -45008,7 +41186,7 @@ pub const OTG_HS_DEVICE = struct {
         OEPM: u16 = 0,
     };
     /// OTG_HS all endpoints interrupt mask
-    pub const OTG_HS_DAINTMSK = Register(OTG_HS_DAINTMSK_val).init(base_address + 0x1c);
+    pub const OTG_HS_DAINTMSK = MMIO(OTG_HS_DAINTMSK_val).init(base_address + 0x1c);
 
     /// OTG_HS_DVBUSDIS
     const OTG_HS_DVBUSDIS_val = packed struct {
@@ -45020,7 +41198,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device VBUS discharge time
-    pub const OTG_HS_DVBUSDIS = Register(OTG_HS_DVBUSDIS_val).init(base_address + 0x28);
+    pub const OTG_HS_DVBUSDIS = MMIO(OTG_HS_DVBUSDIS_val).init(base_address + 0x28);
 
     /// OTG_HS_DVBUSPULSE
     const OTG_HS_DVBUSPULSE_val = packed struct {
@@ -45033,7 +41211,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device VBUS pulsing time
-    pub const OTG_HS_DVBUSPULSE = Register(OTG_HS_DVBUSPULSE_val).init(base_address + 0x2c);
+    pub const OTG_HS_DVBUSPULSE = MMIO(OTG_HS_DVBUSPULSE_val).init(base_address + 0x2c);
 
     /// OTG_HS_DTHRCTL
     const OTG_HS_DTHRCTL_val = packed struct {
@@ -45063,7 +41241,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused28: u4 = 0,
     };
     /// OTG_HS Device threshold control
-    pub const OTG_HS_DTHRCTL = Register(OTG_HS_DTHRCTL_val).init(base_address + 0x30);
+    pub const OTG_HS_DTHRCTL = MMIO(OTG_HS_DTHRCTL_val).init(base_address + 0x30);
 
     /// OTG_HS_DIEPEMPMSK
     const OTG_HS_DIEPEMPMSK_val = packed struct {
@@ -45075,7 +41253,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint FIFO empty
-    pub const OTG_HS_DIEPEMPMSK = Register(OTG_HS_DIEPEMPMSK_val).init(base_address + 0x34);
+    pub const OTG_HS_DIEPEMPMSK = MMIO(OTG_HS_DIEPEMPMSK_val).init(base_address + 0x34);
 
     /// OTG_HS_DEACHINT
     const OTG_HS_DEACHINT_val = packed struct {
@@ -45096,7 +41274,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device each endpoint interrupt
-    pub const OTG_HS_DEACHINT = Register(OTG_HS_DEACHINT_val).init(base_address + 0x38);
+    pub const OTG_HS_DEACHINT = MMIO(OTG_HS_DEACHINT_val).init(base_address + 0x38);
 
     /// OTG_HS_DEACHINTMSK
     const OTG_HS_DEACHINTMSK_val = packed struct {
@@ -45117,7 +41295,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device each endpoint interrupt
-    pub const OTG_HS_DEACHINTMSK = Register(OTG_HS_DEACHINTMSK_val).init(base_address + 0x3c);
+    pub const OTG_HS_DEACHINTMSK = MMIO(OTG_HS_DEACHINTMSK_val).init(base_address + 0x3c);
 
     /// OTG_HS_DIEPEACHMSK1
     const OTG_HS_DIEPEACHMSK1_val = packed struct {
@@ -45160,7 +41338,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device each in endpoint-1 interrupt
-    pub const OTG_HS_DIEPEACHMSK1 = Register(OTG_HS_DIEPEACHMSK1_val).init(base_address + 0x40);
+    pub const OTG_HS_DIEPEACHMSK1 = MMIO(OTG_HS_DIEPEACHMSK1_val).init(base_address + 0x40);
 
     /// OTG_HS_DOEPEACHMSK1
     const OTG_HS_DOEPEACHMSK1_val = packed struct {
@@ -45209,7 +41387,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device each OUT endpoint-1 interrupt
-    pub const OTG_HS_DOEPEACHMSK1 = Register(OTG_HS_DOEPEACHMSK1_val).init(base_address + 0x80);
+    pub const OTG_HS_DOEPEACHMSK1 = MMIO(OTG_HS_DOEPEACHMSK1_val).init(base_address + 0x80);
 
     /// OTG_HS_DIEPCTL0
     const OTG_HS_DIEPCTL0_val = packed struct {
@@ -45258,7 +41436,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-0 control
-    pub const OTG_HS_DIEPCTL0 = Register(OTG_HS_DIEPCTL0_val).init(base_address + 0x100);
+    pub const OTG_HS_DIEPCTL0 = MMIO(OTG_HS_DIEPCTL0_val).init(base_address + 0x100);
 
     /// OTG_HS_DIEPCTL1
     const OTG_HS_DIEPCTL1_val = packed struct {
@@ -45307,7 +41485,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-1 control
-    pub const OTG_HS_DIEPCTL1 = Register(OTG_HS_DIEPCTL1_val).init(base_address + 0x120);
+    pub const OTG_HS_DIEPCTL1 = MMIO(OTG_HS_DIEPCTL1_val).init(base_address + 0x120);
 
     /// OTG_HS_DIEPCTL2
     const OTG_HS_DIEPCTL2_val = packed struct {
@@ -45356,7 +41534,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-2 control
-    pub const OTG_HS_DIEPCTL2 = Register(OTG_HS_DIEPCTL2_val).init(base_address + 0x140);
+    pub const OTG_HS_DIEPCTL2 = MMIO(OTG_HS_DIEPCTL2_val).init(base_address + 0x140);
 
     /// OTG_HS_DIEPCTL3
     const OTG_HS_DIEPCTL3_val = packed struct {
@@ -45405,7 +41583,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-3 control
-    pub const OTG_HS_DIEPCTL3 = Register(OTG_HS_DIEPCTL3_val).init(base_address + 0x160);
+    pub const OTG_HS_DIEPCTL3 = MMIO(OTG_HS_DIEPCTL3_val).init(base_address + 0x160);
 
     /// OTG_HS_DIEPCTL4
     const OTG_HS_DIEPCTL4_val = packed struct {
@@ -45454,7 +41632,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-4 control
-    pub const OTG_HS_DIEPCTL4 = Register(OTG_HS_DIEPCTL4_val).init(base_address + 0x180);
+    pub const OTG_HS_DIEPCTL4 = MMIO(OTG_HS_DIEPCTL4_val).init(base_address + 0x180);
 
     /// OTG_HS_DIEPCTL5
     const OTG_HS_DIEPCTL5_val = packed struct {
@@ -45503,7 +41681,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-5 control
-    pub const OTG_HS_DIEPCTL5 = Register(OTG_HS_DIEPCTL5_val).init(base_address + 0x1a0);
+    pub const OTG_HS_DIEPCTL5 = MMIO(OTG_HS_DIEPCTL5_val).init(base_address + 0x1a0);
 
     /// OTG_HS_DIEPCTL6
     const OTG_HS_DIEPCTL6_val = packed struct {
@@ -45552,7 +41730,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-6 control
-    pub const OTG_HS_DIEPCTL6 = Register(OTG_HS_DIEPCTL6_val).init(base_address + 0x1c0);
+    pub const OTG_HS_DIEPCTL6 = MMIO(OTG_HS_DIEPCTL6_val).init(base_address + 0x1c0);
 
     /// OTG_HS_DIEPCTL7
     const OTG_HS_DIEPCTL7_val = packed struct {
@@ -45601,7 +41779,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-7 control
-    pub const OTG_HS_DIEPCTL7 = Register(OTG_HS_DIEPCTL7_val).init(base_address + 0x1e0);
+    pub const OTG_HS_DIEPCTL7 = MMIO(OTG_HS_DIEPCTL7_val).init(base_address + 0x1e0);
 
     /// OTG_HS_DIEPINT0
     const OTG_HS_DIEPINT0_val = packed struct {
@@ -45650,7 +41828,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG device endpoint-0 interrupt
-    pub const OTG_HS_DIEPINT0 = Register(OTG_HS_DIEPINT0_val).init(base_address + 0x108);
+    pub const OTG_HS_DIEPINT0 = MMIO(OTG_HS_DIEPINT0_val).init(base_address + 0x108);
 
     /// OTG_HS_DIEPINT1
     const OTG_HS_DIEPINT1_val = packed struct {
@@ -45699,7 +41877,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG device endpoint-1 interrupt
-    pub const OTG_HS_DIEPINT1 = Register(OTG_HS_DIEPINT1_val).init(base_address + 0x128);
+    pub const OTG_HS_DIEPINT1 = MMIO(OTG_HS_DIEPINT1_val).init(base_address + 0x128);
 
     /// OTG_HS_DIEPINT2
     const OTG_HS_DIEPINT2_val = packed struct {
@@ -45748,7 +41926,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG device endpoint-2 interrupt
-    pub const OTG_HS_DIEPINT2 = Register(OTG_HS_DIEPINT2_val).init(base_address + 0x148);
+    pub const OTG_HS_DIEPINT2 = MMIO(OTG_HS_DIEPINT2_val).init(base_address + 0x148);
 
     /// OTG_HS_DIEPINT3
     const OTG_HS_DIEPINT3_val = packed struct {
@@ -45797,7 +41975,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG device endpoint-3 interrupt
-    pub const OTG_HS_DIEPINT3 = Register(OTG_HS_DIEPINT3_val).init(base_address + 0x168);
+    pub const OTG_HS_DIEPINT3 = MMIO(OTG_HS_DIEPINT3_val).init(base_address + 0x168);
 
     /// OTG_HS_DIEPINT4
     const OTG_HS_DIEPINT4_val = packed struct {
@@ -45846,7 +42024,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG device endpoint-4 interrupt
-    pub const OTG_HS_DIEPINT4 = Register(OTG_HS_DIEPINT4_val).init(base_address + 0x188);
+    pub const OTG_HS_DIEPINT4 = MMIO(OTG_HS_DIEPINT4_val).init(base_address + 0x188);
 
     /// OTG_HS_DIEPINT5
     const OTG_HS_DIEPINT5_val = packed struct {
@@ -45895,7 +42073,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG device endpoint-5 interrupt
-    pub const OTG_HS_DIEPINT5 = Register(OTG_HS_DIEPINT5_val).init(base_address + 0x1a8);
+    pub const OTG_HS_DIEPINT5 = MMIO(OTG_HS_DIEPINT5_val).init(base_address + 0x1a8);
 
     /// OTG_HS_DIEPINT6
     const OTG_HS_DIEPINT6_val = packed struct {
@@ -45944,7 +42122,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG device endpoint-6 interrupt
-    pub const OTG_HS_DIEPINT6 = Register(OTG_HS_DIEPINT6_val).init(base_address + 0x1c8);
+    pub const OTG_HS_DIEPINT6 = MMIO(OTG_HS_DIEPINT6_val).init(base_address + 0x1c8);
 
     /// OTG_HS_DIEPINT7
     const OTG_HS_DIEPINT7_val = packed struct {
@@ -45993,7 +42171,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG device endpoint-7 interrupt
-    pub const OTG_HS_DIEPINT7 = Register(OTG_HS_DIEPINT7_val).init(base_address + 0x1e8);
+    pub const OTG_HS_DIEPINT7 = MMIO(OTG_HS_DIEPINT7_val).init(base_address + 0x1e8);
 
     /// OTG_HS_DIEPTSIZ0
     const OTG_HS_DIEPTSIZ0_val = packed struct {
@@ -46012,7 +42190,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint 0 transfer size
-    pub const OTG_HS_DIEPTSIZ0 = Register(OTG_HS_DIEPTSIZ0_val).init(base_address + 0x110);
+    pub const OTG_HS_DIEPTSIZ0 = MMIO(OTG_HS_DIEPTSIZ0_val).init(base_address + 0x110);
 
     /// OTG_HS_DIEPDMA1
     const OTG_HS_DIEPDMA1_val = packed struct {
@@ -46021,7 +42199,7 @@ pub const OTG_HS_DEVICE = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS device endpoint-1 DMA address
-    pub const OTG_HS_DIEPDMA1 = Register(OTG_HS_DIEPDMA1_val).init(base_address + 0x114);
+    pub const OTG_HS_DIEPDMA1 = MMIO(OTG_HS_DIEPDMA1_val).init(base_address + 0x114);
 
     /// OTG_HS_DIEPDMA2
     const OTG_HS_DIEPDMA2_val = packed struct {
@@ -46030,7 +42208,7 @@ pub const OTG_HS_DEVICE = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS device endpoint-2 DMA address
-    pub const OTG_HS_DIEPDMA2 = Register(OTG_HS_DIEPDMA2_val).init(base_address + 0x134);
+    pub const OTG_HS_DIEPDMA2 = MMIO(OTG_HS_DIEPDMA2_val).init(base_address + 0x134);
 
     /// OTG_HS_DIEPDMA3
     const OTG_HS_DIEPDMA3_val = packed struct {
@@ -46039,7 +42217,7 @@ pub const OTG_HS_DEVICE = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS device endpoint-3 DMA address
-    pub const OTG_HS_DIEPDMA3 = Register(OTG_HS_DIEPDMA3_val).init(base_address + 0x154);
+    pub const OTG_HS_DIEPDMA3 = MMIO(OTG_HS_DIEPDMA3_val).init(base_address + 0x154);
 
     /// OTG_HS_DIEPDMA4
     const OTG_HS_DIEPDMA4_val = packed struct {
@@ -46048,7 +42226,7 @@ pub const OTG_HS_DEVICE = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS device endpoint-4 DMA address
-    pub const OTG_HS_DIEPDMA4 = Register(OTG_HS_DIEPDMA4_val).init(base_address + 0x174);
+    pub const OTG_HS_DIEPDMA4 = MMIO(OTG_HS_DIEPDMA4_val).init(base_address + 0x174);
 
     /// OTG_HS_DIEPDMA5
     const OTG_HS_DIEPDMA5_val = packed struct {
@@ -46057,7 +42235,7 @@ pub const OTG_HS_DEVICE = struct {
         DMAADDR: u32 = 0,
     };
     /// OTG_HS device endpoint-5 DMA address
-    pub const OTG_HS_DIEPDMA5 = Register(OTG_HS_DIEPDMA5_val).init(base_address + 0x194);
+    pub const OTG_HS_DIEPDMA5 = MMIO(OTG_HS_DIEPDMA5_val).init(base_address + 0x194);
 
     /// OTG_HS_DTXFSTS0
     const OTG_HS_DTXFSTS0_val = packed struct {
@@ -46069,7 +42247,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint transmit FIFO
-    pub const OTG_HS_DTXFSTS0 = Register(OTG_HS_DTXFSTS0_val).init(base_address + 0x118);
+    pub const OTG_HS_DTXFSTS0 = MMIO(OTG_HS_DTXFSTS0_val).init(base_address + 0x118);
 
     /// OTG_HS_DTXFSTS1
     const OTG_HS_DTXFSTS1_val = packed struct {
@@ -46081,7 +42259,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint transmit FIFO
-    pub const OTG_HS_DTXFSTS1 = Register(OTG_HS_DTXFSTS1_val).init(base_address + 0x138);
+    pub const OTG_HS_DTXFSTS1 = MMIO(OTG_HS_DTXFSTS1_val).init(base_address + 0x138);
 
     /// OTG_HS_DTXFSTS2
     const OTG_HS_DTXFSTS2_val = packed struct {
@@ -46093,7 +42271,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint transmit FIFO
-    pub const OTG_HS_DTXFSTS2 = Register(OTG_HS_DTXFSTS2_val).init(base_address + 0x158);
+    pub const OTG_HS_DTXFSTS2 = MMIO(OTG_HS_DTXFSTS2_val).init(base_address + 0x158);
 
     /// OTG_HS_DTXFSTS3
     const OTG_HS_DTXFSTS3_val = packed struct {
@@ -46105,7 +42283,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint transmit FIFO
-    pub const OTG_HS_DTXFSTS3 = Register(OTG_HS_DTXFSTS3_val).init(base_address + 0x178);
+    pub const OTG_HS_DTXFSTS3 = MMIO(OTG_HS_DTXFSTS3_val).init(base_address + 0x178);
 
     /// OTG_HS_DTXFSTS4
     const OTG_HS_DTXFSTS4_val = packed struct {
@@ -46117,7 +42295,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint transmit FIFO
-    pub const OTG_HS_DTXFSTS4 = Register(OTG_HS_DTXFSTS4_val).init(base_address + 0x198);
+    pub const OTG_HS_DTXFSTS4 = MMIO(OTG_HS_DTXFSTS4_val).init(base_address + 0x198);
 
     /// OTG_HS_DTXFSTS5
     const OTG_HS_DTXFSTS5_val = packed struct {
@@ -46129,7 +42307,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device IN endpoint transmit FIFO
-    pub const OTG_HS_DTXFSTS5 = Register(OTG_HS_DTXFSTS5_val).init(base_address + 0x1b8);
+    pub const OTG_HS_DTXFSTS5 = MMIO(OTG_HS_DTXFSTS5_val).init(base_address + 0x1b8);
 
     /// OTG_HS_DIEPTSIZ1
     const OTG_HS_DIEPTSIZ1_val = packed struct {
@@ -46146,7 +42324,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint transfer size
-    pub const OTG_HS_DIEPTSIZ1 = Register(OTG_HS_DIEPTSIZ1_val).init(base_address + 0x130);
+    pub const OTG_HS_DIEPTSIZ1 = MMIO(OTG_HS_DIEPTSIZ1_val).init(base_address + 0x130);
 
     /// OTG_HS_DIEPTSIZ2
     const OTG_HS_DIEPTSIZ2_val = packed struct {
@@ -46163,7 +42341,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint transfer size
-    pub const OTG_HS_DIEPTSIZ2 = Register(OTG_HS_DIEPTSIZ2_val).init(base_address + 0x150);
+    pub const OTG_HS_DIEPTSIZ2 = MMIO(OTG_HS_DIEPTSIZ2_val).init(base_address + 0x150);
 
     /// OTG_HS_DIEPTSIZ3
     const OTG_HS_DIEPTSIZ3_val = packed struct {
@@ -46180,7 +42358,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint transfer size
-    pub const OTG_HS_DIEPTSIZ3 = Register(OTG_HS_DIEPTSIZ3_val).init(base_address + 0x170);
+    pub const OTG_HS_DIEPTSIZ3 = MMIO(OTG_HS_DIEPTSIZ3_val).init(base_address + 0x170);
 
     /// OTG_HS_DIEPTSIZ4
     const OTG_HS_DIEPTSIZ4_val = packed struct {
@@ -46197,7 +42375,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint transfer size
-    pub const OTG_HS_DIEPTSIZ4 = Register(OTG_HS_DIEPTSIZ4_val).init(base_address + 0x190);
+    pub const OTG_HS_DIEPTSIZ4 = MMIO(OTG_HS_DIEPTSIZ4_val).init(base_address + 0x190);
 
     /// OTG_HS_DIEPTSIZ5
     const OTG_HS_DIEPTSIZ5_val = packed struct {
@@ -46214,7 +42392,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint transfer size
-    pub const OTG_HS_DIEPTSIZ5 = Register(OTG_HS_DIEPTSIZ5_val).init(base_address + 0x1b0);
+    pub const OTG_HS_DIEPTSIZ5 = MMIO(OTG_HS_DIEPTSIZ5_val).init(base_address + 0x1b0);
 
     /// OTG_HS_DOEPCTL0
     const OTG_HS_DOEPCTL0_val = packed struct {
@@ -46260,7 +42438,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG_HS device control OUT endpoint 0 control
-    pub const OTG_HS_DOEPCTL0 = Register(OTG_HS_DOEPCTL0_val).init(base_address + 0x300);
+    pub const OTG_HS_DOEPCTL0 = MMIO(OTG_HS_DOEPCTL0_val).init(base_address + 0x300);
 
     /// OTG_HS_DOEPCTL1
     const OTG_HS_DOEPCTL1_val = packed struct {
@@ -46310,7 +42488,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-1 control
-    pub const OTG_HS_DOEPCTL1 = Register(OTG_HS_DOEPCTL1_val).init(base_address + 0x320);
+    pub const OTG_HS_DOEPCTL1 = MMIO(OTG_HS_DOEPCTL1_val).init(base_address + 0x320);
 
     /// OTG_HS_DOEPCTL2
     const OTG_HS_DOEPCTL2_val = packed struct {
@@ -46360,7 +42538,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-2 control
-    pub const OTG_HS_DOEPCTL2 = Register(OTG_HS_DOEPCTL2_val).init(base_address + 0x340);
+    pub const OTG_HS_DOEPCTL2 = MMIO(OTG_HS_DOEPCTL2_val).init(base_address + 0x340);
 
     /// OTG_HS_DOEPCTL3
     const OTG_HS_DOEPCTL3_val = packed struct {
@@ -46410,7 +42588,7 @@ pub const OTG_HS_DEVICE = struct {
         EPENA: u1 = 0,
     };
     /// OTG device endpoint-3 control
-    pub const OTG_HS_DOEPCTL3 = Register(OTG_HS_DOEPCTL3_val).init(base_address + 0x360);
+    pub const OTG_HS_DOEPCTL3 = MMIO(OTG_HS_DOEPCTL3_val).init(base_address + 0x360);
 
     /// OTG_HS_DOEPINT0
     const OTG_HS_DOEPINT0_val = packed struct {
@@ -46445,7 +42623,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device endpoint-0 interrupt
-    pub const OTG_HS_DOEPINT0 = Register(OTG_HS_DOEPINT0_val).init(base_address + 0x308);
+    pub const OTG_HS_DOEPINT0 = MMIO(OTG_HS_DOEPINT0_val).init(base_address + 0x308);
 
     /// OTG_HS_DOEPINT1
     const OTG_HS_DOEPINT1_val = packed struct {
@@ -46480,7 +42658,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device endpoint-1 interrupt
-    pub const OTG_HS_DOEPINT1 = Register(OTG_HS_DOEPINT1_val).init(base_address + 0x328);
+    pub const OTG_HS_DOEPINT1 = MMIO(OTG_HS_DOEPINT1_val).init(base_address + 0x328);
 
     /// OTG_HS_DOEPINT2
     const OTG_HS_DOEPINT2_val = packed struct {
@@ -46515,7 +42693,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device endpoint-2 interrupt
-    pub const OTG_HS_DOEPINT2 = Register(OTG_HS_DOEPINT2_val).init(base_address + 0x348);
+    pub const OTG_HS_DOEPINT2 = MMIO(OTG_HS_DOEPINT2_val).init(base_address + 0x348);
 
     /// OTG_HS_DOEPINT3
     const OTG_HS_DOEPINT3_val = packed struct {
@@ -46550,7 +42728,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device endpoint-3 interrupt
-    pub const OTG_HS_DOEPINT3 = Register(OTG_HS_DOEPINT3_val).init(base_address + 0x368);
+    pub const OTG_HS_DOEPINT3 = MMIO(OTG_HS_DOEPINT3_val).init(base_address + 0x368);
 
     /// OTG_HS_DOEPINT4
     const OTG_HS_DOEPINT4_val = packed struct {
@@ -46585,7 +42763,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device endpoint-4 interrupt
-    pub const OTG_HS_DOEPINT4 = Register(OTG_HS_DOEPINT4_val).init(base_address + 0x388);
+    pub const OTG_HS_DOEPINT4 = MMIO(OTG_HS_DOEPINT4_val).init(base_address + 0x388);
 
     /// OTG_HS_DOEPINT5
     const OTG_HS_DOEPINT5_val = packed struct {
@@ -46620,7 +42798,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device endpoint-5 interrupt
-    pub const OTG_HS_DOEPINT5 = Register(OTG_HS_DOEPINT5_val).init(base_address + 0x3a8);
+    pub const OTG_HS_DOEPINT5 = MMIO(OTG_HS_DOEPINT5_val).init(base_address + 0x3a8);
 
     /// OTG_HS_DOEPINT6
     const OTG_HS_DOEPINT6_val = packed struct {
@@ -46655,7 +42833,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device endpoint-6 interrupt
-    pub const OTG_HS_DOEPINT6 = Register(OTG_HS_DOEPINT6_val).init(base_address + 0x3c8);
+    pub const OTG_HS_DOEPINT6 = MMIO(OTG_HS_DOEPINT6_val).init(base_address + 0x3c8);
 
     /// OTG_HS_DOEPINT7
     const OTG_HS_DOEPINT7_val = packed struct {
@@ -46690,7 +42868,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused24: u8 = 0,
     };
     /// OTG_HS device endpoint-7 interrupt
-    pub const OTG_HS_DOEPINT7 = Register(OTG_HS_DOEPINT7_val).init(base_address + 0x3e8);
+    pub const OTG_HS_DOEPINT7 = MMIO(OTG_HS_DOEPINT7_val).init(base_address + 0x3e8);
 
     /// OTG_HS_DOEPTSIZ0
     const OTG_HS_DOEPTSIZ0_val = packed struct {
@@ -46714,7 +42892,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint-1 transfer size
-    pub const OTG_HS_DOEPTSIZ0 = Register(OTG_HS_DOEPTSIZ0_val).init(base_address + 0x310);
+    pub const OTG_HS_DOEPTSIZ0 = MMIO(OTG_HS_DOEPTSIZ0_val).init(base_address + 0x310);
 
     /// OTG_HS_DOEPTSIZ1
     const OTG_HS_DOEPTSIZ1_val = packed struct {
@@ -46731,7 +42909,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint-2 transfer size
-    pub const OTG_HS_DOEPTSIZ1 = Register(OTG_HS_DOEPTSIZ1_val).init(base_address + 0x330);
+    pub const OTG_HS_DOEPTSIZ1 = MMIO(OTG_HS_DOEPTSIZ1_val).init(base_address + 0x330);
 
     /// OTG_HS_DOEPTSIZ2
     const OTG_HS_DOEPTSIZ2_val = packed struct {
@@ -46748,7 +42926,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint-3 transfer size
-    pub const OTG_HS_DOEPTSIZ2 = Register(OTG_HS_DOEPTSIZ2_val).init(base_address + 0x350);
+    pub const OTG_HS_DOEPTSIZ2 = MMIO(OTG_HS_DOEPTSIZ2_val).init(base_address + 0x350);
 
     /// OTG_HS_DOEPTSIZ3
     const OTG_HS_DOEPTSIZ3_val = packed struct {
@@ -46765,7 +42943,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint-4 transfer size
-    pub const OTG_HS_DOEPTSIZ3 = Register(OTG_HS_DOEPTSIZ3_val).init(base_address + 0x370);
+    pub const OTG_HS_DOEPTSIZ3 = MMIO(OTG_HS_DOEPTSIZ3_val).init(base_address + 0x370);
 
     /// OTG_HS_DOEPTSIZ4
     const OTG_HS_DOEPTSIZ4_val = packed struct {
@@ -46782,7 +42960,7 @@ pub const OTG_HS_DEVICE = struct {
         _unused31: u1 = 0,
     };
     /// OTG_HS device endpoint-5 transfer size
-    pub const OTG_HS_DOEPTSIZ4 = Register(OTG_HS_DOEPTSIZ4_val).init(base_address + 0x390);
+    pub const OTG_HS_DOEPTSIZ4 = MMIO(OTG_HS_DOEPTSIZ4_val).init(base_address + 0x390);
 };
 
 /// USB on the go high speed
@@ -46808,513 +42986,14 @@ pub const OTG_HS_PWRCLK = struct {
         _unused24: u8 = 0,
     };
     /// Power and clock gating control
-    pub const OTG_HS_PCGCR = Register(OTG_HS_PCGCR_val).init(base_address + 0x0);
-};
-
-/// Nested Vectored Interrupt
-pub const NVIC = struct {
-    const base_address = 0xe000e100;
-    /// ISER0
-    const ISER0_val = packed struct {
-        /// SETENA [0:31]
-        /// SETENA
-        SETENA: u32 = 0,
-    };
-    /// Interrupt Set-Enable Register
-    pub const ISER0 = Register(ISER0_val).init(base_address + 0x0);
-
-    /// ISER1
-    const ISER1_val = packed struct {
-        /// SETENA [0:31]
-        /// SETENA
-        SETENA: u32 = 0,
-    };
-    /// Interrupt Set-Enable Register
-    pub const ISER1 = Register(ISER1_val).init(base_address + 0x4);
-
-    /// ISER2
-    const ISER2_val = packed struct {
-        /// SETENA [0:31]
-        /// SETENA
-        SETENA: u32 = 0,
-    };
-    /// Interrupt Set-Enable Register
-    pub const ISER2 = Register(ISER2_val).init(base_address + 0x8);
-
-    /// ICER0
-    const ICER0_val = packed struct {
-        /// CLRENA [0:31]
-        /// CLRENA
-        CLRENA: u32 = 0,
-    };
-    /// Interrupt Clear-Enable
-    pub const ICER0 = Register(ICER0_val).init(base_address + 0x80);
-
-    /// ICER1
-    const ICER1_val = packed struct {
-        /// CLRENA [0:31]
-        /// CLRENA
-        CLRENA: u32 = 0,
-    };
-    /// Interrupt Clear-Enable
-    pub const ICER1 = Register(ICER1_val).init(base_address + 0x84);
-
-    /// ICER2
-    const ICER2_val = packed struct {
-        /// CLRENA [0:31]
-        /// CLRENA
-        CLRENA: u32 = 0,
-    };
-    /// Interrupt Clear-Enable
-    pub const ICER2 = Register(ICER2_val).init(base_address + 0x88);
-
-    /// ISPR0
-    const ISPR0_val = packed struct {
-        /// SETPEND [0:31]
-        /// SETPEND
-        SETPEND: u32 = 0,
-    };
-    /// Interrupt Set-Pending Register
-    pub const ISPR0 = Register(ISPR0_val).init(base_address + 0x100);
-
-    /// ISPR1
-    const ISPR1_val = packed struct {
-        /// SETPEND [0:31]
-        /// SETPEND
-        SETPEND: u32 = 0,
-    };
-    /// Interrupt Set-Pending Register
-    pub const ISPR1 = Register(ISPR1_val).init(base_address + 0x104);
-
-    /// ISPR2
-    const ISPR2_val = packed struct {
-        /// SETPEND [0:31]
-        /// SETPEND
-        SETPEND: u32 = 0,
-    };
-    /// Interrupt Set-Pending Register
-    pub const ISPR2 = Register(ISPR2_val).init(base_address + 0x108);
-
-    /// ICPR0
-    const ICPR0_val = packed struct {
-        /// CLRPEND [0:31]
-        /// CLRPEND
-        CLRPEND: u32 = 0,
-    };
-    /// Interrupt Clear-Pending
-    pub const ICPR0 = Register(ICPR0_val).init(base_address + 0x180);
-
-    /// ICPR1
-    const ICPR1_val = packed struct {
-        /// CLRPEND [0:31]
-        /// CLRPEND
-        CLRPEND: u32 = 0,
-    };
-    /// Interrupt Clear-Pending
-    pub const ICPR1 = Register(ICPR1_val).init(base_address + 0x184);
-
-    /// ICPR2
-    const ICPR2_val = packed struct {
-        /// CLRPEND [0:31]
-        /// CLRPEND
-        CLRPEND: u32 = 0,
-    };
-    /// Interrupt Clear-Pending
-    pub const ICPR2 = Register(ICPR2_val).init(base_address + 0x188);
-
-    /// IABR0
-    const IABR0_val = packed struct {
-        /// ACTIVE [0:31]
-        /// ACTIVE
-        ACTIVE: u32 = 0,
-    };
-    /// Interrupt Active Bit Register
-    pub const IABR0 = Register(IABR0_val).init(base_address + 0x200);
-
-    /// IABR1
-    const IABR1_val = packed struct {
-        /// ACTIVE [0:31]
-        /// ACTIVE
-        ACTIVE: u32 = 0,
-    };
-    /// Interrupt Active Bit Register
-    pub const IABR1 = Register(IABR1_val).init(base_address + 0x204);
-
-    /// IABR2
-    const IABR2_val = packed struct {
-        /// ACTIVE [0:31]
-        /// ACTIVE
-        ACTIVE: u32 = 0,
-    };
-    /// Interrupt Active Bit Register
-    pub const IABR2 = Register(IABR2_val).init(base_address + 0x208);
-
-    /// IPR0
-    const IPR0_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR0 = Register(IPR0_val).init(base_address + 0x300);
-
-    /// IPR1
-    const IPR1_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR1 = Register(IPR1_val).init(base_address + 0x304);
-
-    /// IPR2
-    const IPR2_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR2 = Register(IPR2_val).init(base_address + 0x308);
-
-    /// IPR3
-    const IPR3_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR3 = Register(IPR3_val).init(base_address + 0x30c);
-
-    /// IPR4
-    const IPR4_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR4 = Register(IPR4_val).init(base_address + 0x310);
-
-    /// IPR5
-    const IPR5_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR5 = Register(IPR5_val).init(base_address + 0x314);
-
-    /// IPR6
-    const IPR6_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR6 = Register(IPR6_val).init(base_address + 0x318);
-
-    /// IPR7
-    const IPR7_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR7 = Register(IPR7_val).init(base_address + 0x31c);
-
-    /// IPR8
-    const IPR8_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR8 = Register(IPR8_val).init(base_address + 0x320);
-
-    /// IPR9
-    const IPR9_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR9 = Register(IPR9_val).init(base_address + 0x324);
-
-    /// IPR10
-    const IPR10_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR10 = Register(IPR10_val).init(base_address + 0x328);
-
-    /// IPR11
-    const IPR11_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR11 = Register(IPR11_val).init(base_address + 0x32c);
-
-    /// IPR12
-    const IPR12_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR12 = Register(IPR12_val).init(base_address + 0x330);
-
-    /// IPR13
-    const IPR13_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR13 = Register(IPR13_val).init(base_address + 0x334);
-
-    /// IPR14
-    const IPR14_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR14 = Register(IPR14_val).init(base_address + 0x338);
-
-    /// IPR15
-    const IPR15_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR15 = Register(IPR15_val).init(base_address + 0x33c);
-
-    /// IPR16
-    const IPR16_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR16 = Register(IPR16_val).init(base_address + 0x340);
-
-    /// IPR17
-    const IPR17_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR17 = Register(IPR17_val).init(base_address + 0x344);
-
-    /// IPR18
-    const IPR18_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR18 = Register(IPR18_val).init(base_address + 0x348);
-
-    /// IPR19
-    const IPR19_val = packed struct {
-        /// IPR_N0 [0:7]
-        /// IPR_N0
-        IPR_N0: u8 = 0,
-        /// IPR_N1 [8:15]
-        /// IPR_N1
-        IPR_N1: u8 = 0,
-        /// IPR_N2 [16:23]
-        /// IPR_N2
-        IPR_N2: u8 = 0,
-        /// IPR_N3 [24:31]
-        /// IPR_N3
-        IPR_N3: u8 = 0,
-    };
-    /// Interrupt Priority Register
-    pub const IPR19 = Register(IPR19_val).init(base_address + 0x34c);
+    pub const OTG_HS_PCGCR = MMIO(OTG_HS_PCGCR_val).init(base_address + 0x0);
 };
 
 /// Serial audio interface
 pub const SAI1 = struct {
     const base_address = 0x40015800;
-    /// SAI_ACR1
-    const SAI_ACR1_val = packed struct {
+    /// BCR1
+    const BCR1_val = packed struct {
         /// MODE [0:1]
         /// Audio block mode
         MODE: u2 = 0,
@@ -47338,63 +43017,13 @@ pub const SAI1 = struct {
         /// MONO [12:12]
         /// Mono mode
         MONO: u1 = 0,
-        /// OUTDRIV [13:13]
+        /// OutDri [13:13]
         /// Output drive
-        OUTDRIV: u1 = 0,
-        /// unused [14:15]
-        _unused14: u2 = 0,
-        /// SAIAEN [16:16]
-        /// Audio block enable
-        SAIAEN: u1 = 0,
-        /// DMAEN [17:17]
-        /// DMA enable
-        DMAEN: u1 = 0,
-        /// unused [18:18]
-        _unused18: u1 = 0,
-        /// NODIV [19:19]
-        /// No divider
-        NODIV: u1 = 0,
-        /// MCKDIV [20:23]
-        /// Master clock divider
-        MCKDIV: u4 = 0,
-        /// unused [24:31]
-        _unused24: u8 = 0,
-    };
-    /// SAI AConfiguration register 1
-    pub const SAI_ACR1 = Register(SAI_ACR1_val).init(base_address + 0x4);
-
-    /// SAI_BCR1
-    const SAI_BCR1_val = packed struct {
-        /// MODE [0:1]
-        /// Audio block mode
-        MODE: u2 = 0,
-        /// PRTCFG [2:3]
-        /// Protocol configuration
-        PRTCFG: u2 = 0,
-        /// unused [4:4]
-        _unused4: u1 = 0,
-        /// DS [5:7]
-        /// Data size
-        DS: u3 = 2,
-        /// LSBFIRST [8:8]
-        /// Least significant bit
-        LSBFIRST: u1 = 0,
-        /// CKSTR [9:9]
-        /// Clock strobing edge
-        CKSTR: u1 = 0,
-        /// SYNCEN [10:11]
-        /// Synchronization enable
-        SYNCEN: u2 = 0,
-        /// MONO [12:12]
-        /// Mono mode
-        MONO: u1 = 0,
-        /// OUTDRIV [13:13]
-        /// Output drive
-        OUTDRIV: u1 = 0,
+        OutDri: u1 = 0,
         /// unused [14:15]
         _unused14: u2 = 0,
         /// SAIBEN [16:16]
-        /// Audio block enable
+        /// Audio block B enable
         SAIBEN: u1 = 0,
         /// DMAEN [17:17]
         /// DMA enable
@@ -47404,23 +43033,23 @@ pub const SAI1 = struct {
         /// NODIV [19:19]
         /// No divider
         NODIV: u1 = 0,
-        /// MCKDIV [20:23]
+        /// MCJDIV [20:23]
         /// Master clock divider
-        MCKDIV: u4 = 0,
+        MCJDIV: u4 = 0,
         /// unused [24:31]
         _unused24: u8 = 0,
     };
-    /// SAI BConfiguration register 1
-    pub const SAI_BCR1 = Register(SAI_BCR1_val).init(base_address + 0x24);
+    /// BConfiguration register 1
+    pub const BCR1 = MMIO(BCR1_val).init(base_address + 0x24);
 
-    /// SAI_ACR2
-    const SAI_ACR2_val = packed struct {
+    /// BCR2
+    const BCR2_val = packed struct {
         /// FTH [0:2]
         /// FIFO threshold
         FTH: u3 = 0,
-        /// FFLUSH [3:3]
+        /// FFLUS [3:3]
         /// FIFO flush
-        FFLUSH: u1 = 0,
+        FFLUS: u1 = 0,
         /// TRIS [4:4]
         /// Tristate management on data
         TRIS: u1 = 0,
@@ -47429,10 +43058,10 @@ pub const SAI1 = struct {
         MUTE: u1 = 0,
         /// MUTEVAL [6:6]
         /// Mute value
-        MUTEVAL: u1 = 1,
-        /// MUTECNT [7:12]
+        MUTEVAL: u1 = 0,
+        /// MUTECN [7:12]
         /// Mute counter
-        MUTECNT: u6 = 0,
+        MUTECN: u6 = 0,
         /// CPL [13:13]
         /// Complement bit
         CPL: u1 = 0,
@@ -47443,44 +43072,11 @@ pub const SAI1 = struct {
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// SAI AConfiguration register 2
-    pub const SAI_ACR2 = Register(SAI_ACR2_val).init(base_address + 0x8);
+    /// BConfiguration register 2
+    pub const BCR2 = MMIO(BCR2_val).init(base_address + 0x28);
 
-    /// SAI_BCR2
-    const SAI_BCR2_val = packed struct {
-        /// FTH [0:2]
-        /// FIFO threshold
-        FTH: u3 = 0,
-        /// FFLUSH [3:3]
-        /// FIFO flush
-        FFLUSH: u1 = 0,
-        /// TRIS [4:4]
-        /// Tristate management on data
-        TRIS: u1 = 0,
-        /// MUTE [5:5]
-        /// Mute
-        MUTE: u1 = 0,
-        /// MUTEVAL [6:6]
-        /// Mute value
-        MUTEVAL: u1 = 1,
-        /// MUTECNT [7:12]
-        /// Mute counter
-        MUTECNT: u6 = 0,
-        /// CPL [13:13]
-        /// Complement bit
-        CPL: u1 = 0,
-        /// COMP [14:15]
-        /// Companding mode
-        COMP: u2 = 0,
-        /// unused [16:31]
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// SAI BConfiguration register 2
-    pub const SAI_BCR2 = Register(SAI_BCR2_val).init(base_address + 0x28);
-
-    /// SAI_AFRCR
-    const SAI_AFRCR_val = packed struct {
+    /// BFRCR
+    const BFRCR_val = packed struct {
         /// FRL [0:7]
         /// Frame length
         FRL: u8 = 7,
@@ -47502,11 +43098,224 @@ pub const SAI1 = struct {
         _unused19: u5 = 0,
         _unused24: u8 = 0,
     };
-    /// SAI AFrame configuration
-    pub const SAI_AFRCR = Register(SAI_AFRCR_val).init(base_address + 0xc);
+    /// BFRCR
+    pub const BFRCR = MMIO(BFRCR_val).init(base_address + 0x2c);
 
-    /// SAI_BFRCR
-    const SAI_BFRCR_val = packed struct {
+    /// BSLOTR
+    const BSLOTR_val = packed struct {
+        /// FBOFF [0:4]
+        /// First bit offset
+        FBOFF: u5 = 0,
+        /// unused [5:5]
+        _unused5: u1 = 0,
+        /// SLOTSZ [6:7]
+        /// Slot size
+        SLOTSZ: u2 = 0,
+        /// NBSLOT [8:11]
+        /// Number of slots in an audio
+        NBSLOT: u4 = 0,
+        /// unused [12:15]
+        _unused12: u4 = 0,
+        /// SLOTEN [16:31]
+        /// Slot enable
+        SLOTEN: u16 = 0,
+    };
+    /// BSlot register
+    pub const BSLOTR = MMIO(BSLOTR_val).init(base_address + 0x30);
+
+    /// BIM
+    const BIM_val = packed struct {
+        /// OVRUDRIE [0:0]
+        /// Overrun/underrun interrupt
+        OVRUDRIE: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection interrupt
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Wrong clock configuration interrupt
+        WCKCFG: u1 = 0,
+        /// FREQIE [3:3]
+        /// FIFO request interrupt
+        FREQIE: u1 = 0,
+        /// CNRDYIE [4:4]
+        /// Codec not ready interrupt
+        CNRDYIE: u1 = 0,
+        /// AFSDETIE [5:5]
+        /// Anticipated frame synchronization
+        AFSDETIE: u1 = 0,
+        /// LFSDETIE [6:6]
+        /// Late frame synchronization detection
+        LFSDETIE: u1 = 0,
+        /// unused [7:31]
+        _unused7: u1 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// BInterrupt mask register2
+    pub const BIM = MMIO(BIM_val).init(base_address + 0x34);
+
+    /// BSR
+    const BSR_val = packed struct {
+        /// OVRUDR [0:0]
+        /// Overrun / underrun
+        OVRUDR: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Wrong clock configuration
+        WCKCFG: u1 = 0,
+        /// FREQ [3:3]
+        /// FIFO request
+        FREQ: u1 = 0,
+        /// CNRDY [4:4]
+        /// Codec not ready
+        CNRDY: u1 = 0,
+        /// AFSDET [5:5]
+        /// Anticipated frame synchronization
+        AFSDET: u1 = 0,
+        /// LFSDET [6:6]
+        /// Late frame synchronization
+        LFSDET: u1 = 0,
+        /// unused [7:15]
+        _unused7: u1 = 0,
+        _unused8: u8 = 0,
+        /// FLVL [16:18]
+        /// FIFO level threshold
+        FLVL: u3 = 0,
+        /// unused [19:31]
+        _unused19: u5 = 0,
+        _unused24: u8 = 0,
+    };
+    /// BStatus register
+    pub const BSR = MMIO(BSR_val).init(base_address + 0x38);
+
+    /// BCLRFR
+    const BCLRFR_val = packed struct {
+        /// OVRUDR [0:0]
+        /// Clear overrun / underrun
+        OVRUDR: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection flag
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Clear wrong clock configuration
+        WCKCFG: u1 = 0,
+        /// unused [3:3]
+        _unused3: u1 = 0,
+        /// CNRDY [4:4]
+        /// Clear codec not ready flag
+        CNRDY: u1 = 0,
+        /// CAFSDET [5:5]
+        /// Clear anticipated frame synchronization
+        CAFSDET: u1 = 0,
+        /// LFSDET [6:6]
+        /// Clear late frame synchronization
+        LFSDET: u1 = 0,
+        /// unused [7:31]
+        _unused7: u1 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// BClear flag register
+    pub const BCLRFR = MMIO(BCLRFR_val).init(base_address + 0x3c);
+
+    /// BDR
+    const BDR_val = packed struct {
+        /// DATA [0:31]
+        /// Data
+        DATA: u32 = 0,
+    };
+    /// BData register
+    pub const BDR = MMIO(BDR_val).init(base_address + 0x40);
+
+    /// ACR1
+    const ACR1_val = packed struct {
+        /// MODE [0:1]
+        /// Audio block mode
+        MODE: u2 = 0,
+        /// PRTCFG [2:3]
+        /// Protocol configuration
+        PRTCFG: u2 = 0,
+        /// unused [4:4]
+        _unused4: u1 = 0,
+        /// DS [5:7]
+        /// Data size
+        DS: u3 = 2,
+        /// LSBFIRST [8:8]
+        /// Least significant bit
+        LSBFIRST: u1 = 0,
+        /// CKSTR [9:9]
+        /// Clock strobing edge
+        CKSTR: u1 = 0,
+        /// SYNCEN [10:11]
+        /// Synchronization enable
+        SYNCEN: u2 = 0,
+        /// MONO [12:12]
+        /// Mono mode
+        MONO: u1 = 0,
+        /// OutDri [13:13]
+        /// Output drive
+        OutDri: u1 = 0,
+        /// unused [14:15]
+        _unused14: u2 = 0,
+        /// SAIAEN [16:16]
+        /// Audio block A enable
+        SAIAEN: u1 = 0,
+        /// DMAEN [17:17]
+        /// DMA enable
+        DMAEN: u1 = 0,
+        /// unused [18:18]
+        _unused18: u1 = 0,
+        /// NODIV [19:19]
+        /// No divider
+        NODIV: u1 = 0,
+        /// MCJDIV [20:23]
+        /// Master clock divider
+        MCJDIV: u4 = 0,
+        /// unused [24:31]
+        _unused24: u8 = 0,
+    };
+    /// AConfiguration register 1
+    pub const ACR1 = MMIO(ACR1_val).init(base_address + 0x4);
+
+    /// ACR2
+    const ACR2_val = packed struct {
+        /// FTH [0:2]
+        /// FIFO threshold
+        FTH: u3 = 0,
+        /// FFLUS [3:3]
+        /// FIFO flush
+        FFLUS: u1 = 0,
+        /// TRIS [4:4]
+        /// Tristate management on data
+        TRIS: u1 = 0,
+        /// MUTE [5:5]
+        /// Mute
+        MUTE: u1 = 0,
+        /// MUTEVAL [6:6]
+        /// Mute value
+        MUTEVAL: u1 = 0,
+        /// MUTECN [7:12]
+        /// Mute counter
+        MUTECN: u6 = 0,
+        /// CPL [13:13]
+        /// Complement bit
+        CPL: u1 = 0,
+        /// COMP [14:15]
+        /// Companding mode
+        COMP: u2 = 0,
+        /// unused [16:31]
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// AConfiguration register 2
+    pub const ACR2 = MMIO(ACR2_val).init(base_address + 0x8);
+
+    /// AFRCR
+    const AFRCR_val = packed struct {
         /// FRL [0:7]
         /// Frame length
         FRL: u8 = 7,
@@ -47528,11 +43337,11 @@ pub const SAI1 = struct {
         _unused19: u5 = 0,
         _unused24: u8 = 0,
     };
-    /// SAI BFrame configuration
-    pub const SAI_BFRCR = Register(SAI_BFRCR_val).init(base_address + 0x2c);
+    /// AFRCR
+    pub const AFRCR = MMIO(AFRCR_val).init(base_address + 0xc);
 
-    /// SAI_ASLOTR
-    const SAI_ASLOTR_val = packed struct {
+    /// ASLOTR
+    const ASLOTR_val = packed struct {
         /// FBOFF [0:4]
         /// First bit offset
         FBOFF: u5 = 0,
@@ -47550,42 +43359,20 @@ pub const SAI1 = struct {
         /// Slot enable
         SLOTEN: u16 = 0,
     };
-    /// SAI ASlot register
-    pub const SAI_ASLOTR = Register(SAI_ASLOTR_val).init(base_address + 0x10);
+    /// ASlot register
+    pub const ASLOTR = MMIO(ASLOTR_val).init(base_address + 0x10);
 
-    /// SAI_BSLOTR
-    const SAI_BSLOTR_val = packed struct {
-        /// FBOFF [0:4]
-        /// First bit offset
-        FBOFF: u5 = 0,
-        /// unused [5:5]
-        _unused5: u1 = 0,
-        /// SLOTSZ [6:7]
-        /// Slot size
-        SLOTSZ: u2 = 0,
-        /// NBSLOT [8:11]
-        /// Number of slots in an audio
-        NBSLOT: u4 = 0,
-        /// unused [12:15]
-        _unused12: u4 = 0,
-        /// SLOTEN [16:31]
-        /// Slot enable
-        SLOTEN: u16 = 0,
-    };
-    /// SAI BSlot register
-    pub const SAI_BSLOTR = Register(SAI_BSLOTR_val).init(base_address + 0x30);
-
-    /// SAI_AIM
-    const SAI_AIM_val = packed struct {
+    /// AIM
+    const AIM_val = packed struct {
         /// OVRUDRIE [0:0]
         /// Overrun/underrun interrupt
         OVRUDRIE: u1 = 0,
-        /// MUTEDETIE [1:1]
+        /// MUTEDET [1:1]
         /// Mute detection interrupt
-        MUTEDETIE: u1 = 0,
-        /// WCKCFGIE [2:2]
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
         /// Wrong clock configuration interrupt
-        WCKCFGIE: u1 = 0,
+        WCKCFG: u1 = 0,
         /// FREQIE [3:3]
         /// FIFO request interrupt
         FREQIE: u1 = 0,
@@ -47595,52 +43382,20 @@ pub const SAI1 = struct {
         /// AFSDETIE [5:5]
         /// Anticipated frame synchronization
         AFSDETIE: u1 = 0,
-        /// LFSDETIE [6:6]
+        /// LFSDET [6:6]
         /// Late frame synchronization detection
-        LFSDETIE: u1 = 0,
+        LFSDET: u1 = 0,
         /// unused [7:31]
         _unused7: u1 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// SAI AInterrupt mask register2
-    pub const SAI_AIM = Register(SAI_AIM_val).init(base_address + 0x14);
+    /// AInterrupt mask register2
+    pub const AIM = MMIO(AIM_val).init(base_address + 0x14);
 
-    /// SAI_BIM
-    const SAI_BIM_val = packed struct {
-        /// OVRUDRIE [0:0]
-        /// Overrun/underrun interrupt
-        OVRUDRIE: u1 = 0,
-        /// MUTEDETIE [1:1]
-        /// Mute detection interrupt
-        MUTEDETIE: u1 = 0,
-        /// WCKCFGIE [2:2]
-        /// Wrong clock configuration interrupt
-        WCKCFGIE: u1 = 0,
-        /// FREQIE [3:3]
-        /// FIFO request interrupt
-        FREQIE: u1 = 0,
-        /// CNRDYIE [4:4]
-        /// Codec not ready interrupt
-        CNRDYIE: u1 = 0,
-        /// AFSDETIE [5:5]
-        /// Anticipated frame synchronization
-        AFSDETIE: u1 = 0,
-        /// LFSDETIE [6:6]
-        /// Late frame synchronization detection
-        LFSDETIE: u1 = 0,
-        /// unused [7:31]
-        _unused7: u1 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// SAI BInterrupt mask register2
-    pub const SAI_BIM = Register(SAI_BIM_val).init(base_address + 0x34);
-
-    /// SAI_ASR
-    const SAI_ASR_val = packed struct {
+    /// ASR
+    const ASR_val = packed struct {
         /// OVRUDR [0:0]
         /// Overrun / underrun
         OVRUDR: u1 = 0,
@@ -47648,11 +43403,11 @@ pub const SAI1 = struct {
         /// Mute detection
         MUTEDET: u1 = 0,
         /// WCKCFG [2:2]
-        /// Wrong clock configuration
+        /// Wrong clock configuration flag. This bit
         WCKCFG: u1 = 0,
         /// FREQ [3:3]
         /// FIFO request
-        FREQ: u1 = 1,
+        FREQ: u1 = 0,
         /// CNRDY [4:4]
         /// Codec not ready
         CNRDY: u1 = 0,
@@ -47665,3010 +43420,1935 @@ pub const SAI1 = struct {
         /// unused [7:15]
         _unused7: u1 = 0,
         _unused8: u8 = 0,
-        /// FLTH [16:18]
+        /// FLVL [16:18]
         /// FIFO level threshold
-        FLTH: u3 = 0,
+        FLVL: u3 = 0,
         /// unused [19:31]
         _unused19: u5 = 0,
         _unused24: u8 = 0,
     };
-    /// SAI AStatus register
-    pub const SAI_ASR = Register(SAI_ASR_val).init(base_address + 0x18);
+    /// AStatus register
+    pub const ASR = MMIO(ASR_val).init(base_address + 0x18);
 
-    /// SAI_BSR
-    const SAI_BSR_val = packed struct {
+    /// ACLRFR
+    const ACLRFR_val = packed struct {
         /// OVRUDR [0:0]
-        /// Overrun / underrun
+        /// Clear overrun / underrun
         OVRUDR: u1 = 0,
         /// MUTEDET [1:1]
-        /// Mute detection
+        /// Mute detection flag
         MUTEDET: u1 = 0,
         /// WCKCFG [2:2]
-        /// Wrong clock configuration
+        /// Clear wrong clock configuration
         WCKCFG: u1 = 0,
-        /// FREQ [3:3]
-        /// FIFO request
-        FREQ: u1 = 1,
+        /// unused [3:3]
+        _unused3: u1 = 0,
         /// CNRDY [4:4]
-        /// Codec not ready
+        /// Clear codec not ready flag
         CNRDY: u1 = 0,
-        /// AFSDET [5:5]
-        /// Anticipated frame synchronization
-        AFSDET: u1 = 0,
+        /// CAFSDET [5:5]
+        /// Clear anticipated frame synchronization
+        CAFSDET: u1 = 0,
         /// LFSDET [6:6]
-        /// Late frame synchronization
+        /// Clear late frame synchronization
         LFSDET: u1 = 0,
-        /// unused [7:15]
-        _unused7: u1 = 0,
-        _unused8: u8 = 0,
-        /// FLTH [16:18]
-        /// FIFO level threshold
-        FLTH: u3 = 0,
-        /// unused [19:31]
-        _unused19: u5 = 0,
-        _unused24: u8 = 0,
-    };
-    /// SAI BStatus register
-    pub const SAI_BSR = Register(SAI_BSR_val).init(base_address + 0x38);
-
-    /// SAI_ACLRFR
-    const SAI_ACLRFR_val = packed struct {
-        /// COVRUDR [0:0]
-        /// Clear overrun / underrun
-        COVRUDR: u1 = 0,
-        /// CMUTEDET [1:1]
-        /// Mute detection flag
-        CMUTEDET: u1 = 0,
-        /// CWCKCFG [2:2]
-        /// Clear wrong clock configuration
-        CWCKCFG: u1 = 0,
-        /// unused [3:3]
-        _unused3: u1 = 0,
-        /// CCNRDY [4:4]
-        /// Clear codec not ready flag
-        CCNRDY: u1 = 0,
-        /// CAFSDET [5:5]
-        /// Clear anticipated frame synchronization
-        CAFSDET: u1 = 0,
-        /// CLFSDET [6:6]
-        /// Clear late frame synchronization
-        CLFSDET: u1 = 0,
         /// unused [7:31]
         _unused7: u1 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// SAI AClear flag register
-    pub const SAI_ACLRFR = Register(SAI_ACLRFR_val).init(base_address + 0x1c);
+    /// AClear flag register
+    pub const ACLRFR = MMIO(ACLRFR_val).init(base_address + 0x1c);
 
-    /// SAI_BCLRFR
-    const SAI_BCLRFR_val = packed struct {
-        /// COVRUDR [0:0]
-        /// Clear overrun / underrun
-        COVRUDR: u1 = 0,
-        /// CMUTEDET [1:1]
-        /// Mute detection flag
-        CMUTEDET: u1 = 0,
-        /// CWCKCFG [2:2]
-        /// Clear wrong clock configuration
-        CWCKCFG: u1 = 0,
-        /// unused [3:3]
-        _unused3: u1 = 0,
-        /// CCNRDY [4:4]
-        /// Clear codec not ready flag
-        CCNRDY: u1 = 0,
-        /// CAFSDET [5:5]
-        /// Clear anticipated frame synchronization
-        CAFSDET: u1 = 0,
-        /// CLFSDET [6:6]
-        /// Clear late frame synchronization
-        CLFSDET: u1 = 0,
-        /// unused [7:31]
-        _unused7: u1 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// SAI BClear flag register
-    pub const SAI_BCLRFR = Register(SAI_BCLRFR_val).init(base_address + 0x3c);
-
-    /// SAI_ADR
-    const SAI_ADR_val = packed struct {
+    /// ADR
+    const ADR_val = packed struct {
         /// DATA [0:31]
         /// Data
         DATA: u32 = 0,
     };
-    /// SAI AData register
-    pub const SAI_ADR = Register(SAI_ADR_val).init(base_address + 0x20);
-
-    /// SAI_BDR
-    const SAI_BDR_val = packed struct {
-        /// DATA [0:31]
-        /// Data
-        DATA: u32 = 0,
-    };
-    /// SAI BData register
-    pub const SAI_BDR = Register(SAI_BDR_val).init(base_address + 0x40);
-};
-
-/// LCD-TFT Controller
-pub const LTDC = struct {
-    const base_address = 0x40016800;
-    /// SSCR
-    const SSCR_val = packed struct {
-        /// VSH [0:10]
-        /// Vertical Synchronization Height (in
-        VSH: u11 = 0,
-        /// unused [11:15]
-        _unused11: u5 = 0,
-        /// HSW [16:25]
-        /// Horizontal Synchronization Width (in
-        HSW: u10 = 0,
-        /// unused [26:31]
-        _unused26: u6 = 0,
-    };
-    /// Synchronization Size Configuration
-    pub const SSCR = Register(SSCR_val).init(base_address + 0x8);
-
-    /// BPCR
-    const BPCR_val = packed struct {
-        /// AVBP [0:10]
-        /// Accumulated Vertical back porch (in
-        AVBP: u11 = 0,
-        /// unused [11:15]
-        _unused11: u5 = 0,
-        /// AHBP [16:25]
-        /// Accumulated Horizontal back porch (in
-        AHBP: u10 = 0,
-        /// unused [26:31]
-        _unused26: u6 = 0,
-    };
-    /// Back Porch Configuration
-    pub const BPCR = Register(BPCR_val).init(base_address + 0xc);
-
-    /// AWCR
-    const AWCR_val = packed struct {
-        /// AAH [0:10]
-        /// Accumulated Active Height (in units of
-        AAH: u11 = 0,
-        /// unused [11:15]
-        _unused11: u5 = 0,
-        /// AAV [16:25]
-        /// AAV
-        AAV: u10 = 0,
-        /// unused [26:31]
-        _unused26: u6 = 0,
-    };
-    /// Active Width Configuration
-    pub const AWCR = Register(AWCR_val).init(base_address + 0x10);
-
-    /// TWCR
-    const TWCR_val = packed struct {
-        /// TOTALH [0:10]
-        /// Total Height (in units of horizontal
-        TOTALH: u11 = 0,
-        /// unused [11:15]
-        _unused11: u5 = 0,
-        /// TOTALW [16:25]
-        /// Total Width (in units of pixel clock
-        TOTALW: u10 = 0,
-        /// unused [26:31]
-        _unused26: u6 = 0,
-    };
-    /// Total Width Configuration
-    pub const TWCR = Register(TWCR_val).init(base_address + 0x14);
+    /// AData register
+    pub const ADR = MMIO(ADR_val).init(base_address + 0x20);
 
     /// GCR
     const GCR_val = packed struct {
-        /// LTDCEN [0:0]
-        /// LCD-TFT controller enable
-        LTDCEN: u1 = 0,
-        /// unused [1:3]
-        _unused1: u3 = 0,
-        /// DBW [4:6]
-        /// Dither Blue Width
-        DBW: u3 = 2,
-        /// unused [7:7]
-        _unused7: u1 = 0,
-        /// DGW [8:10]
-        /// Dither Green Width
-        DGW: u3 = 2,
-        /// unused [11:11]
-        _unused11: u1 = 0,
-        /// DRW [12:14]
-        /// Dither Red Width
-        DRW: u3 = 2,
-        /// unused [15:15]
-        _unused15: u1 = 0,
-        /// DEN [16:16]
-        /// Dither Enable
-        DEN: u1 = 0,
-        /// unused [17:27]
-        _unused17: u7 = 0,
-        _unused24: u4 = 0,
-        /// PCPOL [28:28]
-        /// Pixel Clock Polarity
-        PCPOL: u1 = 0,
-        /// DEPOL [29:29]
-        /// Data Enable Polarity
-        DEPOL: u1 = 0,
-        /// VSPOL [30:30]
-        /// Vertical Synchronization
-        VSPOL: u1 = 0,
-        /// HSPOL [31:31]
-        /// Horizontal Synchronization
-        HSPOL: u1 = 0,
-    };
-    /// Global Control Register
-    pub const GCR = Register(GCR_val).init(base_address + 0x18);
-
-    /// SRCR
-    const SRCR_val = packed struct {
-        /// IMR [0:0]
-        /// Immediate Reload
-        IMR: u1 = 0,
-        /// VBR [1:1]
-        /// Vertical Blanking Reload
-        VBR: u1 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Shadow Reload Configuration
-    pub const SRCR = Register(SRCR_val).init(base_address + 0x24);
-
-    /// BCCR
-    const BCCR_val = packed struct {
-        /// BC [0:23]
-        /// Background Color Red value
-        BC: u24 = 0,
-        /// unused [24:31]
-        _unused24: u8 = 0,
-    };
-    /// Background Color Configuration
-    pub const BCCR = Register(BCCR_val).init(base_address + 0x2c);
-
-    /// IER
-    const IER_val = packed struct {
-        /// LIE [0:0]
-        /// Line Interrupt Enable
-        LIE: u1 = 0,
-        /// FUIE [1:1]
-        /// FIFO Underrun Interrupt
-        FUIE: u1 = 0,
-        /// TERRIE [2:2]
-        /// Transfer Error Interrupt
-        TERRIE: u1 = 0,
-        /// RRIE [3:3]
-        /// Register Reload interrupt
-        RRIE: u1 = 0,
-        /// unused [4:31]
-        _unused4: u4 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Interrupt Enable Register
-    pub const IER = Register(IER_val).init(base_address + 0x34);
-
-    /// ISR
-    const ISR_val = packed struct {
-        /// LIF [0:0]
-        /// Line Interrupt flag
-        LIF: u1 = 0,
-        /// FUIF [1:1]
-        /// FIFO Underrun Interrupt
-        FUIF: u1 = 0,
-        /// TERRIF [2:2]
-        /// Transfer Error interrupt
-        TERRIF: u1 = 0,
-        /// RRIF [3:3]
-        /// Register Reload Interrupt
-        RRIF: u1 = 0,
-        /// unused [4:31]
-        _unused4: u4 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Interrupt Status Register
-    pub const ISR = Register(ISR_val).init(base_address + 0x38);
-
-    /// ICR
-    const ICR_val = packed struct {
-        /// CLIF [0:0]
-        /// Clears the Line Interrupt
-        CLIF: u1 = 0,
-        /// CFUIF [1:1]
-        /// Clears the FIFO Underrun Interrupt
-        CFUIF: u1 = 0,
-        /// CTERRIF [2:2]
-        /// Clears the Transfer Error Interrupt
-        CTERRIF: u1 = 0,
-        /// CRRIF [3:3]
-        /// Clears Register Reload Interrupt
-        CRRIF: u1 = 0,
-        /// unused [4:31]
-        _unused4: u4 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Interrupt Clear Register
-    pub const ICR = Register(ICR_val).init(base_address + 0x3c);
-
-    /// LIPCR
-    const LIPCR_val = packed struct {
-        /// LIPOS [0:10]
-        /// Line Interrupt Position
-        LIPOS: u11 = 0,
-        /// unused [11:31]
-        _unused11: u5 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Line Interrupt Position Configuration
-    pub const LIPCR = Register(LIPCR_val).init(base_address + 0x40);
-
-    /// CPSR
-    const CPSR_val = packed struct {
-        /// CYPOS [0:15]
-        /// Current Y Position
-        CYPOS: u16 = 0,
-        /// CXPOS [16:31]
-        /// Current X Position
-        CXPOS: u16 = 0,
-    };
-    /// Current Position Status
-    pub const CPSR = Register(CPSR_val).init(base_address + 0x44);
-
-    /// CDSR
-    const CDSR_val = packed struct {
-        /// VDES [0:0]
-        /// Vertical Data Enable display
-        VDES: u1 = 1,
-        /// HDES [1:1]
-        /// Horizontal Data Enable display
-        HDES: u1 = 1,
-        /// VSYNCS [2:2]
-        /// Vertical Synchronization display
-        VSYNCS: u1 = 1,
-        /// HSYNCS [3:3]
-        /// Horizontal Synchronization display
-        HSYNCS: u1 = 1,
-        /// unused [4:31]
-        _unused4: u4 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Current Display Status
-    pub const CDSR = Register(CDSR_val).init(base_address + 0x48);
-
-    /// L1CR
-    const L1CR_val = packed struct {
-        /// LEN [0:0]
-        /// Layer Enable
-        LEN: u1 = 0,
-        /// COLKEN [1:1]
-        /// Color Keying Enable
-        COLKEN: u1 = 0,
+        /// SYNCIN [0:1]
+        /// Synchronization inputs
+        SYNCIN: u2 = 0,
         /// unused [2:3]
         _unused2: u2 = 0,
-        /// CLUTEN [4:4]
-        /// Color Look-Up Table Enable
-        CLUTEN: u1 = 0,
-        /// unused [5:31]
-        _unused5: u3 = 0,
+        /// SYNCOUT [4:5]
+        /// Synchronization outputs
+        SYNCOUT: u2 = 0,
+        /// unused [6:31]
+        _unused6: u2 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// Layerx Control Register
-    pub const L1CR = Register(L1CR_val).init(base_address + 0x84);
-
-    /// L1WHPCR
-    const L1WHPCR_val = packed struct {
-        /// WHSTPOS [0:11]
-        /// Window Horizontal Start
-        WHSTPOS: u12 = 0,
-        /// unused [12:15]
-        _unused12: u4 = 0,
-        /// WHSPPOS [16:27]
-        /// Window Horizontal Stop
-        WHSPPOS: u12 = 0,
-        /// unused [28:31]
-        _unused28: u4 = 0,
-    };
-    /// Layerx Window Horizontal Position
-    pub const L1WHPCR = Register(L1WHPCR_val).init(base_address + 0x88);
-
-    /// L1WVPCR
-    const L1WVPCR_val = packed struct {
-        /// WVSTPOS [0:10]
-        /// Window Vertical Start
-        WVSTPOS: u11 = 0,
-        /// unused [11:15]
-        _unused11: u5 = 0,
-        /// WVSPPOS [16:26]
-        /// Window Vertical Stop
-        WVSPPOS: u11 = 0,
-        /// unused [27:31]
-        _unused27: u5 = 0,
-    };
-    /// Layerx Window Vertical Position
-    pub const L1WVPCR = Register(L1WVPCR_val).init(base_address + 0x8c);
-
-    /// L1CKCR
-    const L1CKCR_val = packed struct {
-        /// CKBLUE [0:7]
-        /// Color Key Blue value
-        CKBLUE: u8 = 0,
-        /// CKGREEN [8:15]
-        /// Color Key Green value
-        CKGREEN: u8 = 0,
-        /// CKRED [16:23]
-        /// Color Key Red value
-        CKRED: u8 = 0,
-        /// unused [24:31]
-        _unused24: u8 = 0,
-    };
-    /// Layerx Color Keying Configuration
-    pub const L1CKCR = Register(L1CKCR_val).init(base_address + 0x90);
-
-    /// L1PFCR
-    const L1PFCR_val = packed struct {
-        /// PF [0:2]
-        /// Pixel Format
-        PF: u3 = 0,
-        /// unused [3:31]
-        _unused3: u5 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx Pixel Format Configuration
-    pub const L1PFCR = Register(L1PFCR_val).init(base_address + 0x94);
-
-    /// L1CACR
-    const L1CACR_val = packed struct {
-        /// CONSTA [0:7]
-        /// Constant Alpha
-        CONSTA: u8 = 0,
-        /// unused [8:31]
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx Constant Alpha Configuration
-    pub const L1CACR = Register(L1CACR_val).init(base_address + 0x98);
-
-    /// L1DCCR
-    const L1DCCR_val = packed struct {
-        /// DCBLUE [0:7]
-        /// Default Color Blue
-        DCBLUE: u8 = 0,
-        /// DCGREEN [8:15]
-        /// Default Color Green
-        DCGREEN: u8 = 0,
-        /// DCRED [16:23]
-        /// Default Color Red
-        DCRED: u8 = 0,
-        /// DCALPHA [24:31]
-        /// Default Color Alpha
-        DCALPHA: u8 = 0,
-    };
-    /// Layerx Default Color Configuration
-    pub const L1DCCR = Register(L1DCCR_val).init(base_address + 0x9c);
-
-    /// L1BFCR
-    const L1BFCR_val = packed struct {
-        /// BF2 [0:2]
-        /// Blending Factor 2
-        BF2: u3 = 7,
-        /// unused [3:7]
-        _unused3: u5 = 0,
-        /// BF1 [8:10]
-        /// Blending Factor 1
-        BF1: u3 = 6,
-        /// unused [11:31]
-        _unused11: u5 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx Blending Factors Configuration
-    pub const L1BFCR = Register(L1BFCR_val).init(base_address + 0xa0);
-
-    /// L1CFBAR
-    const L1CFBAR_val = packed struct {
-        /// CFBADD [0:31]
-        /// Color Frame Buffer Start
-        CFBADD: u32 = 0,
-    };
-    /// Layerx Color Frame Buffer Address
-    pub const L1CFBAR = Register(L1CFBAR_val).init(base_address + 0xac);
-
-    /// L1CFBLR
-    const L1CFBLR_val = packed struct {
-        /// CFBLL [0:12]
-        /// Color Frame Buffer Line
-        CFBLL: u13 = 0,
-        /// unused [13:15]
-        _unused13: u3 = 0,
-        /// CFBP [16:28]
-        /// Color Frame Buffer Pitch in
-        CFBP: u13 = 0,
-        /// unused [29:31]
-        _unused29: u3 = 0,
-    };
-    /// Layerx Color Frame Buffer Length
-    pub const L1CFBLR = Register(L1CFBLR_val).init(base_address + 0xb0);
-
-    /// L1CFBLNR
-    const L1CFBLNR_val = packed struct {
-        /// CFBLNBR [0:10]
-        /// Frame Buffer Line Number
-        CFBLNBR: u11 = 0,
-        /// unused [11:31]
-        _unused11: u5 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx ColorFrame Buffer Line Number
-    pub const L1CFBLNR = Register(L1CFBLNR_val).init(base_address + 0xb4);
-
-    /// L1CLUTWR
-    const L1CLUTWR_val = packed struct {
-        /// BLUE [0:7]
-        /// Blue value
-        BLUE: u8 = 0,
-        /// GREEN [8:15]
-        /// Green value
-        GREEN: u8 = 0,
-        /// RED [16:23]
-        /// Red value
-        RED: u8 = 0,
-        /// CLUTADD [24:31]
-        /// CLUT Address
-        CLUTADD: u8 = 0,
-    };
-    /// Layerx CLUT Write Register
-    pub const L1CLUTWR = Register(L1CLUTWR_val).init(base_address + 0xc4);
-
-    /// L2CR
-    const L2CR_val = packed struct {
-        /// LEN [0:0]
-        /// Layer Enable
-        LEN: u1 = 0,
-        /// COLKEN [1:1]
-        /// Color Keying Enable
-        COLKEN: u1 = 0,
-        /// unused [2:3]
-        _unused2: u2 = 0,
-        /// CLUTEN [4:4]
-        /// Color Look-Up Table Enable
-        CLUTEN: u1 = 0,
-        /// unused [5:31]
-        _unused5: u3 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx Control Register
-    pub const L2CR = Register(L2CR_val).init(base_address + 0x104);
-
-    /// L2WHPCR
-    const L2WHPCR_val = packed struct {
-        /// WHSTPOS [0:11]
-        /// Window Horizontal Start
-        WHSTPOS: u12 = 0,
-        /// unused [12:15]
-        _unused12: u4 = 0,
-        /// WHSPPOS [16:27]
-        /// Window Horizontal Stop
-        WHSPPOS: u12 = 0,
-        /// unused [28:31]
-        _unused28: u4 = 0,
-    };
-    /// Layerx Window Horizontal Position
-    pub const L2WHPCR = Register(L2WHPCR_val).init(base_address + 0x108);
-
-    /// L2WVPCR
-    const L2WVPCR_val = packed struct {
-        /// WVSTPOS [0:10]
-        /// Window Vertical Start
-        WVSTPOS: u11 = 0,
-        /// unused [11:15]
-        _unused11: u5 = 0,
-        /// WVSPPOS [16:26]
-        /// Window Vertical Stop
-        WVSPPOS: u11 = 0,
-        /// unused [27:31]
-        _unused27: u5 = 0,
-    };
-    /// Layerx Window Vertical Position
-    pub const L2WVPCR = Register(L2WVPCR_val).init(base_address + 0x10c);
-
-    /// L2CKCR
-    const L2CKCR_val = packed struct {
-        /// CKBLUE [0:7]
-        /// Color Key Blue value
-        CKBLUE: u8 = 0,
-        /// CKGREEN [8:14]
-        /// Color Key Green value
-        CKGREEN: u7 = 0,
-        /// CKRED [15:23]
-        /// Color Key Red value
-        CKRED: u9 = 0,
-        /// unused [24:31]
-        _unused24: u8 = 0,
-    };
-    /// Layerx Color Keying Configuration
-    pub const L2CKCR = Register(L2CKCR_val).init(base_address + 0x110);
-
-    /// L2PFCR
-    const L2PFCR_val = packed struct {
-        /// PF [0:2]
-        /// Pixel Format
-        PF: u3 = 0,
-        /// unused [3:31]
-        _unused3: u5 = 0,
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx Pixel Format Configuration
-    pub const L2PFCR = Register(L2PFCR_val).init(base_address + 0x114);
-
-    /// L2CACR
-    const L2CACR_val = packed struct {
-        /// CONSTA [0:7]
-        /// Constant Alpha
-        CONSTA: u8 = 0,
-        /// unused [8:31]
-        _unused8: u8 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx Constant Alpha Configuration
-    pub const L2CACR = Register(L2CACR_val).init(base_address + 0x118);
-
-    /// L2DCCR
-    const L2DCCR_val = packed struct {
-        /// DCBLUE [0:7]
-        /// Default Color Blue
-        DCBLUE: u8 = 0,
-        /// DCGREEN [8:15]
-        /// Default Color Green
-        DCGREEN: u8 = 0,
-        /// DCRED [16:23]
-        /// Default Color Red
-        DCRED: u8 = 0,
-        /// DCALPHA [24:31]
-        /// Default Color Alpha
-        DCALPHA: u8 = 0,
-    };
-    /// Layerx Default Color Configuration
-    pub const L2DCCR = Register(L2DCCR_val).init(base_address + 0x11c);
-
-    /// L2BFCR
-    const L2BFCR_val = packed struct {
-        /// BF2 [0:2]
-        /// Blending Factor 2
-        BF2: u3 = 7,
-        /// unused [3:7]
-        _unused3: u5 = 0,
-        /// BF1 [8:10]
-        /// Blending Factor 1
-        BF1: u3 = 6,
-        /// unused [11:31]
-        _unused11: u5 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx Blending Factors Configuration
-    pub const L2BFCR = Register(L2BFCR_val).init(base_address + 0x120);
-
-    /// L2CFBAR
-    const L2CFBAR_val = packed struct {
-        /// CFBADD [0:31]
-        /// Color Frame Buffer Start
-        CFBADD: u32 = 0,
-    };
-    /// Layerx Color Frame Buffer Address
-    pub const L2CFBAR = Register(L2CFBAR_val).init(base_address + 0x12c);
-
-    /// L2CFBLR
-    const L2CFBLR_val = packed struct {
-        /// CFBLL [0:12]
-        /// Color Frame Buffer Line
-        CFBLL: u13 = 0,
-        /// unused [13:15]
-        _unused13: u3 = 0,
-        /// CFBP [16:28]
-        /// Color Frame Buffer Pitch in
-        CFBP: u13 = 0,
-        /// unused [29:31]
-        _unused29: u3 = 0,
-    };
-    /// Layerx Color Frame Buffer Length
-    pub const L2CFBLR = Register(L2CFBLR_val).init(base_address + 0x130);
-
-    /// L2CFBLNR
-    const L2CFBLNR_val = packed struct {
-        /// CFBLNBR [0:10]
-        /// Frame Buffer Line Number
-        CFBLNBR: u11 = 0,
-        /// unused [11:31]
-        _unused11: u5 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// Layerx ColorFrame Buffer Line Number
-    pub const L2CFBLNR = Register(L2CFBLNR_val).init(base_address + 0x134);
-
-    /// L2CLUTWR
-    const L2CLUTWR_val = packed struct {
-        /// BLUE [0:7]
-        /// Blue value
-        BLUE: u8 = 0,
-        /// GREEN [8:15]
-        /// Green value
-        GREEN: u8 = 0,
-        /// RED [16:23]
-        /// Red value
-        RED: u8 = 0,
-        /// CLUTADD [24:31]
-        /// CLUT Address
-        CLUTADD: u8 = 0,
-    };
-    /// Layerx CLUT Write Register
-    pub const L2CLUTWR = Register(L2CLUTWR_val).init(base_address + 0x144);
+    /// Global configuration register
+    pub const GCR = MMIO(GCR_val).init(base_address + 0x0);
 };
 
-/// Hash processor
-pub const HASH = struct {
-    const base_address = 0x50060400;
-    /// CR
-    const CR_val = packed struct {
-        /// unused [0:1]
-        _unused0: u2 = 0,
-        /// INIT [2:2]
-        /// Initialize message digest
-        INIT: u1 = 0,
-        /// DMAE [3:3]
-        /// DMA enable
-        DMAE: u1 = 0,
-        /// DATATYPE [4:5]
-        /// Data type selection
-        DATATYPE: u2 = 0,
-        /// MODE [6:6]
-        /// Mode selection
-        MODE: u1 = 0,
-        /// ALGO0 [7:7]
-        /// Algorithm selection
-        ALGO0: u1 = 0,
-        /// NBW [8:11]
-        /// Number of words already
-        NBW: u4 = 0,
-        /// DINNE [12:12]
-        /// DIN not empty
-        DINNE: u1 = 0,
-        /// MDMAT [13:13]
-        /// Multiple DMA Transfers
-        MDMAT: u1 = 0,
+/// Serial audio interface
+pub const SAI2 = struct {
+    const base_address = 0x40015c00;
+    /// BCR1
+    const BCR1_val = packed struct {
+        /// MODE [0:1]
+        /// Audio block mode
+        MODE: u2 = 0,
+        /// PRTCFG [2:3]
+        /// Protocol configuration
+        PRTCFG: u2 = 0,
+        /// unused [4:4]
+        _unused4: u1 = 0,
+        /// DS [5:7]
+        /// Data size
+        DS: u3 = 2,
+        /// LSBFIRST [8:8]
+        /// Least significant bit
+        LSBFIRST: u1 = 0,
+        /// CKSTR [9:9]
+        /// Clock strobing edge
+        CKSTR: u1 = 0,
+        /// SYNCEN [10:11]
+        /// Synchronization enable
+        SYNCEN: u2 = 0,
+        /// MONO [12:12]
+        /// Mono mode
+        MONO: u1 = 0,
+        /// OutDri [13:13]
+        /// Output drive
+        OutDri: u1 = 0,
         /// unused [14:15]
         _unused14: u2 = 0,
-        /// LKEY [16:16]
-        /// Long key selection
-        LKEY: u1 = 0,
-        /// unused [17:17]
-        _unused17: u1 = 0,
-        /// ALGO1 [18:18]
-        /// ALGO
-        ALGO1: u1 = 0,
+        /// SAIBEN [16:16]
+        /// Audio block B enable
+        SAIBEN: u1 = 0,
+        /// DMAEN [17:17]
+        /// DMA enable
+        DMAEN: u1 = 0,
+        /// unused [18:18]
+        _unused18: u1 = 0,
+        /// NODIV [19:19]
+        /// No divider
+        NODIV: u1 = 0,
+        /// MCJDIV [20:23]
+        /// Master clock divider
+        MCJDIV: u4 = 0,
+        /// unused [24:31]
+        _unused24: u8 = 0,
+    };
+    /// BConfiguration register 1
+    pub const BCR1 = MMIO(BCR1_val).init(base_address + 0x24);
+
+    /// BCR2
+    const BCR2_val = packed struct {
+        /// FTH [0:2]
+        /// FIFO threshold
+        FTH: u3 = 0,
+        /// FFLUS [3:3]
+        /// FIFO flush
+        FFLUS: u1 = 0,
+        /// TRIS [4:4]
+        /// Tristate management on data
+        TRIS: u1 = 0,
+        /// MUTE [5:5]
+        /// Mute
+        MUTE: u1 = 0,
+        /// MUTEVAL [6:6]
+        /// Mute value
+        MUTEVAL: u1 = 0,
+        /// MUTECN [7:12]
+        /// Mute counter
+        MUTECN: u6 = 0,
+        /// CPL [13:13]
+        /// Complement bit
+        CPL: u1 = 0,
+        /// COMP [14:15]
+        /// Companding mode
+        COMP: u2 = 0,
+        /// unused [16:31]
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// BConfiguration register 2
+    pub const BCR2 = MMIO(BCR2_val).init(base_address + 0x28);
+
+    /// BFRCR
+    const BFRCR_val = packed struct {
+        /// FRL [0:7]
+        /// Frame length
+        FRL: u8 = 7,
+        /// FSALL [8:14]
+        /// Frame synchronization active level
+        FSALL: u7 = 0,
+        /// unused [15:15]
+        _unused15: u1 = 0,
+        /// FSDEF [16:16]
+        /// Frame synchronization
+        FSDEF: u1 = 0,
+        /// FSPOL [17:17]
+        /// Frame synchronization
+        FSPOL: u1 = 0,
+        /// FSOFF [18:18]
+        /// Frame synchronization
+        FSOFF: u1 = 0,
         /// unused [19:31]
         _unused19: u5 = 0,
         _unused24: u8 = 0,
     };
-    /// control register
-    pub const CR = Register(CR_val).init(base_address + 0x0);
+    /// BFRCR
+    pub const BFRCR = MMIO(BFRCR_val).init(base_address + 0x2c);
 
-    /// DIN
-    const DIN_val = packed struct {
-        /// DATAIN [0:31]
-        /// Data input
-        DATAIN: u32 = 0,
+    /// BSLOTR
+    const BSLOTR_val = packed struct {
+        /// FBOFF [0:4]
+        /// First bit offset
+        FBOFF: u5 = 0,
+        /// unused [5:5]
+        _unused5: u1 = 0,
+        /// SLOTSZ [6:7]
+        /// Slot size
+        SLOTSZ: u2 = 0,
+        /// NBSLOT [8:11]
+        /// Number of slots in an audio
+        NBSLOT: u4 = 0,
+        /// unused [12:15]
+        _unused12: u4 = 0,
+        /// SLOTEN [16:31]
+        /// Slot enable
+        SLOTEN: u16 = 0,
     };
-    /// data input register
-    pub const DIN = Register(DIN_val).init(base_address + 0x4);
+    /// BSlot register
+    pub const BSLOTR = MMIO(BSLOTR_val).init(base_address + 0x30);
 
-    /// STR
-    const STR_val = packed struct {
-        /// NBLW [0:4]
-        /// Number of valid bits in the last word of
-        NBLW: u5 = 0,
-        /// unused [5:7]
-        _unused5: u3 = 0,
-        /// DCAL [8:8]
-        /// Digest calculation
-        DCAL: u1 = 0,
-        /// unused [9:31]
-        _unused9: u7 = 0,
-        _unused16: u8 = 0,
-        _unused24: u8 = 0,
-    };
-    /// start register
-    pub const STR = Register(STR_val).init(base_address + 0x8);
-
-    /// HR0
-    const HR0_val = packed struct {
-        /// H0 [0:31]
-        /// H0
-        H0: u32 = 0,
-    };
-    /// digest registers
-    pub const HR0 = Register(HR0_val).init(base_address + 0xc);
-
-    /// HR1
-    const HR1_val = packed struct {
-        /// H1 [0:31]
-        /// H1
-        H1: u32 = 0,
-    };
-    /// digest registers
-    pub const HR1 = Register(HR1_val).init(base_address + 0x10);
-
-    /// HR2
-    const HR2_val = packed struct {
-        /// H2 [0:31]
-        /// H2
-        H2: u32 = 0,
-    };
-    /// digest registers
-    pub const HR2 = Register(HR2_val).init(base_address + 0x14);
-
-    /// HR3
-    const HR3_val = packed struct {
-        /// H3 [0:31]
-        /// H3
-        H3: u32 = 0,
-    };
-    /// digest registers
-    pub const HR3 = Register(HR3_val).init(base_address + 0x18);
-
-    /// HR4
-    const HR4_val = packed struct {
-        /// H4 [0:31]
-        /// H4
-        H4: u32 = 0,
-    };
-    /// digest registers
-    pub const HR4 = Register(HR4_val).init(base_address + 0x1c);
-
-    /// IMR
-    const IMR_val = packed struct {
-        /// DINIE [0:0]
-        /// Data input interrupt
-        DINIE: u1 = 0,
-        /// DCIE [1:1]
-        /// Digest calculation completion interrupt
-        DCIE: u1 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
+    /// BIM
+    const BIM_val = packed struct {
+        /// OVRUDRIE [0:0]
+        /// Overrun/underrun interrupt
+        OVRUDRIE: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection interrupt
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Wrong clock configuration interrupt
+        WCKCFG: u1 = 0,
+        /// FREQIE [3:3]
+        /// FIFO request interrupt
+        FREQIE: u1 = 0,
+        /// CNRDYIE [4:4]
+        /// Codec not ready interrupt
+        CNRDYIE: u1 = 0,
+        /// AFSDETIE [5:5]
+        /// Anticipated frame synchronization
+        AFSDETIE: u1 = 0,
+        /// LFSDETIE [6:6]
+        /// Late frame synchronization detection
+        LFSDETIE: u1 = 0,
+        /// unused [7:31]
+        _unused7: u1 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// interrupt enable register
-    pub const IMR = Register(IMR_val).init(base_address + 0x20);
+    /// BInterrupt mask register2
+    pub const BIM = MMIO(BIM_val).init(base_address + 0x34);
 
-    /// SR
-    const SR_val = packed struct {
-        /// DINIS [0:0]
-        /// Data input interrupt
-        DINIS: u1 = 1,
-        /// DCIS [1:1]
-        /// Digest calculation completion interrupt
-        DCIS: u1 = 0,
-        /// DMAS [2:2]
-        /// DMA Status
-        DMAS: u1 = 0,
-        /// BUSY [3:3]
-        /// Busy bit
-        BUSY: u1 = 0,
-        /// unused [4:31]
-        _unused4: u4 = 0,
+    /// BSR
+    const BSR_val = packed struct {
+        /// OVRUDR [0:0]
+        /// Overrun / underrun
+        OVRUDR: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Wrong clock configuration
+        WCKCFG: u1 = 0,
+        /// FREQ [3:3]
+        /// FIFO request
+        FREQ: u1 = 0,
+        /// CNRDY [4:4]
+        /// Codec not ready
+        CNRDY: u1 = 0,
+        /// AFSDET [5:5]
+        /// Anticipated frame synchronization
+        AFSDET: u1 = 0,
+        /// LFSDET [6:6]
+        /// Late frame synchronization
+        LFSDET: u1 = 0,
+        /// unused [7:15]
+        _unused7: u1 = 0,
+        _unused8: u8 = 0,
+        /// FLVL [16:18]
+        /// FIFO level threshold
+        FLVL: u3 = 0,
+        /// unused [19:31]
+        _unused19: u5 = 0,
+        _unused24: u8 = 0,
+    };
+    /// BStatus register
+    pub const BSR = MMIO(BSR_val).init(base_address + 0x38);
+
+    /// BCLRFR
+    const BCLRFR_val = packed struct {
+        /// OVRUDR [0:0]
+        /// Clear overrun / underrun
+        OVRUDR: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection flag
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Clear wrong clock configuration
+        WCKCFG: u1 = 0,
+        /// unused [3:3]
+        _unused3: u1 = 0,
+        /// CNRDY [4:4]
+        /// Clear codec not ready flag
+        CNRDY: u1 = 0,
+        /// CAFSDET [5:5]
+        /// Clear anticipated frame synchronization
+        CAFSDET: u1 = 0,
+        /// LFSDET [6:6]
+        /// Clear late frame synchronization
+        LFSDET: u1 = 0,
+        /// unused [7:31]
+        _unused7: u1 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x24);
+    /// BClear flag register
+    pub const BCLRFR = MMIO(BCLRFR_val).init(base_address + 0x3c);
 
-    /// CSR0
-    const CSR0_val = packed struct {
-        /// CSR0 [0:31]
-        /// CSR0
-        CSR0: u32 = 0,
+    /// BDR
+    const BDR_val = packed struct {
+        /// DATA [0:31]
+        /// Data
+        DATA: u32 = 0,
     };
-    /// context swap registers
-    pub const CSR0 = Register(CSR0_val).init(base_address + 0xf8);
+    /// BData register
+    pub const BDR = MMIO(BDR_val).init(base_address + 0x40);
 
-    /// CSR1
-    const CSR1_val = packed struct {
-        /// CSR1 [0:31]
-        /// CSR1
-        CSR1: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR1 = Register(CSR1_val).init(base_address + 0xfc);
-
-    /// CSR2
-    const CSR2_val = packed struct {
-        /// CSR2 [0:31]
-        /// CSR2
-        CSR2: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR2 = Register(CSR2_val).init(base_address + 0x100);
-
-    /// CSR3
-    const CSR3_val = packed struct {
-        /// CSR3 [0:31]
-        /// CSR3
-        CSR3: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR3 = Register(CSR3_val).init(base_address + 0x104);
-
-    /// CSR4
-    const CSR4_val = packed struct {
-        /// CSR4 [0:31]
-        /// CSR4
-        CSR4: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR4 = Register(CSR4_val).init(base_address + 0x108);
-
-    /// CSR5
-    const CSR5_val = packed struct {
-        /// CSR5 [0:31]
-        /// CSR5
-        CSR5: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR5 = Register(CSR5_val).init(base_address + 0x10c);
-
-    /// CSR6
-    const CSR6_val = packed struct {
-        /// CSR6 [0:31]
-        /// CSR6
-        CSR6: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR6 = Register(CSR6_val).init(base_address + 0x110);
-
-    /// CSR7
-    const CSR7_val = packed struct {
-        /// CSR7 [0:31]
-        /// CSR7
-        CSR7: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR7 = Register(CSR7_val).init(base_address + 0x114);
-
-    /// CSR8
-    const CSR8_val = packed struct {
-        /// CSR8 [0:31]
-        /// CSR8
-        CSR8: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR8 = Register(CSR8_val).init(base_address + 0x118);
-
-    /// CSR9
-    const CSR9_val = packed struct {
-        /// CSR9 [0:31]
-        /// CSR9
-        CSR9: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR9 = Register(CSR9_val).init(base_address + 0x11c);
-
-    /// CSR10
-    const CSR10_val = packed struct {
-        /// CSR10 [0:31]
-        /// CSR10
-        CSR10: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR10 = Register(CSR10_val).init(base_address + 0x120);
-
-    /// CSR11
-    const CSR11_val = packed struct {
-        /// CSR11 [0:31]
-        /// CSR11
-        CSR11: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR11 = Register(CSR11_val).init(base_address + 0x124);
-
-    /// CSR12
-    const CSR12_val = packed struct {
-        /// CSR12 [0:31]
-        /// CSR12
-        CSR12: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR12 = Register(CSR12_val).init(base_address + 0x128);
-
-    /// CSR13
-    const CSR13_val = packed struct {
-        /// CSR13 [0:31]
-        /// CSR13
-        CSR13: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR13 = Register(CSR13_val).init(base_address + 0x12c);
-
-    /// CSR14
-    const CSR14_val = packed struct {
-        /// CSR14 [0:31]
-        /// CSR14
-        CSR14: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR14 = Register(CSR14_val).init(base_address + 0x130);
-
-    /// CSR15
-    const CSR15_val = packed struct {
-        /// CSR15 [0:31]
-        /// CSR15
-        CSR15: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR15 = Register(CSR15_val).init(base_address + 0x134);
-
-    /// CSR16
-    const CSR16_val = packed struct {
-        /// CSR16 [0:31]
-        /// CSR16
-        CSR16: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR16 = Register(CSR16_val).init(base_address + 0x138);
-
-    /// CSR17
-    const CSR17_val = packed struct {
-        /// CSR17 [0:31]
-        /// CSR17
-        CSR17: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR17 = Register(CSR17_val).init(base_address + 0x13c);
-
-    /// CSR18
-    const CSR18_val = packed struct {
-        /// CSR18 [0:31]
-        /// CSR18
-        CSR18: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR18 = Register(CSR18_val).init(base_address + 0x140);
-
-    /// CSR19
-    const CSR19_val = packed struct {
-        /// CSR19 [0:31]
-        /// CSR19
-        CSR19: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR19 = Register(CSR19_val).init(base_address + 0x144);
-
-    /// CSR20
-    const CSR20_val = packed struct {
-        /// CSR20 [0:31]
-        /// CSR20
-        CSR20: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR20 = Register(CSR20_val).init(base_address + 0x148);
-
-    /// CSR21
-    const CSR21_val = packed struct {
-        /// CSR21 [0:31]
-        /// CSR21
-        CSR21: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR21 = Register(CSR21_val).init(base_address + 0x14c);
-
-    /// CSR22
-    const CSR22_val = packed struct {
-        /// CSR22 [0:31]
-        /// CSR22
-        CSR22: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR22 = Register(CSR22_val).init(base_address + 0x150);
-
-    /// CSR23
-    const CSR23_val = packed struct {
-        /// CSR23 [0:31]
-        /// CSR23
-        CSR23: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR23 = Register(CSR23_val).init(base_address + 0x154);
-
-    /// CSR24
-    const CSR24_val = packed struct {
-        /// CSR24 [0:31]
-        /// CSR24
-        CSR24: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR24 = Register(CSR24_val).init(base_address + 0x158);
-
-    /// CSR25
-    const CSR25_val = packed struct {
-        /// CSR25 [0:31]
-        /// CSR25
-        CSR25: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR25 = Register(CSR25_val).init(base_address + 0x15c);
-
-    /// CSR26
-    const CSR26_val = packed struct {
-        /// CSR26 [0:31]
-        /// CSR26
-        CSR26: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR26 = Register(CSR26_val).init(base_address + 0x160);
-
-    /// CSR27
-    const CSR27_val = packed struct {
-        /// CSR27 [0:31]
-        /// CSR27
-        CSR27: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR27 = Register(CSR27_val).init(base_address + 0x164);
-
-    /// CSR28
-    const CSR28_val = packed struct {
-        /// CSR28 [0:31]
-        /// CSR28
-        CSR28: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR28 = Register(CSR28_val).init(base_address + 0x168);
-
-    /// CSR29
-    const CSR29_val = packed struct {
-        /// CSR29 [0:31]
-        /// CSR29
-        CSR29: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR29 = Register(CSR29_val).init(base_address + 0x16c);
-
-    /// CSR30
-    const CSR30_val = packed struct {
-        /// CSR30 [0:31]
-        /// CSR30
-        CSR30: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR30 = Register(CSR30_val).init(base_address + 0x170);
-
-    /// CSR31
-    const CSR31_val = packed struct {
-        /// CSR31 [0:31]
-        /// CSR31
-        CSR31: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR31 = Register(CSR31_val).init(base_address + 0x174);
-
-    /// CSR32
-    const CSR32_val = packed struct {
-        /// CSR32 [0:31]
-        /// CSR32
-        CSR32: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR32 = Register(CSR32_val).init(base_address + 0x178);
-
-    /// CSR33
-    const CSR33_val = packed struct {
-        /// CSR33 [0:31]
-        /// CSR33
-        CSR33: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR33 = Register(CSR33_val).init(base_address + 0x17c);
-
-    /// CSR34
-    const CSR34_val = packed struct {
-        /// CSR34 [0:31]
-        /// CSR34
-        CSR34: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR34 = Register(CSR34_val).init(base_address + 0x180);
-
-    /// CSR35
-    const CSR35_val = packed struct {
-        /// CSR35 [0:31]
-        /// CSR35
-        CSR35: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR35 = Register(CSR35_val).init(base_address + 0x184);
-
-    /// CSR36
-    const CSR36_val = packed struct {
-        /// CSR36 [0:31]
-        /// CSR36
-        CSR36: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR36 = Register(CSR36_val).init(base_address + 0x188);
-
-    /// CSR37
-    const CSR37_val = packed struct {
-        /// CSR37 [0:31]
-        /// CSR37
-        CSR37: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR37 = Register(CSR37_val).init(base_address + 0x18c);
-
-    /// CSR38
-    const CSR38_val = packed struct {
-        /// CSR38 [0:31]
-        /// CSR38
-        CSR38: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR38 = Register(CSR38_val).init(base_address + 0x190);
-
-    /// CSR39
-    const CSR39_val = packed struct {
-        /// CSR39 [0:31]
-        /// CSR39
-        CSR39: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR39 = Register(CSR39_val).init(base_address + 0x194);
-
-    /// CSR40
-    const CSR40_val = packed struct {
-        /// CSR40 [0:31]
-        /// CSR40
-        CSR40: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR40 = Register(CSR40_val).init(base_address + 0x198);
-
-    /// CSR41
-    const CSR41_val = packed struct {
-        /// CSR41 [0:31]
-        /// CSR41
-        CSR41: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR41 = Register(CSR41_val).init(base_address + 0x19c);
-
-    /// CSR42
-    const CSR42_val = packed struct {
-        /// CSR42 [0:31]
-        /// CSR42
-        CSR42: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR42 = Register(CSR42_val).init(base_address + 0x1a0);
-
-    /// CSR43
-    const CSR43_val = packed struct {
-        /// CSR43 [0:31]
-        /// CSR43
-        CSR43: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR43 = Register(CSR43_val).init(base_address + 0x1a4);
-
-    /// CSR44
-    const CSR44_val = packed struct {
-        /// CSR44 [0:31]
-        /// CSR44
-        CSR44: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR44 = Register(CSR44_val).init(base_address + 0x1a8);
-
-    /// CSR45
-    const CSR45_val = packed struct {
-        /// CSR45 [0:31]
-        /// CSR45
-        CSR45: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR45 = Register(CSR45_val).init(base_address + 0x1ac);
-
-    /// CSR46
-    const CSR46_val = packed struct {
-        /// CSR46 [0:31]
-        /// CSR46
-        CSR46: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR46 = Register(CSR46_val).init(base_address + 0x1b0);
-
-    /// CSR47
-    const CSR47_val = packed struct {
-        /// CSR47 [0:31]
-        /// CSR47
-        CSR47: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR47 = Register(CSR47_val).init(base_address + 0x1b4);
-
-    /// CSR48
-    const CSR48_val = packed struct {
-        /// CSR48 [0:31]
-        /// CSR48
-        CSR48: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR48 = Register(CSR48_val).init(base_address + 0x1b8);
-
-    /// CSR49
-    const CSR49_val = packed struct {
-        /// CSR49 [0:31]
-        /// CSR49
-        CSR49: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR49 = Register(CSR49_val).init(base_address + 0x1bc);
-
-    /// CSR50
-    const CSR50_val = packed struct {
-        /// CSR50 [0:31]
-        /// CSR50
-        CSR50: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR50 = Register(CSR50_val).init(base_address + 0x1c0);
-
-    /// CSR51
-    const CSR51_val = packed struct {
-        /// CSR51 [0:31]
-        /// CSR51
-        CSR51: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR51 = Register(CSR51_val).init(base_address + 0x1c4);
-
-    /// CSR52
-    const CSR52_val = packed struct {
-        /// CSR52 [0:31]
-        /// CSR52
-        CSR52: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR52 = Register(CSR52_val).init(base_address + 0x1c8);
-
-    /// CSR53
-    const CSR53_val = packed struct {
-        /// CSR53 [0:31]
-        /// CSR53
-        CSR53: u32 = 0,
-    };
-    /// context swap registers
-    pub const CSR53 = Register(CSR53_val).init(base_address + 0x1cc);
-
-    /// HASH_HR0
-    const HASH_HR0_val = packed struct {
-        /// H0 [0:31]
-        /// H0
-        H0: u32 = 0,
-    };
-    /// HASH digest register
-    pub const HASH_HR0 = Register(HASH_HR0_val).init(base_address + 0x310);
-
-    /// HASH_HR1
-    const HASH_HR1_val = packed struct {
-        /// H1 [0:31]
-        /// H1
-        H1: u32 = 0,
-    };
-    /// read-only
-    pub const HASH_HR1 = Register(HASH_HR1_val).init(base_address + 0x314);
-
-    /// HASH_HR2
-    const HASH_HR2_val = packed struct {
-        /// H2 [0:31]
-        /// H2
-        H2: u32 = 0,
-    };
-    /// read-only
-    pub const HASH_HR2 = Register(HASH_HR2_val).init(base_address + 0x318);
-
-    /// HASH_HR3
-    const HASH_HR3_val = packed struct {
-        /// H3 [0:31]
-        /// H3
-        H3: u32 = 0,
-    };
-    /// read-only
-    pub const HASH_HR3 = Register(HASH_HR3_val).init(base_address + 0x31c);
-
-    /// HASH_HR4
-    const HASH_HR4_val = packed struct {
-        /// H4 [0:31]
-        /// H4
-        H4: u32 = 0,
-    };
-    /// read-only
-    pub const HASH_HR4 = Register(HASH_HR4_val).init(base_address + 0x320);
-
-    /// HASH_HR5
-    const HASH_HR5_val = packed struct {
-        /// H5 [0:31]
-        /// H5
-        H5: u32 = 0,
-    };
-    /// read-only
-    pub const HASH_HR5 = Register(HASH_HR5_val).init(base_address + 0x324);
-
-    /// HASH_HR6
-    const HASH_HR6_val = packed struct {
-        /// H6 [0:31]
-        /// H6
-        H6: u32 = 0,
-    };
-    /// read-only
-    pub const HASH_HR6 = Register(HASH_HR6_val).init(base_address + 0x328);
-
-    /// HASH_HR7
-    const HASH_HR7_val = packed struct {
-        /// H7 [0:31]
-        /// H7
-        H7: u32 = 0,
-    };
-    /// read-only
-    pub const HASH_HR7 = Register(HASH_HR7_val).init(base_address + 0x32c);
-};
-
-/// Cryptographic processor
-pub const CRYP = struct {
-    const base_address = 0x50060000;
-    /// CR
-    const CR_val = packed struct {
-        /// unused [0:1]
-        _unused0: u2 = 0,
-        /// ALGODIR [2:2]
-        /// Algorithm direction
-        ALGODIR: u1 = 0,
-        /// ALGOMODE0 [3:5]
-        /// Algorithm mode
-        ALGOMODE0: u3 = 0,
-        /// DATATYPE [6:7]
-        /// Data type selection
-        DATATYPE: u2 = 0,
-        /// KEYSIZE [8:9]
-        /// Key size selection (AES mode
-        KEYSIZE: u2 = 0,
-        /// unused [10:13]
-        _unused10: u4 = 0,
-        /// FFLUSH [14:14]
-        /// FIFO flush
-        FFLUSH: u1 = 0,
-        /// CRYPEN [15:15]
-        /// Cryptographic processor
-        CRYPEN: u1 = 0,
-        /// GCM_CCMPH [16:17]
-        /// GCM_CCMPH
-        GCM_CCMPH: u2 = 0,
+    /// ACR1
+    const ACR1_val = packed struct {
+        /// MODE [0:1]
+        /// Audio block mode
+        MODE: u2 = 0,
+        /// PRTCFG [2:3]
+        /// Protocol configuration
+        PRTCFG: u2 = 0,
+        /// unused [4:4]
+        _unused4: u1 = 0,
+        /// DS [5:7]
+        /// Data size
+        DS: u3 = 2,
+        /// LSBFIRST [8:8]
+        /// Least significant bit
+        LSBFIRST: u1 = 0,
+        /// CKSTR [9:9]
+        /// Clock strobing edge
+        CKSTR: u1 = 0,
+        /// SYNCEN [10:11]
+        /// Synchronization enable
+        SYNCEN: u2 = 0,
+        /// MONO [12:12]
+        /// Mono mode
+        MONO: u1 = 0,
+        /// OutDri [13:13]
+        /// Output drive
+        OutDri: u1 = 0,
+        /// unused [14:15]
+        _unused14: u2 = 0,
+        /// SAIAEN [16:16]
+        /// Audio block A enable
+        SAIAEN: u1 = 0,
+        /// DMAEN [17:17]
+        /// DMA enable
+        DMAEN: u1 = 0,
         /// unused [18:18]
         _unused18: u1 = 0,
-        /// ALGOMODE3 [19:19]
-        /// ALGOMODE
-        ALGOMODE3: u1 = 0,
+        /// NODIV [19:19]
+        /// No divider
+        NODIV: u1 = 0,
+        /// MCJDIV [20:23]
+        /// Master clock divider
+        MCJDIV: u4 = 0,
+        /// unused [24:31]
+        _unused24: u8 = 0,
+    };
+    /// AConfiguration register 1
+    pub const ACR1 = MMIO(ACR1_val).init(base_address + 0x4);
+
+    /// ACR2
+    const ACR2_val = packed struct {
+        /// FTH [0:2]
+        /// FIFO threshold
+        FTH: u3 = 0,
+        /// FFLUS [3:3]
+        /// FIFO flush
+        FFLUS: u1 = 0,
+        /// TRIS [4:4]
+        /// Tristate management on data
+        TRIS: u1 = 0,
+        /// MUTE [5:5]
+        /// Mute
+        MUTE: u1 = 0,
+        /// MUTEVAL [6:6]
+        /// Mute value
+        MUTEVAL: u1 = 0,
+        /// MUTECN [7:12]
+        /// Mute counter
+        MUTECN: u6 = 0,
+        /// CPL [13:13]
+        /// Complement bit
+        CPL: u1 = 0,
+        /// COMP [14:15]
+        /// Companding mode
+        COMP: u2 = 0,
+        /// unused [16:31]
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// AConfiguration register 2
+    pub const ACR2 = MMIO(ACR2_val).init(base_address + 0x8);
+
+    /// AFRCR
+    const AFRCR_val = packed struct {
+        /// FRL [0:7]
+        /// Frame length
+        FRL: u8 = 7,
+        /// FSALL [8:14]
+        /// Frame synchronization active level
+        FSALL: u7 = 0,
+        /// unused [15:15]
+        _unused15: u1 = 0,
+        /// FSDEF [16:16]
+        /// Frame synchronization
+        FSDEF: u1 = 0,
+        /// FSPOL [17:17]
+        /// Frame synchronization
+        FSPOL: u1 = 0,
+        /// FSOFF [18:18]
+        /// Frame synchronization
+        FSOFF: u1 = 0,
+        /// unused [19:31]
+        _unused19: u5 = 0,
+        _unused24: u8 = 0,
+    };
+    /// AFRCR
+    pub const AFRCR = MMIO(AFRCR_val).init(base_address + 0xc);
+
+    /// ASLOTR
+    const ASLOTR_val = packed struct {
+        /// FBOFF [0:4]
+        /// First bit offset
+        FBOFF: u5 = 0,
+        /// unused [5:5]
+        _unused5: u1 = 0,
+        /// SLOTSZ [6:7]
+        /// Slot size
+        SLOTSZ: u2 = 0,
+        /// NBSLOT [8:11]
+        /// Number of slots in an audio
+        NBSLOT: u4 = 0,
+        /// unused [12:15]
+        _unused12: u4 = 0,
+        /// SLOTEN [16:31]
+        /// Slot enable
+        SLOTEN: u16 = 0,
+    };
+    /// ASlot register
+    pub const ASLOTR = MMIO(ASLOTR_val).init(base_address + 0x10);
+
+    /// AIM
+    const AIM_val = packed struct {
+        /// OVRUDRIE [0:0]
+        /// Overrun/underrun interrupt
+        OVRUDRIE: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection interrupt
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Wrong clock configuration interrupt
+        WCKCFG: u1 = 0,
+        /// FREQIE [3:3]
+        /// FIFO request interrupt
+        FREQIE: u1 = 0,
+        /// CNRDYIE [4:4]
+        /// Codec not ready interrupt
+        CNRDYIE: u1 = 0,
+        /// AFSDETIE [5:5]
+        /// Anticipated frame synchronization
+        AFSDETIE: u1 = 0,
+        /// LFSDET [6:6]
+        /// Late frame synchronization detection
+        LFSDET: u1 = 0,
+        /// unused [7:31]
+        _unused7: u1 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// AInterrupt mask register2
+    pub const AIM = MMIO(AIM_val).init(base_address + 0x14);
+
+    /// ASR
+    const ASR_val = packed struct {
+        /// OVRUDR [0:0]
+        /// Overrun / underrun
+        OVRUDR: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Wrong clock configuration flag. This bit
+        WCKCFG: u1 = 0,
+        /// FREQ [3:3]
+        /// FIFO request
+        FREQ: u1 = 0,
+        /// CNRDY [4:4]
+        /// Codec not ready
+        CNRDY: u1 = 0,
+        /// AFSDET [5:5]
+        /// Anticipated frame synchronization
+        AFSDET: u1 = 0,
+        /// LFSDET [6:6]
+        /// Late frame synchronization
+        LFSDET: u1 = 0,
+        /// unused [7:15]
+        _unused7: u1 = 0,
+        _unused8: u8 = 0,
+        /// FLVL [16:18]
+        /// FIFO level threshold
+        FLVL: u3 = 0,
+        /// unused [19:31]
+        _unused19: u5 = 0,
+        _unused24: u8 = 0,
+    };
+    /// AStatus register
+    pub const ASR = MMIO(ASR_val).init(base_address + 0x18);
+
+    /// ACLRFR
+    const ACLRFR_val = packed struct {
+        /// OVRUDR [0:0]
+        /// Clear overrun / underrun
+        OVRUDR: u1 = 0,
+        /// MUTEDET [1:1]
+        /// Mute detection flag
+        MUTEDET: u1 = 0,
+        /// WCKCFG [2:2]
+        /// Clear wrong clock configuration
+        WCKCFG: u1 = 0,
+        /// unused [3:3]
+        _unused3: u1 = 0,
+        /// CNRDY [4:4]
+        /// Clear codec not ready flag
+        CNRDY: u1 = 0,
+        /// CAFSDET [5:5]
+        /// Clear anticipated frame synchronization
+        CAFSDET: u1 = 0,
+        /// LFSDET [6:6]
+        /// Clear late frame synchronization
+        LFSDET: u1 = 0,
+        /// unused [7:31]
+        _unused7: u1 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// AClear flag register
+    pub const ACLRFR = MMIO(ACLRFR_val).init(base_address + 0x1c);
+
+    /// ADR
+    const ADR_val = packed struct {
+        /// DATA [0:31]
+        /// Data
+        DATA: u32 = 0,
+    };
+    /// AData register
+    pub const ADR = MMIO(ADR_val).init(base_address + 0x20);
+
+    /// GCR
+    const GCR_val = packed struct {
+        /// SYNCIN [0:1]
+        /// Synchronization inputs
+        SYNCIN: u2 = 0,
+        /// unused [2:3]
+        _unused2: u2 = 0,
+        /// SYNCOUT [4:5]
+        /// Synchronization outputs
+        SYNCOUT: u2 = 0,
+        /// unused [6:31]
+        _unused6: u2 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// Global configuration register
+    pub const GCR = MMIO(GCR_val).init(base_address + 0x0);
+};
+
+/// Power control
+pub const PWR = struct {
+    const base_address = 0x40007000;
+    /// CR
+    const CR_val = packed struct {
+        /// LPDS [0:0]
+        /// Low-power deep sleep
+        LPDS: u1 = 0,
+        /// PDDS [1:1]
+        /// Power down deepsleep
+        PDDS: u1 = 0,
+        /// CWUF [2:2]
+        /// Clear wakeup flag
+        CWUF: u1 = 0,
+        /// CSBF [3:3]
+        /// Clear standby flag
+        CSBF: u1 = 0,
+        /// PVDE [4:4]
+        /// Power voltage detector
+        PVDE: u1 = 0,
+        /// PLS [5:7]
+        /// PVD level selection
+        PLS: u3 = 0,
+        /// DBP [8:8]
+        /// Disable backup domain write
+        DBP: u1 = 0,
+        /// FPDS [9:9]
+        /// Flash power down in Stop
+        FPDS: u1 = 0,
+        /// LPLVDS [10:10]
+        /// Low-Power Regulator Low Voltage in
+        LPLVDS: u1 = 0,
+        /// MRLVDS [11:11]
+        /// Main regulator low voltage in deepsleep
+        MRLVDS: u1 = 0,
+        /// unused [12:12]
+        _unused12: u1 = 0,
+        /// ADCDC1 [13:13]
+        /// ADCDC1
+        ADCDC1: u1 = 0,
+        /// VOS [14:15]
+        /// Regulator voltage scaling output
+        VOS: u2 = 3,
+        /// ODEN [16:16]
+        /// Over-drive enable
+        ODEN: u1 = 0,
+        /// ODSWEN [17:17]
+        /// Over-drive switching
+        ODSWEN: u1 = 0,
+        /// UDEN [18:19]
+        /// Under-drive enable in stop
+        UDEN: u2 = 0,
+        /// FMSSR [20:20]
+        /// Flash Memory Stop while System
+        FMSSR: u1 = 0,
+        /// FISSR [21:21]
+        /// Flash Interface Stop while System
+        FISSR: u1 = 0,
+        /// unused [22:31]
+        _unused22: u2 = 0,
+        _unused24: u8 = 0,
+    };
+    /// power control register
+    pub const CR = MMIO(CR_val).init(base_address + 0x0);
+
+    /// CSR
+    const CSR_val = packed struct {
+        /// WUF [0:0]
+        /// Wakeup flag
+        WUF: u1 = 0,
+        /// SBF [1:1]
+        /// Standby flag
+        SBF: u1 = 0,
+        /// PVDO [2:2]
+        /// PVD output
+        PVDO: u1 = 0,
+        /// BRR [3:3]
+        /// Backup regulator ready
+        BRR: u1 = 0,
+        /// unused [4:6]
+        _unused4: u3 = 0,
+        /// EWUP2 [7:7]
+        /// Enable WKUP2 pin
+        EWUP2: u1 = 0,
+        /// EWUP [8:8]
+        /// Enable WKUP pin
+        EWUP: u1 = 0,
+        /// BRE [9:9]
+        /// Backup regulator enable
+        BRE: u1 = 0,
+        /// unused [10:13]
+        _unused10: u4 = 0,
+        /// VOSRDY [14:14]
+        /// Regulator voltage scaling output
+        VOSRDY: u1 = 0,
+        /// unused [15:15]
+        _unused15: u1 = 0,
+        /// ODRDY [16:16]
+        /// Over-drive mode ready
+        ODRDY: u1 = 0,
+        /// ODSWRDY [17:17]
+        /// Over-drive mode switching
+        ODSWRDY: u1 = 0,
+        /// UDRDY [18:19]
+        /// Under-drive ready flag
+        UDRDY: u2 = 0,
         /// unused [20:31]
         _unused20: u4 = 0,
         _unused24: u8 = 0,
     };
+    /// power control/status register
+    pub const CSR = MMIO(CSR_val).init(base_address + 0x4);
+};
+
+/// QuadSPI interface
+pub const QUADSPI = struct {
+    const base_address = 0xa0001000;
+    /// CR
+    const CR_val = packed struct {
+        /// EN [0:0]
+        /// Enable
+        EN: u1 = 0,
+        /// ABORT [1:1]
+        /// Abort request
+        ABORT: u1 = 0,
+        /// DMAEN [2:2]
+        /// DMA enable
+        DMAEN: u1 = 0,
+        /// TCEN [3:3]
+        /// Timeout counter enable
+        TCEN: u1 = 0,
+        /// SSHIFT [4:4]
+        /// Sample shift
+        SSHIFT: u1 = 0,
+        /// unused [5:5]
+        _unused5: u1 = 0,
+        /// DFM [6:6]
+        /// Dual-flash mode
+        DFM: u1 = 0,
+        /// FSEL [7:7]
+        /// FLASH memory selection
+        FSEL: u1 = 0,
+        /// FTHRES [8:12]
+        /// IFO threshold level
+        FTHRES: u5 = 0,
+        /// unused [13:15]
+        _unused13: u3 = 0,
+        /// TEIE [16:16]
+        /// Transfer error interrupt
+        TEIE: u1 = 0,
+        /// TCIE [17:17]
+        /// Transfer complete interrupt
+        TCIE: u1 = 0,
+        /// FTIE [18:18]
+        /// FIFO threshold interrupt
+        FTIE: u1 = 0,
+        /// SMIE [19:19]
+        /// Status match interrupt
+        SMIE: u1 = 0,
+        /// TOIE [20:20]
+        /// TimeOut interrupt enable
+        TOIE: u1 = 0,
+        /// unused [21:21]
+        _unused21: u1 = 0,
+        /// APMS [22:22]
+        /// Automatic poll mode stop
+        APMS: u1 = 0,
+        /// PMM [23:23]
+        /// Polling match mode
+        PMM: u1 = 0,
+        /// PRESCALER [24:31]
+        /// Clock prescaler
+        PRESCALER: u8 = 0,
+    };
     /// control register
-    pub const CR = Register(CR_val).init(base_address + 0x0);
+    pub const CR = MMIO(CR_val).init(base_address + 0x0);
+
+    /// DCR
+    const DCR_val = packed struct {
+        /// CKMODE [0:0]
+        /// Mode 0 / mode 3
+        CKMODE: u1 = 0,
+        /// unused [1:7]
+        _unused1: u7 = 0,
+        /// CSHT [8:10]
+        /// Chip select high time
+        CSHT: u3 = 0,
+        /// unused [11:15]
+        _unused11: u5 = 0,
+        /// FSIZE [16:20]
+        /// FLASH memory size
+        FSIZE: u5 = 0,
+        /// unused [21:31]
+        _unused21: u3 = 0,
+        _unused24: u8 = 0,
+    };
+    /// device configuration register
+    pub const DCR = MMIO(DCR_val).init(base_address + 0x4);
 
     /// SR
     const SR_val = packed struct {
-        /// IFEM [0:0]
-        /// Input FIFO empty
-        IFEM: u1 = 1,
-        /// IFNF [1:1]
-        /// Input FIFO not full
-        IFNF: u1 = 1,
-        /// OFNE [2:2]
-        /// Output FIFO not empty
-        OFNE: u1 = 0,
-        /// OFFU [3:3]
-        /// Output FIFO full
-        OFFU: u1 = 0,
-        /// BUSY [4:4]
-        /// Busy bit
+        /// TEF [0:0]
+        /// Transfer error flag
+        TEF: u1 = 0,
+        /// TCF [1:1]
+        /// Transfer complete flag
+        TCF: u1 = 0,
+        /// FTF [2:2]
+        /// FIFO threshold flag
+        FTF: u1 = 0,
+        /// SMF [3:3]
+        /// Status match flag
+        SMF: u1 = 0,
+        /// TOF [4:4]
+        /// Timeout flag
+        TOF: u1 = 0,
+        /// BUSY [5:5]
+        /// Busy
         BUSY: u1 = 0,
+        /// unused [6:7]
+        _unused6: u2 = 0,
+        /// FLEVEL [8:14]
+        /// FIFO level
+        FLEVEL: u7 = 0,
+        /// unused [15:31]
+        _unused15: u1 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// status register
+    pub const SR = MMIO(SR_val).init(base_address + 0x8);
+
+    /// FCR
+    const FCR_val = packed struct {
+        /// CTEF [0:0]
+        /// Clear transfer error flag
+        CTEF: u1 = 0,
+        /// CTCF [1:1]
+        /// Clear transfer complete
+        CTCF: u1 = 0,
+        /// unused [2:2]
+        _unused2: u1 = 0,
+        /// CSMF [3:3]
+        /// Clear status match flag
+        CSMF: u1 = 0,
+        /// CTOF [4:4]
+        /// Clear timeout flag
+        CTOF: u1 = 0,
         /// unused [5:31]
         _unused5: u3 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// status register
-    pub const SR = Register(SR_val).init(base_address + 0x4);
+    /// flag clear register
+    pub const FCR = MMIO(FCR_val).init(base_address + 0xc);
 
-    /// DIN
-    const DIN_val = packed struct {
-        /// DATAIN [0:31]
-        /// Data input
-        DATAIN: u32 = 0,
+    /// DLR
+    const DLR_val = packed struct {
+        /// DL [0:31]
+        /// Data length
+        DL: u32 = 0,
     };
-    /// data input register
-    pub const DIN = Register(DIN_val).init(base_address + 0x8);
+    /// data length register
+    pub const DLR = MMIO(DLR_val).init(base_address + 0x10);
 
-    /// DOUT
-    const DOUT_val = packed struct {
-        /// DATAOUT [0:31]
-        /// Data output
-        DATAOUT: u32 = 0,
+    /// CCR
+    const CCR_val = packed struct {
+        /// INSTRUCTION [0:7]
+        /// Instruction
+        INSTRUCTION: u8 = 0,
+        /// IMODE [8:9]
+        /// Instruction mode
+        IMODE: u2 = 0,
+        /// ADMODE [10:11]
+        /// Address mode
+        ADMODE: u2 = 0,
+        /// ADSIZE [12:13]
+        /// Address size
+        ADSIZE: u2 = 0,
+        /// ABMODE [14:15]
+        /// Alternate bytes mode
+        ABMODE: u2 = 0,
+        /// ABSIZE [16:17]
+        /// Alternate bytes size
+        ABSIZE: u2 = 0,
+        /// DCYC [18:22]
+        /// Number of dummy cycles
+        DCYC: u5 = 0,
+        /// unused [23:23]
+        _unused23: u1 = 0,
+        /// DMODE [24:25]
+        /// Data mode
+        DMODE: u2 = 0,
+        /// FMODE [26:27]
+        /// Functional mode
+        FMODE: u2 = 0,
+        /// SIOO [28:28]
+        /// Send instruction only once
+        SIOO: u1 = 0,
+        /// unused [29:29]
+        _unused29: u1 = 0,
+        /// DHHC [30:30]
+        /// DDR hold half cycle
+        DHHC: u1 = 0,
+        /// DDRM [31:31]
+        /// Double data rate mode
+        DDRM: u1 = 0,
     };
-    /// data output register
-    pub const DOUT = Register(DOUT_val).init(base_address + 0xc);
+    /// communication configuration
+    pub const CCR = MMIO(CCR_val).init(base_address + 0x14);
 
-    /// DMACR
-    const DMACR_val = packed struct {
-        /// DIEN [0:0]
-        /// DMA input enable
-        DIEN: u1 = 0,
-        /// DOEN [1:1]
-        /// DMA output enable
-        DOEN: u1 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
+    /// AR
+    const AR_val = packed struct {
+        /// ADDRESS [0:31]
+        /// Address
+        ADDRESS: u32 = 0,
+    };
+    /// address register
+    pub const AR = MMIO(AR_val).init(base_address + 0x18);
+
+    /// ABR
+    const ABR_val = packed struct {
+        /// ALTERNATE [0:31]
+        /// ALTERNATE
+        ALTERNATE: u32 = 0,
+    };
+    /// ABR
+    pub const ABR = MMIO(ABR_val).init(base_address + 0x1c);
+
+    /// DR
+    const DR_val = packed struct {
+        /// DATA [0:31]
+        /// Data
+        DATA: u32 = 0,
+    };
+    /// data register
+    pub const DR = MMIO(DR_val).init(base_address + 0x20);
+
+    /// PSMKR
+    const PSMKR_val = packed struct {
+        /// MASK [0:31]
+        /// Status mask
+        MASK: u32 = 0,
+    };
+    /// polling status mask register
+    pub const PSMKR = MMIO(PSMKR_val).init(base_address + 0x24);
+
+    /// PSMAR
+    const PSMAR_val = packed struct {
+        /// MATCH [0:31]
+        /// Status match
+        MATCH: u32 = 0,
+    };
+    /// polling status match register
+    pub const PSMAR = MMIO(PSMAR_val).init(base_address + 0x28);
+
+    /// PIR
+    const PIR_val = packed struct {
+        /// INTERVAL [0:15]
+        /// Polling interval
+        INTERVAL: u16 = 0,
+        /// unused [16:31]
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// polling interval register
+    pub const PIR = MMIO(PIR_val).init(base_address + 0x2c);
+
+    /// LPTR
+    const LPTR_val = packed struct {
+        /// TIMEOUT [0:15]
+        /// Timeout period
+        TIMEOUT: u16 = 0,
+        /// unused [16:31]
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// low-power timeout register
+    pub const LPTR = MMIO(LPTR_val).init(base_address + 0x30);
+};
+
+/// Receiver Interface
+pub const SPDIF_RX = struct {
+    const base_address = 0x40004000;
+    /// CR
+    const CR_val = packed struct {
+        /// SPDIFEN [0:1]
+        /// Peripheral Block Enable
+        SPDIFEN: u2 = 0,
+        /// RXDMAEN [2:2]
+        /// Receiver DMA ENable for data
+        RXDMAEN: u1 = 0,
+        /// RXSTEO [3:3]
+        /// STerEO Mode
+        RXSTEO: u1 = 0,
+        /// DRFMT [4:5]
+        /// RX Data format
+        DRFMT: u2 = 0,
+        /// PMSK [6:6]
+        /// Mask Parity error bit
+        PMSK: u1 = 0,
+        /// VMSK [7:7]
+        /// Mask of Validity bit
+        VMSK: u1 = 0,
+        /// CUMSK [8:8]
+        /// Mask of channel status and user
+        CUMSK: u1 = 0,
+        /// PTMSK [9:9]
+        /// Mask of Preamble Type bits
+        PTMSK: u1 = 0,
+        /// CBDMAEN [10:10]
+        /// Control Buffer DMA ENable for control
+        CBDMAEN: u1 = 0,
+        /// CHSEL [11:11]
+        /// Channel Selection
+        CHSEL: u1 = 0,
+        /// NBTR [12:13]
+        /// Maximum allowed re-tries during
+        NBTR: u2 = 0,
+        /// WFA [14:14]
+        /// Wait For Activity
+        WFA: u1 = 0,
+        /// unused [15:15]
+        _unused15: u1 = 0,
+        /// INSEL [16:18]
+        /// input selection
+        INSEL: u3 = 0,
+        /// unused [19:31]
+        _unused19: u5 = 0,
+        _unused24: u8 = 0,
+    };
+    /// Control register
+    pub const CR = MMIO(CR_val).init(base_address + 0x0);
+
+    /// IMR
+    const IMR_val = packed struct {
+        /// RXNEIE [0:0]
+        /// RXNE interrupt enable
+        RXNEIE: u1 = 0,
+        /// CSRNEIE [1:1]
+        /// Control Buffer Ready Interrupt
+        CSRNEIE: u1 = 0,
+        /// PERRIE [2:2]
+        /// Parity error interrupt
+        PERRIE: u1 = 0,
+        /// OVRIE [3:3]
+        /// Overrun error Interrupt
+        OVRIE: u1 = 0,
+        /// SBLKIE [4:4]
+        /// Synchronization Block Detected Interrupt
+        SBLKIE: u1 = 0,
+        /// SYNCDIE [5:5]
+        /// Synchronization Done
+        SYNCDIE: u1 = 0,
+        /// IFEIE [6:6]
+        /// Serial Interface Error Interrupt
+        IFEIE: u1 = 0,
+        /// unused [7:31]
+        _unused7: u1 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// DMA control register
-    pub const DMACR = Register(DMACR_val).init(base_address + 0x10);
+    /// Interrupt mask register
+    pub const IMR = MMIO(IMR_val).init(base_address + 0x4);
 
-    /// IMSCR
-    const IMSCR_val = packed struct {
-        /// INIM [0:0]
-        /// Input FIFO service interrupt
-        INIM: u1 = 0,
-        /// OUTIM [1:1]
-        /// Output FIFO service interrupt
-        OUTIM: u1 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
+    /// SR
+    const SR_val = packed struct {
+        /// RXNE [0:0]
+        /// Read data register not
+        RXNE: u1 = 0,
+        /// CSRNE [1:1]
+        /// Control Buffer register is not
+        CSRNE: u1 = 0,
+        /// PERR [2:2]
+        /// Parity error
+        PERR: u1 = 0,
+        /// OVR [3:3]
+        /// Overrun error
+        OVR: u1 = 0,
+        /// SBD [4:4]
+        /// Synchronization Block
+        SBD: u1 = 0,
+        /// SYNCD [5:5]
+        /// Synchronization Done
+        SYNCD: u1 = 0,
+        /// FERR [6:6]
+        /// Framing error
+        FERR: u1 = 0,
+        /// SERR [7:7]
+        /// Synchronization error
+        SERR: u1 = 0,
+        /// TERR [8:8]
+        /// Time-out error
+        TERR: u1 = 0,
+        /// unused [9:15]
+        _unused9: u7 = 0,
+        /// WIDTH5 [16:30]
+        /// Duration of 5 symbols counted with
+        WIDTH5: u15 = 0,
+        /// unused [31:31]
+        _unused31: u1 = 0,
+    };
+    /// Status register
+    pub const SR = MMIO(SR_val).init(base_address + 0x8);
+
+    /// IFCR
+    const IFCR_val = packed struct {
+        /// unused [0:1]
+        _unused0: u2 = 0,
+        /// PERRCF [2:2]
+        /// Clears the Parity error
+        PERRCF: u1 = 0,
+        /// OVRCF [3:3]
+        /// Clears the Overrun error
+        OVRCF: u1 = 0,
+        /// SBDCF [4:4]
+        /// Clears the Synchronization Block
+        SBDCF: u1 = 0,
+        /// SYNCDCF [5:5]
+        /// Clears the Synchronization Done
+        SYNCDCF: u1 = 0,
+        /// unused [6:31]
+        _unused6: u2 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// interrupt mask set/clear
-    pub const IMSCR = Register(IMSCR_val).init(base_address + 0x14);
+    /// Interrupt Flag Clear register
+    pub const IFCR = MMIO(IFCR_val).init(base_address + 0xc);
 
-    /// RISR
-    const RISR_val = packed struct {
-        /// INRIS [0:0]
-        /// Input FIFO service raw interrupt
-        INRIS: u1 = 1,
-        /// OUTRIS [1:1]
-        /// Output FIFO service raw interrupt
-        OUTRIS: u1 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
+    /// DR
+    const DR_val = packed struct {
+        /// DR [0:23]
+        /// Parity Error bit
+        DR: u24 = 0,
+        /// PE [24:24]
+        /// Parity Error bit
+        PE: u1 = 0,
+        /// V [25:25]
+        /// Validity bit
+        V: u1 = 0,
+        /// U [26:26]
+        /// User bit
+        U: u1 = 0,
+        /// C [27:27]
+        /// Channel Status bit
+        C: u1 = 0,
+        /// PT [28:29]
+        /// Preamble Type
+        PT: u2 = 0,
+        /// unused [30:31]
+        _unused30: u2 = 0,
+    };
+    /// Data input register
+    pub const DR = MMIO(DR_val).init(base_address + 0x10);
+
+    /// CSR
+    const CSR_val = packed struct {
+        /// USR [0:15]
+        /// User data information
+        USR: u16 = 0,
+        /// CS [16:23]
+        /// Channel A status
+        CS: u8 = 0,
+        /// SOB [24:24]
+        /// Start Of Block
+        SOB: u1 = 0,
+        /// unused [25:31]
+        _unused25: u7 = 0,
+    };
+    /// Channel Status register
+    pub const CSR = MMIO(CSR_val).init(base_address + 0x14);
+
+    /// DIR
+    const DIR_val = packed struct {
+        /// THI [0:12]
+        /// Threshold HIGH
+        THI: u13 = 0,
+        /// unused [13:15]
+        _unused13: u3 = 0,
+        /// TLO [16:28]
+        /// Threshold LOW
+        TLO: u13 = 0,
+        /// unused [29:31]
+        _unused29: u3 = 0,
+    };
+    /// Debug Information register
+    pub const DIR = MMIO(DIR_val).init(base_address + 0x18);
+};
+
+/// SDMMC
+pub const SDMMC = struct {
+    const base_address = 0x40012c00;
+    /// SDMMC_POWER
+    const SDMMC_POWER_val = packed struct {
+        /// PWRCTRL [0:1]
+        /// SDMMC state control bits. These bits can
+        PWRCTRL: u2 = 0,
+        /// VSWITCH [2:2]
+        /// Voltage switch sequence start. This bit
+        VSWITCH: u1 = 0,
+        /// VSWITCHEN [3:3]
+        /// Voltage switch procedure enable. This
+        VSWITCHEN: u1 = 0,
+        /// DIRPOL [4:4]
+        /// Data and command direction signals
+        DIRPOL: u1 = 0,
+        /// unused [5:31]
+        _unused5: u3 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// raw interrupt status register
-    pub const RISR = Register(RISR_val).init(base_address + 0x18);
+    /// SDMMC power control register
+    pub const SDMMC_POWER = MMIO(SDMMC_POWER_val).init(base_address + 0x0);
 
-    /// MISR
-    const MISR_val = packed struct {
-        /// INMIS [0:0]
-        /// Input FIFO service masked interrupt
-        INMIS: u1 = 0,
-        /// OUTMIS [1:1]
-        /// Output FIFO service masked interrupt
-        OUTMIS: u1 = 0,
-        /// unused [2:31]
-        _unused2: u6 = 0,
+    /// SDMMC_CLKCR
+    const SDMMC_CLKCR_val = packed struct {
+        /// CLKDIV [0:9]
+        /// Clock divide factor This bit can only be
+        CLKDIV: u10 = 0,
+        /// unused [10:11]
+        _unused10: u2 = 0,
+        /// PWRSAV [12:12]
+        /// Power saving configuration bit This bit
+        PWRSAV: u1 = 0,
+        /// unused [13:13]
+        _unused13: u1 = 0,
+        /// WIDBUS [14:15]
+        /// Wide bus mode enable bit This bit can
+        WIDBUS: u2 = 0,
+        /// NEGEDGE [16:16]
+        /// SDMMC_CK dephasing selection bit for
+        NEGEDGE: u1 = 0,
+        /// HWFC_EN [17:17]
+        /// Hardware flow control enable This bit
+        HWFC_EN: u1 = 0,
+        /// DDR [18:18]
+        /// Data rate signaling selection This bit
+        DDR: u1 = 0,
+        /// BUSSPEED [19:19]
+        /// Bus speed mode selection between DS, HS,
+        BUSSPEED: u1 = 0,
+        /// SELCLKRX [20:21]
+        /// Receive clock selection. These bits can
+        SELCLKRX: u2 = 0,
+        /// unused [22:31]
+        _unused22: u2 = 0,
+        _unused24: u8 = 0,
+    };
+    /// The SDMMC_CLKCR register controls the
+    pub const SDMMC_CLKCR = MMIO(SDMMC_CLKCR_val).init(base_address + 0x4);
+
+    /// SDMMC_ARGR
+    const SDMMC_ARGR_val = packed struct {
+        /// CMDARG [0:31]
+        /// Command argument. These bits can only be
+        CMDARG: u32 = 0,
+    };
+    /// The SDMMC_ARGR register contains a 32-bit
+    pub const SDMMC_ARGR = MMIO(SDMMC_ARGR_val).init(base_address + 0x8);
+
+    /// SDMMC_CMDR
+    const SDMMC_CMDR_val = packed struct {
+        /// CMDINDEX [0:5]
+        /// Command index. This bit can only be
+        CMDINDEX: u6 = 0,
+        /// CMDTRANS [6:6]
+        /// The CPSM treats the command as a data
+        CMDTRANS: u1 = 0,
+        /// CMDSTOP [7:7]
+        /// The CPSM treats the command as a Stop
+        CMDSTOP: u1 = 0,
+        /// WAITRESP [8:9]
+        /// Wait for response bits. This bit can
+        WAITRESP: u2 = 0,
+        /// WAITINT [10:10]
+        /// CPSM waits for interrupt request. If
+        WAITINT: u1 = 0,
+        /// WAITPEND [11:11]
+        /// CPSM Waits for end of data transfer
+        WAITPEND: u1 = 0,
+        /// CPSMEN [12:12]
+        /// Command path state machine (CPSM) Enable
+        CPSMEN: u1 = 0,
+        /// DTHOLD [13:13]
+        /// Hold new data block transmission and
+        DTHOLD: u1 = 0,
+        /// BOOTMODE [14:14]
+        /// Select the boot mode procedure to be
+        BOOTMODE: u1 = 0,
+        /// BOOTEN [15:15]
+        /// Enable boot mode
+        BOOTEN: u1 = 0,
+        /// CMDSUSPEND [16:16]
+        /// The CPSM treats the command as a Suspend
+        CMDSUSPEND: u1 = 0,
+        /// unused [17:31]
+        _unused17: u7 = 0,
+        _unused24: u8 = 0,
+    };
+    /// The SDMMC_CMDR register contains the command
+    pub const SDMMC_CMDR = MMIO(SDMMC_CMDR_val).init(base_address + 0xc);
+
+    /// SDMMC_RESP1R
+    const SDMMC_RESP1R_val = packed struct {
+        /// CARDSTATUS1 [0:31]
+        /// see Table404.
+        CARDSTATUS1: u32 = 0,
+    };
+    /// The SDMMC_RESP1/2/3/4R registers contain the
+    pub const SDMMC_RESP1R = MMIO(SDMMC_RESP1R_val).init(base_address + 0x10);
+
+    /// SDMMC_RESP2R
+    const SDMMC_RESP2R_val = packed struct {
+        /// CARDSTATUS2 [0:31]
+        /// see Table404.
+        CARDSTATUS2: u32 = 0,
+    };
+    /// The SDMMC_RESP1/2/3/4R registers contain the
+    pub const SDMMC_RESP2R = MMIO(SDMMC_RESP2R_val).init(base_address + 0x14);
+
+    /// SDMMC_RESP3R
+    const SDMMC_RESP3R_val = packed struct {
+        /// CARDSTATUS3 [0:31]
+        /// see Table404.
+        CARDSTATUS3: u32 = 0,
+    };
+    /// The SDMMC_RESP1/2/3/4R registers contain the
+    pub const SDMMC_RESP3R = MMIO(SDMMC_RESP3R_val).init(base_address + 0x18);
+
+    /// SDMMC_RESP4R
+    const SDMMC_RESP4R_val = packed struct {
+        /// CARDSTATUS4 [0:31]
+        /// see Table404.
+        CARDSTATUS4: u32 = 0,
+    };
+    /// The SDMMC_RESP1/2/3/4R registers contain the
+    pub const SDMMC_RESP4R = MMIO(SDMMC_RESP4R_val).init(base_address + 0x1c);
+
+    /// SDMMC_DTIMER
+    const SDMMC_DTIMER_val = packed struct {
+        /// DATATIME [0:31]
+        /// Data and R1b busy timeout period This
+        DATATIME: u32 = 0,
+    };
+    /// The SDMMC_DTIMER register contains the data
+    pub const SDMMC_DTIMER = MMIO(SDMMC_DTIMER_val).init(base_address + 0x24);
+
+    /// SDMMC_DLENR
+    const SDMMC_DLENR_val = packed struct {
+        /// DATALENGTH [0:24]
+        /// Data length value This register can only
+        DATALENGTH: u25 = 0,
+        /// unused [25:31]
+        _unused25: u7 = 0,
+    };
+    /// The SDMMC_DLENR register contains the number
+    pub const SDMMC_DLENR = MMIO(SDMMC_DLENR_val).init(base_address + 0x28);
+
+    /// SDMMC_DCTRL
+    const SDMMC_DCTRL_val = packed struct {
+        /// DTEN [0:0]
+        /// Data transfer enable bit This bit can
+        DTEN: u1 = 0,
+        /// DTDIR [1:1]
+        /// Data transfer direction selection This
+        DTDIR: u1 = 0,
+        /// DTMODE [2:3]
+        /// Data transfer mode selection. This bit
+        DTMODE: u2 = 0,
+        /// DBLOCKSIZE [4:7]
+        /// Data block size This bit can only be
+        DBLOCKSIZE: u4 = 0,
+        /// RWSTART [8:8]
+        /// Read wait start. If this bit is set,
+        RWSTART: u1 = 0,
+        /// RWSTOP [9:9]
+        /// Read wait stop This bit is written by
+        RWSTOP: u1 = 0,
+        /// RWMOD [10:10]
+        /// Read wait mode. This bit can only be
+        RWMOD: u1 = 0,
+        /// SDIOEN [11:11]
+        /// SD I/O interrupt enable functions This
+        SDIOEN: u1 = 0,
+        /// BOOTACKEN [12:12]
+        /// Enable the reception of the boot
+        BOOTACKEN: u1 = 0,
+        /// FIFORST [13:13]
+        /// FIFO reset, will flush any remaining
+        FIFORST: u1 = 0,
+        /// unused [14:31]
+        _unused14: u2 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
+    };
+    /// The SDMMC_DCTRL register control the data
+    pub const SDMMC_DCTRL = MMIO(SDMMC_DCTRL_val).init(base_address + 0x2c);
+
+    /// SDMMC_DCNTR
+    const SDMMC_DCNTR_val = packed struct {
+        /// DATACOUNT [0:26]
+        /// Data count value When read, the number
+        DATACOUNT: u27 = 0,
+        /// unused [27:31]
+        _unused27: u5 = 0,
+    };
+    /// The SDMMC_DCNTR register loads the value
+    pub const SDMMC_DCNTR = MMIO(SDMMC_DCNTR_val).init(base_address + 0x30);
+
+    /// SDMMC_STAR
+    const SDMMC_STAR_val = packed struct {
+        /// CCRCFAIL [0:0]
+        /// Command response received (CRC check
+        CCRCFAIL: u1 = 0,
+        /// DCRCFAIL [1:1]
+        /// Data block sent/received (CRC check
+        DCRCFAIL: u1 = 0,
+        /// CTIMEOUT [2:2]
+        /// Command response timeout. Interrupt flag
+        CTIMEOUT: u1 = 0,
+        /// DTIMEOUT [3:3]
+        /// Data timeout. Interrupt flag is cleared
+        DTIMEOUT: u1 = 0,
+        /// TXUNDERR [4:4]
+        /// Transmit FIFO underrun error or IDMA
+        TXUNDERR: u1 = 0,
+        /// RXOVERR [5:5]
+        /// Received FIFO overrun error or IDMA
+        RXOVERR: u1 = 0,
+        /// CMDREND [6:6]
+        /// Command response received (CRC check
+        CMDREND: u1 = 0,
+        /// CMDSENT [7:7]
+        /// Command sent (no response required).
+        CMDSENT: u1 = 0,
+        /// DATAEND [8:8]
+        /// Data transfer ended correctly. (data
+        DATAEND: u1 = 0,
+        /// DHOLD [9:9]
+        /// Data transfer Hold. Interrupt flag is
+        DHOLD: u1 = 0,
+        /// DBCKEND [10:10]
+        /// Data block sent/received. (CRC check
+        DBCKEND: u1 = 0,
+        /// DABORT [11:11]
+        /// Data transfer aborted by CMD12.
+        DABORT: u1 = 0,
+        /// DPSMACT [12:12]
+        /// Data path state machine active, i.e. not
+        DPSMACT: u1 = 0,
+        /// CPSMACT [13:13]
+        /// Command path state machine active, i.e.
+        CPSMACT: u1 = 0,
+        /// TXFIFOHE [14:14]
+        /// Transmit FIFO half empty At least half
+        TXFIFOHE: u1 = 0,
+        /// RXFIFOHF [15:15]
+        /// Receive FIFO half full There are at
+        RXFIFOHF: u1 = 0,
+        /// TXFIFOF [16:16]
+        /// Transmit FIFO full This is a hardware
+        TXFIFOF: u1 = 0,
+        /// RXFIFOF [17:17]
+        /// Receive FIFO full This bit is cleared
+        RXFIFOF: u1 = 0,
+        /// TXFIFOE [18:18]
+        /// Transmit FIFO empty This bit is cleared
+        TXFIFOE: u1 = 0,
+        /// RXFIFOE [19:19]
+        /// Receive FIFO empty This is a hardware
+        RXFIFOE: u1 = 0,
+        /// BUSYD0 [20:20]
+        /// Inverted value of SDMMC_D0 line (Busy),
+        BUSYD0: u1 = 0,
+        /// BUSYD0END [21:21]
+        /// end of SDMMC_D0 Busy following a CMD
+        BUSYD0END: u1 = 0,
+        /// SDIOIT [22:22]
+        /// SDIO interrupt received. Interrupt flag
+        SDIOIT: u1 = 0,
+        /// ACKFAIL [23:23]
+        /// Boot acknowledgment received (boot
+        ACKFAIL: u1 = 0,
+        /// ACKTIMEOUT [24:24]
+        /// Boot acknowledgment timeout. Interrupt
+        ACKTIMEOUT: u1 = 0,
+        /// VSWEND [25:25]
+        /// Voltage switch critical timing section
+        VSWEND: u1 = 0,
+        /// CKSTOP [26:26]
+        /// SDMMC_CK stopped in Voltage switch
+        CKSTOP: u1 = 0,
+        /// IDMATE [27:27]
+        /// IDMA transfer error. Interrupt flag is
+        IDMATE: u1 = 0,
+        /// IDMABTC [28:28]
+        /// IDMA buffer transfer complete. interrupt
+        IDMABTC: u1 = 0,
+        /// unused [29:31]
+        _unused29: u3 = 0,
+    };
+    /// The SDMMC_STAR register is a read-only
+    pub const SDMMC_STAR = MMIO(SDMMC_STAR_val).init(base_address + 0x34);
+
+    /// SDMMC_ICR
+    const SDMMC_ICR_val = packed struct {
+        /// CCRCFAILC [0:0]
+        /// CCRCFAIL flag clear bit Set by software
+        CCRCFAILC: u1 = 0,
+        /// DCRCFAILC [1:1]
+        /// DCRCFAIL flag clear bit Set by software
+        DCRCFAILC: u1 = 0,
+        /// CTIMEOUTC [2:2]
+        /// CTIMEOUT flag clear bit Set by software
+        CTIMEOUTC: u1 = 0,
+        /// DTIMEOUTC [3:3]
+        /// DTIMEOUT flag clear bit Set by software
+        DTIMEOUTC: u1 = 0,
+        /// TXUNDERRC [4:4]
+        /// TXUNDERR flag clear bit Set by software
+        TXUNDERRC: u1 = 0,
+        /// RXOVERRC [5:5]
+        /// RXOVERR flag clear bit Set by software
+        RXOVERRC: u1 = 0,
+        /// CMDRENDC [6:6]
+        /// CMDREND flag clear bit Set by software
+        CMDRENDC: u1 = 0,
+        /// CMDSENTC [7:7]
+        /// CMDSENT flag clear bit Set by software
+        CMDSENTC: u1 = 0,
+        /// DATAENDC [8:8]
+        /// DATAEND flag clear bit Set by software
+        DATAENDC: u1 = 0,
+        /// DHOLDC [9:9]
+        /// DHOLD flag clear bit Set by software to
+        DHOLDC: u1 = 0,
+        /// DBCKENDC [10:10]
+        /// DBCKEND flag clear bit Set by software
+        DBCKENDC: u1 = 0,
+        /// DABORTC [11:11]
+        /// DABORT flag clear bit Set by software to
+        DABORTC: u1 = 0,
+        /// unused [12:20]
+        _unused12: u4 = 0,
+        _unused16: u5 = 0,
+        /// BUSYD0ENDC [21:21]
+        /// BUSYD0END flag clear bit Set by software
+        BUSYD0ENDC: u1 = 0,
+        /// SDIOITC [22:22]
+        /// SDIOIT flag clear bit Set by software to
+        SDIOITC: u1 = 0,
+        /// ACKFAILC [23:23]
+        /// ACKFAIL flag clear bit Set by software
+        ACKFAILC: u1 = 0,
+        /// ACKTIMEOUTC [24:24]
+        /// ACKTIMEOUT flag clear bit Set by
+        ACKTIMEOUTC: u1 = 0,
+        /// VSWENDC [25:25]
+        /// VSWEND flag clear bit Set by software to
+        VSWENDC: u1 = 0,
+        /// CKSTOPC [26:26]
+        /// CKSTOP flag clear bit Set by software to
+        CKSTOPC: u1 = 0,
+        /// IDMATEC [27:27]
+        /// IDMA transfer error clear bit Set by
+        IDMATEC: u1 = 0,
+        /// IDMABTCC [28:28]
+        /// IDMA buffer transfer complete clear bit
+        IDMABTCC: u1 = 0,
+        /// unused [29:31]
+        _unused29: u3 = 0,
+    };
+    /// The SDMMC_ICR register is a write-only
+    pub const SDMMC_ICR = MMIO(SDMMC_ICR_val).init(base_address + 0x38);
+
+    /// SDMMC_MASKR
+    const SDMMC_MASKR_val = packed struct {
+        /// CCRCFAILIE [0:0]
+        /// Command CRC fail interrupt enable Set
+        CCRCFAILIE: u1 = 0,
+        /// DCRCFAILIE [1:1]
+        /// Data CRC fail interrupt enable Set and
+        DCRCFAILIE: u1 = 0,
+        /// CTIMEOUTIE [2:2]
+        /// Command timeout interrupt enable Set and
+        CTIMEOUTIE: u1 = 0,
+        /// DTIMEOUTIE [3:3]
+        /// Data timeout interrupt enable Set and
+        DTIMEOUTIE: u1 = 0,
+        /// TXUNDERRIE [4:4]
+        /// Tx FIFO underrun error interrupt enable
+        TXUNDERRIE: u1 = 0,
+        /// RXOVERRIE [5:5]
+        /// Rx FIFO overrun error interrupt enable
+        RXOVERRIE: u1 = 0,
+        /// CMDRENDIE [6:6]
+        /// Command response received interrupt
+        CMDRENDIE: u1 = 0,
+        /// CMDSENTIE [7:7]
+        /// Command sent interrupt enable Set and
+        CMDSENTIE: u1 = 0,
+        /// DATAENDIE [8:8]
+        /// Data end interrupt enable Set and
+        DATAENDIE: u1 = 0,
+        /// DHOLDIE [9:9]
+        /// Data hold interrupt enable Set and
+        DHOLDIE: u1 = 0,
+        /// DBCKENDIE [10:10]
+        /// Data block end interrupt enable Set and
+        DBCKENDIE: u1 = 0,
+        /// DABORTIE [11:11]
+        /// Data transfer aborted interrupt enable
+        DABORTIE: u1 = 0,
+        /// unused [12:13]
+        _unused12: u2 = 0,
+        /// TXFIFOHEIE [14:14]
+        /// Tx FIFO half empty interrupt enable Set
+        TXFIFOHEIE: u1 = 0,
+        /// RXFIFOHFIE [15:15]
+        /// Rx FIFO half full interrupt enable Set
+        RXFIFOHFIE: u1 = 0,
+        /// unused [16:16]
+        _unused16: u1 = 0,
+        /// RXFIFOFIE [17:17]
+        /// Rx FIFO full interrupt enable Set and
+        RXFIFOFIE: u1 = 0,
+        /// TXFIFOEIE [18:18]
+        /// Tx FIFO empty interrupt enable Set and
+        TXFIFOEIE: u1 = 0,
+        /// unused [19:20]
+        _unused19: u2 = 0,
+        /// BUSYD0ENDIE [21:21]
+        /// BUSYD0END interrupt enable Set and
+        BUSYD0ENDIE: u1 = 0,
+        /// SDIOITIE [22:22]
+        /// SDIO mode interrupt received interrupt
+        SDIOITIE: u1 = 0,
+        /// ACKFAILIE [23:23]
+        /// Acknowledgment Fail interrupt enable Set
+        ACKFAILIE: u1 = 0,
+        /// ACKTIMEOUTIE [24:24]
+        /// Acknowledgment timeout interrupt enable
+        ACKTIMEOUTIE: u1 = 0,
+        /// VSWENDIE [25:25]
+        /// Voltage switch critical timing section
+        VSWENDIE: u1 = 0,
+        /// CKSTOPIE [26:26]
+        /// Voltage Switch clock stopped interrupt
+        CKSTOPIE: u1 = 0,
+        /// unused [27:27]
+        _unused27: u1 = 0,
+        /// IDMABTCIE [28:28]
+        /// IDMA buffer transfer complete interrupt
+        IDMABTCIE: u1 = 0,
+        /// unused [29:31]
+        _unused29: u3 = 0,
+    };
+    /// The interrupt mask register determines which
+    pub const SDMMC_MASKR = MMIO(SDMMC_MASKR_val).init(base_address + 0x3c);
+
+    /// SDMMC_ACKTIMER
+    const SDMMC_ACKTIMER_val = packed struct {
+        /// ACKTIME [0:24]
+        /// Boot acknowledgment timeout period This
+        ACKTIME: u25 = 0,
+        /// unused [25:31]
+        _unused25: u7 = 0,
+    };
+    /// The SDMMC_ACKTIMER register contains the
+    pub const SDMMC_ACKTIMER = MMIO(SDMMC_ACKTIMER_val).init(base_address + 0x40);
+
+    /// SDMMC_IDMACTRLR
+    const SDMMC_IDMACTRLR_val = packed struct {
+        /// IDMAEN [0:0]
+        /// IDMA enable This bit can only be written
+        IDMAEN: u1 = 0,
+        /// IDMABMODE [1:1]
+        /// Buffer mode selection. This bit can only
+        IDMABMODE: u1 = 0,
+        /// IDMABACT [2:2]
+        /// Double buffer mode active buffer
+        IDMABACT: u1 = 0,
+        /// unused [3:31]
+        _unused3: u5 = 0,
         _unused8: u8 = 0,
         _unused16: u8 = 0,
         _unused24: u8 = 0,
     };
-    /// masked interrupt status
-    pub const MISR = Register(MISR_val).init(base_address + 0x1c);
+    /// The receive and transmit FIFOs can be read
+    pub const SDMMC_IDMACTRLR = MMIO(SDMMC_IDMACTRLR_val).init(base_address + 0x50);
 
-    /// K0LR
-    const K0LR_val = packed struct {
-        /// b224 [0:0]
-        /// b224
-        b224: u1 = 0,
-        /// b225 [1:1]
-        /// b225
-        b225: u1 = 0,
-        /// b226 [2:2]
-        /// b226
-        b226: u1 = 0,
-        /// b227 [3:3]
-        /// b227
-        b227: u1 = 0,
-        /// b228 [4:4]
-        /// b228
-        b228: u1 = 0,
-        /// b229 [5:5]
-        /// b229
-        b229: u1 = 0,
-        /// b230 [6:6]
-        /// b230
-        b230: u1 = 0,
-        /// b231 [7:7]
-        /// b231
-        b231: u1 = 0,
-        /// b232 [8:8]
-        /// b232
-        b232: u1 = 0,
-        /// b233 [9:9]
-        /// b233
-        b233: u1 = 0,
-        /// b234 [10:10]
-        /// b234
-        b234: u1 = 0,
-        /// b235 [11:11]
-        /// b235
-        b235: u1 = 0,
-        /// b236 [12:12]
-        /// b236
-        b236: u1 = 0,
-        /// b237 [13:13]
-        /// b237
-        b237: u1 = 0,
-        /// b238 [14:14]
-        /// b238
-        b238: u1 = 0,
-        /// b239 [15:15]
-        /// b239
-        b239: u1 = 0,
-        /// b240 [16:16]
-        /// b240
-        b240: u1 = 0,
-        /// b241 [17:17]
-        /// b241
-        b241: u1 = 0,
-        /// b242 [18:18]
-        /// b242
-        b242: u1 = 0,
-        /// b243 [19:19]
-        /// b243
-        b243: u1 = 0,
-        /// b244 [20:20]
-        /// b244
-        b244: u1 = 0,
-        /// b245 [21:21]
-        /// b245
-        b245: u1 = 0,
-        /// b246 [22:22]
-        /// b246
-        b246: u1 = 0,
-        /// b247 [23:23]
-        /// b247
-        b247: u1 = 0,
-        /// b248 [24:24]
-        /// b248
-        b248: u1 = 0,
-        /// b249 [25:25]
-        /// b249
-        b249: u1 = 0,
-        /// b250 [26:26]
-        /// b250
-        b250: u1 = 0,
-        /// b251 [27:27]
-        /// b251
-        b251: u1 = 0,
-        /// b252 [28:28]
-        /// b252
-        b252: u1 = 0,
-        /// b253 [29:29]
-        /// b253
-        b253: u1 = 0,
-        /// b254 [30:30]
-        /// b254
-        b254: u1 = 0,
-        /// b255 [31:31]
-        /// b255
-        b255: u1 = 0,
+    /// SDMMC_IDMABSIZER
+    const SDMMC_IDMABSIZER_val = packed struct {
+        /// unused [0:4]
+        _unused0: u5 = 0,
+        /// IDMABNDT [5:12]
+        /// Number of transfers per buffer. This
+        IDMABNDT: u8 = 0,
+        /// unused [13:31]
+        _unused13: u3 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
     };
-    /// key registers
-    pub const K0LR = Register(K0LR_val).init(base_address + 0x20);
+    /// The SDMMC_IDMABSIZER register contains the
+    pub const SDMMC_IDMABSIZER = MMIO(SDMMC_IDMABSIZER_val).init(base_address + 0x54);
 
-    /// K0RR
-    const K0RR_val = packed struct {
-        /// b192 [0:0]
-        /// b192
-        b192: u1 = 0,
-        /// b193 [1:1]
-        /// b193
-        b193: u1 = 0,
-        /// b194 [2:2]
-        /// b194
-        b194: u1 = 0,
-        /// b195 [3:3]
-        /// b195
-        b195: u1 = 0,
-        /// b196 [4:4]
-        /// b196
-        b196: u1 = 0,
-        /// b197 [5:5]
-        /// b197
-        b197: u1 = 0,
-        /// b198 [6:6]
-        /// b198
-        b198: u1 = 0,
-        /// b199 [7:7]
-        /// b199
-        b199: u1 = 0,
-        /// b200 [8:8]
-        /// b200
-        b200: u1 = 0,
-        /// b201 [9:9]
-        /// b201
-        b201: u1 = 0,
-        /// b202 [10:10]
-        /// b202
-        b202: u1 = 0,
-        /// b203 [11:11]
-        /// b203
-        b203: u1 = 0,
-        /// b204 [12:12]
-        /// b204
-        b204: u1 = 0,
-        /// b205 [13:13]
-        /// b205
-        b205: u1 = 0,
-        /// b206 [14:14]
-        /// b206
-        b206: u1 = 0,
-        /// b207 [15:15]
-        /// b207
-        b207: u1 = 0,
-        /// b208 [16:16]
-        /// b208
-        b208: u1 = 0,
-        /// b209 [17:17]
-        /// b209
-        b209: u1 = 0,
-        /// b210 [18:18]
-        /// b210
-        b210: u1 = 0,
-        /// b211 [19:19]
-        /// b211
-        b211: u1 = 0,
-        /// b212 [20:20]
-        /// b212
-        b212: u1 = 0,
-        /// b213 [21:21]
-        /// b213
-        b213: u1 = 0,
-        /// b214 [22:22]
-        /// b214
-        b214: u1 = 0,
-        /// b215 [23:23]
-        /// b215
-        b215: u1 = 0,
-        /// b216 [24:24]
-        /// b216
-        b216: u1 = 0,
-        /// b217 [25:25]
-        /// b217
-        b217: u1 = 0,
-        /// b218 [26:26]
-        /// b218
-        b218: u1 = 0,
-        /// b219 [27:27]
-        /// b219
-        b219: u1 = 0,
-        /// b220 [28:28]
-        /// b220
-        b220: u1 = 0,
-        /// b221 [29:29]
-        /// b221
-        b221: u1 = 0,
-        /// b222 [30:30]
-        /// b222
-        b222: u1 = 0,
-        /// b223 [31:31]
-        /// b223
-        b223: u1 = 0,
+    /// SDMMC_IDMABASE0R
+    const SDMMC_IDMABASE0R_val = packed struct {
+        /// IDMABASE0 [0:31]
+        /// Buffer 0 memory base address bits
+        IDMABASE0: u32 = 0,
     };
-    /// key registers
-    pub const K0RR = Register(K0RR_val).init(base_address + 0x24);
+    /// The SDMMC_IDMABASE0R register contains the
+    pub const SDMMC_IDMABASE0R = MMIO(SDMMC_IDMABASE0R_val).init(base_address + 0x58);
 
-    /// K1LR
-    const K1LR_val = packed struct {
-        /// b160 [0:0]
-        /// b160
-        b160: u1 = 0,
-        /// b161 [1:1]
-        /// b161
-        b161: u1 = 0,
-        /// b162 [2:2]
-        /// b162
-        b162: u1 = 0,
-        /// b163 [3:3]
-        /// b163
-        b163: u1 = 0,
-        /// b164 [4:4]
-        /// b164
-        b164: u1 = 0,
-        /// b165 [5:5]
-        /// b165
-        b165: u1 = 0,
-        /// b166 [6:6]
-        /// b166
-        b166: u1 = 0,
-        /// b167 [7:7]
-        /// b167
-        b167: u1 = 0,
-        /// b168 [8:8]
-        /// b168
-        b168: u1 = 0,
-        /// b169 [9:9]
-        /// b169
-        b169: u1 = 0,
-        /// b170 [10:10]
-        /// b170
-        b170: u1 = 0,
-        /// b171 [11:11]
-        /// b171
-        b171: u1 = 0,
-        /// b172 [12:12]
-        /// b172
-        b172: u1 = 0,
-        /// b173 [13:13]
-        /// b173
-        b173: u1 = 0,
-        /// b174 [14:14]
-        /// b174
-        b174: u1 = 0,
-        /// b175 [15:15]
-        /// b175
-        b175: u1 = 0,
-        /// b176 [16:16]
-        /// b176
-        b176: u1 = 0,
-        /// b177 [17:17]
-        /// b177
-        b177: u1 = 0,
-        /// b178 [18:18]
-        /// b178
-        b178: u1 = 0,
-        /// b179 [19:19]
-        /// b179
-        b179: u1 = 0,
-        /// b180 [20:20]
-        /// b180
-        b180: u1 = 0,
-        /// b181 [21:21]
-        /// b181
-        b181: u1 = 0,
-        /// b182 [22:22]
-        /// b182
-        b182: u1 = 0,
-        /// b183 [23:23]
-        /// b183
-        b183: u1 = 0,
-        /// b184 [24:24]
-        /// b184
-        b184: u1 = 0,
-        /// b185 [25:25]
-        /// b185
-        b185: u1 = 0,
-        /// b186 [26:26]
-        /// b186
-        b186: u1 = 0,
-        /// b187 [27:27]
-        /// b187
-        b187: u1 = 0,
-        /// b188 [28:28]
-        /// b188
-        b188: u1 = 0,
-        /// b189 [29:29]
-        /// b189
-        b189: u1 = 0,
-        /// b190 [30:30]
-        /// b190
-        b190: u1 = 0,
-        /// b191 [31:31]
-        /// b191
-        b191: u1 = 0,
+    /// SDMMC_IDMABASE1R
+    const SDMMC_IDMABASE1R_val = packed struct {
+        /// IDMABASE1 [0:31]
+        /// Buffer 1 memory base address, shall be
+        IDMABASE1: u32 = 0,
     };
-    /// key registers
-    pub const K1LR = Register(K1LR_val).init(base_address + 0x28);
+    /// The SDMMC_IDMABASE1R register contains the
+    pub const SDMMC_IDMABASE1R = MMIO(SDMMC_IDMABASE1R_val).init(base_address + 0x5c);
 
-    /// K1RR
-    const K1RR_val = packed struct {
-        /// b128 [0:0]
-        /// b128
-        b128: u1 = 0,
-        /// b129 [1:1]
-        /// b129
-        b129: u1 = 0,
-        /// b130 [2:2]
-        /// b130
-        b130: u1 = 0,
-        /// b131 [3:3]
-        /// b131
-        b131: u1 = 0,
-        /// b132 [4:4]
-        /// b132
-        b132: u1 = 0,
-        /// b133 [5:5]
-        /// b133
-        b133: u1 = 0,
-        /// b134 [6:6]
-        /// b134
-        b134: u1 = 0,
-        /// b135 [7:7]
-        /// b135
-        b135: u1 = 0,
-        /// b136 [8:8]
-        /// b136
-        b136: u1 = 0,
-        /// b137 [9:9]
-        /// b137
-        b137: u1 = 0,
-        /// b138 [10:10]
-        /// b138
-        b138: u1 = 0,
-        /// b139 [11:11]
-        /// b139
-        b139: u1 = 0,
-        /// b140 [12:12]
-        /// b140
-        b140: u1 = 0,
-        /// b141 [13:13]
-        /// b141
-        b141: u1 = 0,
-        /// b142 [14:14]
-        /// b142
-        b142: u1 = 0,
-        /// b143 [15:15]
-        /// b143
-        b143: u1 = 0,
-        /// b144 [16:16]
-        /// b144
-        b144: u1 = 0,
-        /// b145 [17:17]
-        /// b145
-        b145: u1 = 0,
-        /// b146 [18:18]
-        /// b146
-        b146: u1 = 0,
-        /// b147 [19:19]
-        /// b147
-        b147: u1 = 0,
-        /// b148 [20:20]
-        /// b148
-        b148: u1 = 0,
-        /// b149 [21:21]
-        /// b149
-        b149: u1 = 0,
-        /// b150 [22:22]
-        /// b150
-        b150: u1 = 0,
-        /// b151 [23:23]
-        /// b151
-        b151: u1 = 0,
-        /// b152 [24:24]
-        /// b152
-        b152: u1 = 0,
-        /// b153 [25:25]
-        /// b153
-        b153: u1 = 0,
-        /// b154 [26:26]
-        /// b154
-        b154: u1 = 0,
-        /// b155 [27:27]
-        /// b155
-        b155: u1 = 0,
-        /// b156 [28:28]
-        /// b156
-        b156: u1 = 0,
-        /// b157 [29:29]
-        /// b157
-        b157: u1 = 0,
-        /// b158 [30:30]
-        /// b158
-        b158: u1 = 0,
-        /// b159 [31:31]
-        /// b159
-        b159: u1 = 0,
+    /// SDMMC_RESPCMDR
+    const SDMMC_RESPCMDR_val = packed struct {
+        /// RESPCMD [0:5]
+        /// Response command index Read-only bit
+        RESPCMD: u6 = 0,
+        /// unused [6:31]
+        _unused6: u2 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
     };
-    /// key registers
-    pub const K1RR = Register(K1RR_val).init(base_address + 0x2c);
+    /// The SDMMC_RESPCMDR register contains the
+    pub const SDMMC_RESPCMDR = MMIO(SDMMC_RESPCMDR_val).init(base_address + 0x60);
 
-    /// K2LR
-    const K2LR_val = packed struct {
-        /// b96 [0:0]
-        /// b96
-        b96: u1 = 0,
-        /// b97 [1:1]
-        /// b97
-        b97: u1 = 0,
-        /// b98 [2:2]
-        /// b98
-        b98: u1 = 0,
-        /// b99 [3:3]
-        /// b99
-        b99: u1 = 0,
-        /// b100 [4:4]
-        /// b100
-        b100: u1 = 0,
-        /// b101 [5:5]
-        /// b101
-        b101: u1 = 0,
-        /// b102 [6:6]
-        /// b102
-        b102: u1 = 0,
-        /// b103 [7:7]
-        /// b103
-        b103: u1 = 0,
-        /// b104 [8:8]
-        /// b104
-        b104: u1 = 0,
-        /// b105 [9:9]
-        /// b105
-        b105: u1 = 0,
-        /// b106 [10:10]
-        /// b106
-        b106: u1 = 0,
-        /// b107 [11:11]
-        /// b107
-        b107: u1 = 0,
-        /// b108 [12:12]
-        /// b108
-        b108: u1 = 0,
-        /// b109 [13:13]
-        /// b109
-        b109: u1 = 0,
-        /// b110 [14:14]
-        /// b110
-        b110: u1 = 0,
-        /// b111 [15:15]
-        /// b111
-        b111: u1 = 0,
-        /// b112 [16:16]
-        /// b112
-        b112: u1 = 0,
-        /// b113 [17:17]
-        /// b113
-        b113: u1 = 0,
-        /// b114 [18:18]
-        /// b114
-        b114: u1 = 0,
-        /// b115 [19:19]
-        /// b115
-        b115: u1 = 0,
-        /// b116 [20:20]
-        /// b116
-        b116: u1 = 0,
-        /// b117 [21:21]
-        /// b117
-        b117: u1 = 0,
-        /// b118 [22:22]
-        /// b118
-        b118: u1 = 0,
-        /// b119 [23:23]
-        /// b119
-        b119: u1 = 0,
-        /// b120 [24:24]
-        /// b120
-        b120: u1 = 0,
-        /// b121 [25:25]
-        /// b121
-        b121: u1 = 0,
-        /// b122 [26:26]
-        /// b122
-        b122: u1 = 0,
-        /// b123 [27:27]
-        /// b123
-        b123: u1 = 0,
-        /// b124 [28:28]
-        /// b124
-        b124: u1 = 0,
-        /// b125 [29:29]
-        /// b125
-        b125: u1 = 0,
-        /// b126 [30:30]
-        /// b126
-        b126: u1 = 0,
-        /// b127 [31:31]
-        /// b127
-        b127: u1 = 0,
+    /// SDMMC_FIFOR
+    const SDMMC_FIFOR_val = packed struct {
+        /// FIFODATA [0:31]
+        /// Receive and transmit FIFO data This
+        FIFODATA: u32 = 0,
     };
-    /// key registers
-    pub const K2LR = Register(K2LR_val).init(base_address + 0x30);
+    /// The receive and transmit FIFOs can be only
+    pub const SDMMC_FIFOR = MMIO(SDMMC_FIFOR_val).init(base_address + 0x80);
 
-    /// K2RR
-    const K2RR_val = packed struct {
-        /// b64 [0:0]
-        /// b64
-        b64: u1 = 0,
-        /// b65 [1:1]
-        /// b65
-        b65: u1 = 0,
-        /// b66 [2:2]
-        /// b66
-        b66: u1 = 0,
-        /// b67 [3:3]
-        /// b67
-        b67: u1 = 0,
-        /// b68 [4:4]
-        /// b68
-        b68: u1 = 0,
-        /// b69 [5:5]
-        /// b69
-        b69: u1 = 0,
-        /// b70 [6:6]
-        /// b70
-        b70: u1 = 0,
-        /// b71 [7:7]
-        /// b71
-        b71: u1 = 0,
-        /// b72 [8:8]
-        /// b72
-        b72: u1 = 0,
-        /// b73 [9:9]
-        /// b73
-        b73: u1 = 0,
-        /// b74 [10:10]
-        /// b74
-        b74: u1 = 0,
-        /// b75 [11:11]
-        /// b75
-        b75: u1 = 0,
-        /// b76 [12:12]
-        /// b76
-        b76: u1 = 0,
-        /// b77 [13:13]
-        /// b77
-        b77: u1 = 0,
-        /// b78 [14:14]
-        /// b78
-        b78: u1 = 0,
-        /// b79 [15:15]
-        /// b79
-        b79: u1 = 0,
-        /// b80 [16:16]
-        /// b80
-        b80: u1 = 0,
-        /// b81 [17:17]
-        /// b81
-        b81: u1 = 0,
-        /// b82 [18:18]
-        /// b82
-        b82: u1 = 0,
-        /// b83 [19:19]
-        /// b83
-        b83: u1 = 0,
-        /// b84 [20:20]
-        /// b84
-        b84: u1 = 0,
-        /// b85 [21:21]
-        /// b85
-        b85: u1 = 0,
-        /// b86 [22:22]
-        /// b86
-        b86: u1 = 0,
-        /// b87 [23:23]
-        /// b87
-        b87: u1 = 0,
-        /// b88 [24:24]
-        /// b88
-        b88: u1 = 0,
-        /// b89 [25:25]
-        /// b89
-        b89: u1 = 0,
-        /// b90 [26:26]
-        /// b90
-        b90: u1 = 0,
-        /// b91 [27:27]
-        /// b91
-        b91: u1 = 0,
-        /// b92 [28:28]
-        /// b92
-        b92: u1 = 0,
-        /// b93 [29:29]
-        /// b93
-        b93: u1 = 0,
-        /// b94 [30:30]
-        /// b94
-        b94: u1 = 0,
-        /// b95 [31:31]
-        /// b95
-        b95: u1 = 0,
+    /// SDMMC_VER
+    const SDMMC_VER_val = packed struct {
+        /// MINREV [0:3]
+        /// IP minor revision number.
+        MINREV: u4 = 0,
+        /// MAJREV [4:7]
+        /// IP major revision number.
+        MAJREV: u4 = 1,
+        /// unused [8:31]
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
     };
-    /// key registers
-    pub const K2RR = Register(K2RR_val).init(base_address + 0x34);
+    /// SDMMC IP version register
+    pub const SDMMC_VER = MMIO(SDMMC_VER_val).init(base_address + 0x3f4);
 
-    /// K3LR
-    const K3LR_val = packed struct {
-        /// b32 [0:0]
-        /// b32
-        b32: u1 = 0,
-        /// b33 [1:1]
-        /// b33
-        b33: u1 = 0,
-        /// b34 [2:2]
-        /// b34
-        b34: u1 = 0,
-        /// b35 [3:3]
-        /// b35
-        b35: u1 = 0,
-        /// b36 [4:4]
-        /// b36
-        b36: u1 = 0,
-        /// b37 [5:5]
-        /// b37
-        b37: u1 = 0,
-        /// b38 [6:6]
-        /// b38
-        b38: u1 = 0,
-        /// b39 [7:7]
-        /// b39
-        b39: u1 = 0,
-        /// b40 [8:8]
-        /// b40
-        b40: u1 = 0,
-        /// b41 [9:9]
-        /// b41
-        b41: u1 = 0,
-        /// b42 [10:10]
-        /// b42
-        b42: u1 = 0,
-        /// b43 [11:11]
-        /// b43
-        b43: u1 = 0,
-        /// b44 [12:12]
-        /// b44
-        b44: u1 = 0,
-        /// b45 [13:13]
-        /// b45
-        b45: u1 = 0,
-        /// b46 [14:14]
-        /// b46
-        b46: u1 = 0,
-        /// b47 [15:15]
-        /// b47
-        b47: u1 = 0,
-        /// b48 [16:16]
-        /// b48
-        b48: u1 = 0,
-        /// b49 [17:17]
-        /// b49
-        b49: u1 = 0,
-        /// b50 [18:18]
-        /// b50
-        b50: u1 = 0,
-        /// b51 [19:19]
-        /// b51
-        b51: u1 = 0,
-        /// b52 [20:20]
-        /// b52
-        b52: u1 = 0,
-        /// b53 [21:21]
-        /// b53
-        b53: u1 = 0,
-        /// b54 [22:22]
-        /// b54
-        b54: u1 = 0,
-        /// b55 [23:23]
-        /// b55
-        b55: u1 = 0,
-        /// b56 [24:24]
-        /// b56
-        b56: u1 = 0,
-        /// b57 [25:25]
-        /// b57
-        b57: u1 = 0,
-        /// b58 [26:26]
-        /// b58
-        b58: u1 = 0,
-        /// b59 [27:27]
-        /// b59
-        b59: u1 = 0,
-        /// b60 [28:28]
-        /// b60
-        b60: u1 = 0,
-        /// b61 [29:29]
-        /// b61
-        b61: u1 = 0,
-        /// b62 [30:30]
-        /// b62
-        b62: u1 = 0,
-        /// b63 [31:31]
-        /// b63
-        b63: u1 = 0,
+    /// SDMMC_ID
+    const SDMMC_ID_val = packed struct {
+        /// IP_ID [0:31]
+        /// SDMMC IP identification.
+        IP_ID: u32 = 1310754,
     };
-    /// key registers
-    pub const K3LR = Register(K3LR_val).init(base_address + 0x38);
+    /// SDMMC IP identification
+    pub const SDMMC_ID = MMIO(SDMMC_ID_val).init(base_address + 0x3f8);
+};
 
-    /// K3RR
-    const K3RR_val = packed struct {
-        /// b0 [0:0]
-        /// b0
-        b0: u1 = 0,
-        /// b1 [1:1]
-        /// b1
-        b1: u1 = 0,
-        /// b2 [2:2]
-        /// b2
-        b2: u1 = 0,
-        /// b3 [3:3]
-        /// b3
-        b3: u1 = 0,
-        /// b4 [4:4]
-        /// b4
-        b4: u1 = 0,
-        /// b5 [5:5]
-        /// b5
-        b5: u1 = 0,
-        /// b6 [6:6]
-        /// b6
-        b6: u1 = 0,
-        /// b7 [7:7]
-        /// b7
-        b7: u1 = 0,
-        /// b8 [8:8]
-        /// b8
-        b8: u1 = 0,
-        /// b9 [9:9]
-        /// b9
-        b9: u1 = 0,
-        /// b10 [10:10]
-        /// b10
-        b10: u1 = 0,
-        /// b11 [11:11]
-        /// b11
-        b11: u1 = 0,
-        /// b12 [12:12]
-        /// b12
-        b12: u1 = 0,
-        /// b13 [13:13]
-        /// b13
-        b13: u1 = 0,
-        /// b14 [14:14]
-        /// b14
-        b14: u1 = 0,
-        /// b15 [15:15]
-        /// b15
-        b15: u1 = 0,
-        /// b16 [16:16]
-        /// b16
-        b16: u1 = 0,
-        /// b17 [17:17]
-        /// b17
-        b17: u1 = 0,
-        /// b18 [18:18]
-        /// b18
-        b18: u1 = 0,
-        /// b19 [19:19]
-        /// b19
-        b19: u1 = 0,
-        /// b20 [20:20]
-        /// b20
-        b20: u1 = 0,
-        /// b21 [21:21]
-        /// b21
-        b21: u1 = 0,
-        /// b22 [22:22]
-        /// b22
-        b22: u1 = 0,
-        /// b23 [23:23]
-        /// b23
-        b23: u1 = 0,
-        /// b24 [24:24]
-        /// b24
-        b24: u1 = 0,
-        /// b25 [25:25]
-        /// b25
-        b25: u1 = 0,
-        /// b26 [26:26]
-        /// b26
-        b26: u1 = 0,
-        /// b27 [27:27]
-        /// b27
-        b27: u1 = 0,
-        /// b28 [28:28]
-        /// b28
-        b28: u1 = 0,
-        /// b29 [29:29]
-        /// b29
-        b29: u1 = 0,
-        /// b30 [30:30]
-        /// b30
-        b30: u1 = 0,
-        /// b31 [31:31]
-        /// b31
-        b31: u1 = 0,
+/// HDMI-CEC controller
+pub const HDMI_CEC = struct {
+    const base_address = 0x40006c00;
+    /// CEC_CR
+    const CEC_CR_val = packed struct {
+        /// CECEN [0:0]
+        /// CEC Enable
+        CECEN: u1 = 0,
+        /// TXSOM [1:1]
+        /// Tx Start Of Message
+        TXSOM: u1 = 0,
+        /// TXEOM [2:2]
+        /// Tx End Of Message
+        TXEOM: u1 = 0,
+        /// unused [3:31]
+        _unused3: u5 = 0,
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
     };
-    /// key registers
-    pub const K3RR = Register(K3RR_val).init(base_address + 0x3c);
+    /// CEC control register
+    pub const CEC_CR = MMIO(CEC_CR_val).init(base_address + 0x0);
 
-    /// IV0LR
-    const IV0LR_val = packed struct {
-        /// IV31 [0:0]
-        /// IV31
-        IV31: u1 = 0,
-        /// IV30 [1:1]
-        /// IV30
-        IV30: u1 = 0,
-        /// IV29 [2:2]
-        /// IV29
-        IV29: u1 = 0,
-        /// IV28 [3:3]
-        /// IV28
-        IV28: u1 = 0,
-        /// IV27 [4:4]
-        /// IV27
-        IV27: u1 = 0,
-        /// IV26 [5:5]
-        /// IV26
-        IV26: u1 = 0,
-        /// IV25 [6:6]
-        /// IV25
-        IV25: u1 = 0,
-        /// IV24 [7:7]
-        /// IV24
-        IV24: u1 = 0,
-        /// IV23 [8:8]
-        /// IV23
-        IV23: u1 = 0,
-        /// IV22 [9:9]
-        /// IV22
-        IV22: u1 = 0,
-        /// IV21 [10:10]
-        /// IV21
-        IV21: u1 = 0,
-        /// IV20 [11:11]
-        /// IV20
-        IV20: u1 = 0,
-        /// IV19 [12:12]
-        /// IV19
-        IV19: u1 = 0,
-        /// IV18 [13:13]
-        /// IV18
-        IV18: u1 = 0,
-        /// IV17 [14:14]
-        /// IV17
-        IV17: u1 = 0,
-        /// IV16 [15:15]
-        /// IV16
-        IV16: u1 = 0,
-        /// IV15 [16:16]
-        /// IV15
-        IV15: u1 = 0,
-        /// IV14 [17:17]
-        /// IV14
-        IV14: u1 = 0,
-        /// IV13 [18:18]
-        /// IV13
-        IV13: u1 = 0,
-        /// IV12 [19:19]
-        /// IV12
-        IV12: u1 = 0,
-        /// IV11 [20:20]
-        /// IV11
-        IV11: u1 = 0,
-        /// IV10 [21:21]
-        /// IV10
-        IV10: u1 = 0,
-        /// IV9 [22:22]
-        /// IV9
-        IV9: u1 = 0,
-        /// IV8 [23:23]
-        /// IV8
-        IV8: u1 = 0,
-        /// IV7 [24:24]
-        /// IV7
-        IV7: u1 = 0,
-        /// IV6 [25:25]
-        /// IV6
-        IV6: u1 = 0,
-        /// IV5 [26:26]
-        /// IV5
-        IV5: u1 = 0,
-        /// IV4 [27:27]
-        /// IV4
-        IV4: u1 = 0,
-        /// IV3 [28:28]
-        /// IV3
-        IV3: u1 = 0,
-        /// IV2 [29:29]
-        /// IV2
-        IV2: u1 = 0,
-        /// IV1 [30:30]
-        /// IV1
-        IV1: u1 = 0,
-        /// IV0 [31:31]
-        /// IV0
-        IV0: u1 = 0,
+    /// CEC_CFGR
+    const CEC_CFGR_val = packed struct {
+        /// SFT [0:2]
+        /// Signal Free Time
+        SFT: u3 = 0,
+        /// RXTOL [3:3]
+        /// Rx-Tolerance
+        RXTOL: u1 = 0,
+        /// BRESTP [4:4]
+        /// Rx-Stop on Bit Rising
+        BRESTP: u1 = 0,
+        /// BREGEN [5:5]
+        /// Generate Error-Bit on Bit Rising
+        BREGEN: u1 = 0,
+        /// LBPEGEN [6:6]
+        /// Generate Error-Bit on Long Bit Period
+        LBPEGEN: u1 = 0,
+        /// BRDNOGEN [7:7]
+        /// Avoid Error-Bit Generation in
+        BRDNOGEN: u1 = 0,
+        /// SFTOP [8:8]
+        /// SFT Option Bit
+        SFTOP: u1 = 0,
+        /// unused [9:15]
+        _unused9: u7 = 0,
+        /// OAR [16:30]
+        /// Own addresses
+        OAR: u15 = 0,
+        /// LSTN [31:31]
+        /// Listen mode
+        LSTN: u1 = 0,
     };
-    /// initialization vector
-    pub const IV0LR = Register(IV0LR_val).init(base_address + 0x40);
+    /// CEC configuration register
+    pub const CEC_CFGR = MMIO(CEC_CFGR_val).init(base_address + 0x4);
 
-    /// IV0RR
-    const IV0RR_val = packed struct {
-        /// IV63 [0:0]
-        /// IV63
-        IV63: u1 = 0,
-        /// IV62 [1:1]
-        /// IV62
-        IV62: u1 = 0,
-        /// IV61 [2:2]
-        /// IV61
-        IV61: u1 = 0,
-        /// IV60 [3:3]
-        /// IV60
-        IV60: u1 = 0,
-        /// IV59 [4:4]
-        /// IV59
-        IV59: u1 = 0,
-        /// IV58 [5:5]
-        /// IV58
-        IV58: u1 = 0,
-        /// IV57 [6:6]
-        /// IV57
-        IV57: u1 = 0,
-        /// IV56 [7:7]
-        /// IV56
-        IV56: u1 = 0,
-        /// IV55 [8:8]
-        /// IV55
-        IV55: u1 = 0,
-        /// IV54 [9:9]
-        /// IV54
-        IV54: u1 = 0,
-        /// IV53 [10:10]
-        /// IV53
-        IV53: u1 = 0,
-        /// IV52 [11:11]
-        /// IV52
-        IV52: u1 = 0,
-        /// IV51 [12:12]
-        /// IV51
-        IV51: u1 = 0,
-        /// IV50 [13:13]
-        /// IV50
-        IV50: u1 = 0,
-        /// IV49 [14:14]
-        /// IV49
-        IV49: u1 = 0,
-        /// IV48 [15:15]
-        /// IV48
-        IV48: u1 = 0,
-        /// IV47 [16:16]
-        /// IV47
-        IV47: u1 = 0,
-        /// IV46 [17:17]
-        /// IV46
-        IV46: u1 = 0,
-        /// IV45 [18:18]
-        /// IV45
-        IV45: u1 = 0,
-        /// IV44 [19:19]
-        /// IV44
-        IV44: u1 = 0,
-        /// IV43 [20:20]
-        /// IV43
-        IV43: u1 = 0,
-        /// IV42 [21:21]
-        /// IV42
-        IV42: u1 = 0,
-        /// IV41 [22:22]
-        /// IV41
-        IV41: u1 = 0,
-        /// IV40 [23:23]
-        /// IV40
-        IV40: u1 = 0,
-        /// IV39 [24:24]
-        /// IV39
-        IV39: u1 = 0,
-        /// IV38 [25:25]
-        /// IV38
-        IV38: u1 = 0,
-        /// IV37 [26:26]
-        /// IV37
-        IV37: u1 = 0,
-        /// IV36 [27:27]
-        /// IV36
-        IV36: u1 = 0,
-        /// IV35 [28:28]
-        /// IV35
-        IV35: u1 = 0,
-        /// IV34 [29:29]
-        /// IV34
-        IV34: u1 = 0,
-        /// IV33 [30:30]
-        /// IV33
-        IV33: u1 = 0,
-        /// IV32 [31:31]
-        /// IV32
-        IV32: u1 = 0,
+    /// CEC_TXDR
+    const CEC_TXDR_val = packed struct {
+        /// TXD [0:7]
+        /// Tx Data register
+        TXD: u8 = 0,
+        /// unused [8:31]
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
     };
-    /// initialization vector
-    pub const IV0RR = Register(IV0RR_val).init(base_address + 0x44);
+    /// CEC Tx data register
+    pub const CEC_TXDR = MMIO(CEC_TXDR_val).init(base_address + 0x8);
 
-    /// IV1LR
-    const IV1LR_val = packed struct {
-        /// IV95 [0:0]
-        /// IV95
-        IV95: u1 = 0,
-        /// IV94 [1:1]
-        /// IV94
-        IV94: u1 = 0,
-        /// IV93 [2:2]
-        /// IV93
-        IV93: u1 = 0,
-        /// IV92 [3:3]
-        /// IV92
-        IV92: u1 = 0,
-        /// IV91 [4:4]
-        /// IV91
-        IV91: u1 = 0,
-        /// IV90 [5:5]
-        /// IV90
-        IV90: u1 = 0,
-        /// IV89 [6:6]
-        /// IV89
-        IV89: u1 = 0,
-        /// IV88 [7:7]
-        /// IV88
-        IV88: u1 = 0,
-        /// IV87 [8:8]
-        /// IV87
-        IV87: u1 = 0,
-        /// IV86 [9:9]
-        /// IV86
-        IV86: u1 = 0,
-        /// IV85 [10:10]
-        /// IV85
-        IV85: u1 = 0,
-        /// IV84 [11:11]
-        /// IV84
-        IV84: u1 = 0,
-        /// IV83 [12:12]
-        /// IV83
-        IV83: u1 = 0,
-        /// IV82 [13:13]
-        /// IV82
-        IV82: u1 = 0,
-        /// IV81 [14:14]
-        /// IV81
-        IV81: u1 = 0,
-        /// IV80 [15:15]
-        /// IV80
-        IV80: u1 = 0,
-        /// IV79 [16:16]
-        /// IV79
-        IV79: u1 = 0,
-        /// IV78 [17:17]
-        /// IV78
-        IV78: u1 = 0,
-        /// IV77 [18:18]
-        /// IV77
-        IV77: u1 = 0,
-        /// IV76 [19:19]
-        /// IV76
-        IV76: u1 = 0,
-        /// IV75 [20:20]
-        /// IV75
-        IV75: u1 = 0,
-        /// IV74 [21:21]
-        /// IV74
-        IV74: u1 = 0,
-        /// IV73 [22:22]
-        /// IV73
-        IV73: u1 = 0,
-        /// IV72 [23:23]
-        /// IV72
-        IV72: u1 = 0,
-        /// IV71 [24:24]
-        /// IV71
-        IV71: u1 = 0,
-        /// IV70 [25:25]
-        /// IV70
-        IV70: u1 = 0,
-        /// IV69 [26:26]
-        /// IV69
-        IV69: u1 = 0,
-        /// IV68 [27:27]
-        /// IV68
-        IV68: u1 = 0,
-        /// IV67 [28:28]
-        /// IV67
-        IV67: u1 = 0,
-        /// IV66 [29:29]
-        /// IV66
-        IV66: u1 = 0,
-        /// IV65 [30:30]
-        /// IV65
-        IV65: u1 = 0,
-        /// IV64 [31:31]
-        /// IV64
-        IV64: u1 = 0,
+    /// CEC_RXDR
+    const CEC_RXDR_val = packed struct {
+        /// RXD [0:7]
+        /// Rx Data register
+        RXD: u8 = 0,
+        /// unused [8:31]
+        _unused8: u8 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
     };
-    /// initialization vector
-    pub const IV1LR = Register(IV1LR_val).init(base_address + 0x48);
+    /// CEC Rx Data Register
+    pub const CEC_RXDR = MMIO(CEC_RXDR_val).init(base_address + 0xc);
 
-    /// IV1RR
-    const IV1RR_val = packed struct {
-        /// IV127 [0:0]
-        /// IV127
-        IV127: u1 = 0,
-        /// IV126 [1:1]
-        /// IV126
-        IV126: u1 = 0,
-        /// IV125 [2:2]
-        /// IV125
-        IV125: u1 = 0,
-        /// IV124 [3:3]
-        /// IV124
-        IV124: u1 = 0,
-        /// IV123 [4:4]
-        /// IV123
-        IV123: u1 = 0,
-        /// IV122 [5:5]
-        /// IV122
-        IV122: u1 = 0,
-        /// IV121 [6:6]
-        /// IV121
-        IV121: u1 = 0,
-        /// IV120 [7:7]
-        /// IV120
-        IV120: u1 = 0,
-        /// IV119 [8:8]
-        /// IV119
-        IV119: u1 = 0,
-        /// IV118 [9:9]
-        /// IV118
-        IV118: u1 = 0,
-        /// IV117 [10:10]
-        /// IV117
-        IV117: u1 = 0,
-        /// IV116 [11:11]
-        /// IV116
-        IV116: u1 = 0,
-        /// IV115 [12:12]
-        /// IV115
-        IV115: u1 = 0,
-        /// IV114 [13:13]
-        /// IV114
-        IV114: u1 = 0,
-        /// IV113 [14:14]
-        /// IV113
-        IV113: u1 = 0,
-        /// IV112 [15:15]
-        /// IV112
-        IV112: u1 = 0,
-        /// IV111 [16:16]
-        /// IV111
-        IV111: u1 = 0,
-        /// IV110 [17:17]
-        /// IV110
-        IV110: u1 = 0,
-        /// IV109 [18:18]
-        /// IV109
-        IV109: u1 = 0,
-        /// IV108 [19:19]
-        /// IV108
-        IV108: u1 = 0,
-        /// IV107 [20:20]
-        /// IV107
-        IV107: u1 = 0,
-        /// IV106 [21:21]
-        /// IV106
-        IV106: u1 = 0,
-        /// IV105 [22:22]
-        /// IV105
-        IV105: u1 = 0,
-        /// IV104 [23:23]
-        /// IV104
-        IV104: u1 = 0,
-        /// IV103 [24:24]
-        /// IV103
-        IV103: u1 = 0,
-        /// IV102 [25:25]
-        /// IV102
-        IV102: u1 = 0,
-        /// IV101 [26:26]
-        /// IV101
-        IV101: u1 = 0,
-        /// IV100 [27:27]
-        /// IV100
-        IV100: u1 = 0,
-        /// IV99 [28:28]
-        /// IV99
-        IV99: u1 = 0,
-        /// IV98 [29:29]
-        /// IV98
-        IV98: u1 = 0,
-        /// IV97 [30:30]
-        /// IV97
-        IV97: u1 = 0,
-        /// IV96 [31:31]
-        /// IV96
-        IV96: u1 = 0,
+    /// CEC_ISR
+    const CEC_ISR_val = packed struct {
+        /// RXBR [0:0]
+        /// Rx-Byte Received
+        RXBR: u1 = 0,
+        /// RXEND [1:1]
+        /// End Of Reception
+        RXEND: u1 = 0,
+        /// RXOVR [2:2]
+        /// Rx-Overrun
+        RXOVR: u1 = 0,
+        /// BRE [3:3]
+        /// Rx-Bit Rising Error
+        BRE: u1 = 0,
+        /// SBPE [4:4]
+        /// Rx-Short Bit Period Error
+        SBPE: u1 = 0,
+        /// LBPE [5:5]
+        /// Rx-Long Bit Period Error
+        LBPE: u1 = 0,
+        /// RXACKE [6:6]
+        /// Rx-Missing Acknowledge
+        RXACKE: u1 = 0,
+        /// ARBLST [7:7]
+        /// Arbitration Lost
+        ARBLST: u1 = 0,
+        /// TXBR [8:8]
+        /// Tx-Byte Request
+        TXBR: u1 = 0,
+        /// TXEND [9:9]
+        /// End of Transmission
+        TXEND: u1 = 0,
+        /// TXUDR [10:10]
+        /// Tx-Buffer Underrun
+        TXUDR: u1 = 0,
+        /// TXERR [11:11]
+        /// Tx-Error
+        TXERR: u1 = 0,
+        /// TXACKE [12:12]
+        /// Tx-Missing Acknowledge
+        TXACKE: u1 = 0,
+        /// unused [13:31]
+        _unused13: u3 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
     };
-    /// initialization vector
-    pub const IV1RR = Register(IV1RR_val).init(base_address + 0x4c);
+    /// CEC Interrupt and Status
+    pub const CEC_ISR = MMIO(CEC_ISR_val).init(base_address + 0x10);
 
-    /// CSGCMCCM0R
-    const CSGCMCCM0R_val = packed struct {
-        /// CSGCMCCM0R [0:31]
-        /// CSGCMCCM0R
-        CSGCMCCM0R: u32 = 0,
+    /// CEC_IER
+    const CEC_IER_val = packed struct {
+        /// RXBRIE [0:0]
+        /// Rx-Byte Received Interrupt
+        RXBRIE: u1 = 0,
+        /// RXENDIE [1:1]
+        /// End Of Reception Interrupt
+        RXENDIE: u1 = 0,
+        /// RXOVRIE [2:2]
+        /// Rx-Buffer Overrun Interrupt
+        RXOVRIE: u1 = 0,
+        /// BREIE [3:3]
+        /// Bit Rising Error Interrupt
+        BREIE: u1 = 0,
+        /// SBPEIE [4:4]
+        /// Short Bit Period Error Interrupt
+        SBPEIE: u1 = 0,
+        /// LBPEIE [5:5]
+        /// Long Bit Period Error Interrupt
+        LBPEIE: u1 = 0,
+        /// RXACKIE [6:6]
+        /// Rx-Missing Acknowledge Error Interrupt
+        RXACKIE: u1 = 0,
+        /// ARBLSTIE [7:7]
+        /// Arbitration Lost Interrupt
+        ARBLSTIE: u1 = 0,
+        /// TXBRIE [8:8]
+        /// Tx-Byte Request Interrupt
+        TXBRIE: u1 = 0,
+        /// TXENDIE [9:9]
+        /// Tx-End Of Message Interrupt
+        TXENDIE: u1 = 0,
+        /// TXUDRIE [10:10]
+        /// Tx-Underrun Interrupt
+        TXUDRIE: u1 = 0,
+        /// TXERRIE [11:11]
+        /// Tx-Error Interrupt Enable
+        TXERRIE: u1 = 0,
+        /// TXACKIE [12:12]
+        /// Tx-Missing Acknowledge Error Interrupt
+        TXACKIE: u1 = 0,
+        /// unused [13:31]
+        _unused13: u3 = 0,
+        _unused16: u8 = 0,
+        _unused24: u8 = 0,
     };
-    /// context swap register
-    pub const CSGCMCCM0R = Register(CSGCMCCM0R_val).init(base_address + 0x50);
-
-    /// CSGCMCCM1R
-    const CSGCMCCM1R_val = packed struct {
-        /// CSGCMCCM1R [0:31]
-        /// CSGCMCCM1R
-        CSGCMCCM1R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCMCCM1R = Register(CSGCMCCM1R_val).init(base_address + 0x54);
-
-    /// CSGCMCCM2R
-    const CSGCMCCM2R_val = packed struct {
-        /// CSGCMCCM2R [0:31]
-        /// CSGCMCCM2R
-        CSGCMCCM2R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCMCCM2R = Register(CSGCMCCM2R_val).init(base_address + 0x58);
-
-    /// CSGCMCCM3R
-    const CSGCMCCM3R_val = packed struct {
-        /// CSGCMCCM3R [0:31]
-        /// CSGCMCCM3R
-        CSGCMCCM3R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCMCCM3R = Register(CSGCMCCM3R_val).init(base_address + 0x5c);
-
-    /// CSGCMCCM4R
-    const CSGCMCCM4R_val = packed struct {
-        /// CSGCMCCM4R [0:31]
-        /// CSGCMCCM4R
-        CSGCMCCM4R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCMCCM4R = Register(CSGCMCCM4R_val).init(base_address + 0x60);
-
-    /// CSGCMCCM5R
-    const CSGCMCCM5R_val = packed struct {
-        /// CSGCMCCM5R [0:31]
-        /// CSGCMCCM5R
-        CSGCMCCM5R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCMCCM5R = Register(CSGCMCCM5R_val).init(base_address + 0x64);
-
-    /// CSGCMCCM6R
-    const CSGCMCCM6R_val = packed struct {
-        /// CSGCMCCM6R [0:31]
-        /// CSGCMCCM6R
-        CSGCMCCM6R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCMCCM6R = Register(CSGCMCCM6R_val).init(base_address + 0x68);
-
-    /// CSGCMCCM7R
-    const CSGCMCCM7R_val = packed struct {
-        /// CSGCMCCM7R [0:31]
-        /// CSGCMCCM7R
-        CSGCMCCM7R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCMCCM7R = Register(CSGCMCCM7R_val).init(base_address + 0x6c);
-
-    /// CSGCM0R
-    const CSGCM0R_val = packed struct {
-        /// CSGCM0R [0:31]
-        /// CSGCM0R
-        CSGCM0R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCM0R = Register(CSGCM0R_val).init(base_address + 0x70);
-
-    /// CSGCM1R
-    const CSGCM1R_val = packed struct {
-        /// CSGCM1R [0:31]
-        /// CSGCM1R
-        CSGCM1R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCM1R = Register(CSGCM1R_val).init(base_address + 0x74);
-
-    /// CSGCM2R
-    const CSGCM2R_val = packed struct {
-        /// CSGCM2R [0:31]
-        /// CSGCM2R
-        CSGCM2R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCM2R = Register(CSGCM2R_val).init(base_address + 0x78);
-
-    /// CSGCM3R
-    const CSGCM3R_val = packed struct {
-        /// CSGCM3R [0:31]
-        /// CSGCM3R
-        CSGCM3R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCM3R = Register(CSGCM3R_val).init(base_address + 0x7c);
-
-    /// CSGCM4R
-    const CSGCM4R_val = packed struct {
-        /// CSGCM4R [0:31]
-        /// CSGCM4R
-        CSGCM4R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCM4R = Register(CSGCM4R_val).init(base_address + 0x80);
-
-    /// CSGCM5R
-    const CSGCM5R_val = packed struct {
-        /// CSGCM5R [0:31]
-        /// CSGCM5R
-        CSGCM5R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCM5R = Register(CSGCM5R_val).init(base_address + 0x84);
-
-    /// CSGCM6R
-    const CSGCM6R_val = packed struct {
-        /// CSGCM6R [0:31]
-        /// CSGCM6R
-        CSGCM6R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCM6R = Register(CSGCM6R_val).init(base_address + 0x88);
-
-    /// CSGCM7R
-    const CSGCM7R_val = packed struct {
-        /// CSGCM7R [0:31]
-        /// CSGCM7R
-        CSGCM7R: u32 = 0,
-    };
-    /// context swap register
-    pub const CSGCM7R = Register(CSGCM7R_val).init(base_address + 0x8c);
+    /// CEC interrupt enable register
+    pub const CEC_IER = MMIO(CEC_IER_val).init(base_address + 0x14);
 };
 
 /// Floting point unit
@@ -50713,7 +45393,7 @@ pub const FPU = struct {
         ASPEN: u1 = 0,
     };
     /// Floating-point context control
-    pub const FPCCR = Register(FPCCR_val).init(base_address + 0x0);
+    pub const FPCCR = MMIO(FPCCR_val).init(base_address + 0x0);
 
     /// FPCAR
     const FPCAR_val = packed struct {
@@ -50724,7 +45404,7 @@ pub const FPU = struct {
         ADDRESS: u29 = 0,
     };
     /// Floating-point context address
-    pub const FPCAR = Register(FPCAR_val).init(base_address + 0x4);
+    pub const FPCAR = MMIO(FPCAR_val).init(base_address + 0x4);
 
     /// FPSCR
     const FPSCR_val = packed struct {
@@ -50779,7 +45459,7 @@ pub const FPU = struct {
         N: u1 = 0,
     };
     /// Floating-point status control
-    pub const FPSCR = Register(FPSCR_val).init(base_address + 0x8);
+    pub const FPSCR = MMIO(FPSCR_val).init(base_address + 0x8);
 };
 
 /// Memory protection unit
@@ -50802,7 +45482,7 @@ pub const MPU = struct {
         _unused24: u8 = 0,
     };
     /// MPU type register
-    pub const MPU_TYPER = Register(MPU_TYPER_val).init(base_address + 0x0);
+    pub const MPU_TYPER = MMIO(MPU_TYPER_val).init(base_address + 0x0);
 
     /// MPU_CTRL
     const MPU_CTRL_val = packed struct {
@@ -50822,7 +45502,7 @@ pub const MPU = struct {
         _unused24: u8 = 0,
     };
     /// MPU control register
-    pub const MPU_CTRL = Register(MPU_CTRL_val).init(base_address + 0x4);
+    pub const MPU_CTRL = MMIO(MPU_CTRL_val).init(base_address + 0x4);
 
     /// MPU_RNR
     const MPU_RNR_val = packed struct {
@@ -50835,7 +45515,7 @@ pub const MPU = struct {
         _unused24: u8 = 0,
     };
     /// MPU region number register
-    pub const MPU_RNR = Register(MPU_RNR_val).init(base_address + 0x8);
+    pub const MPU_RNR = MMIO(MPU_RNR_val).init(base_address + 0x8);
 
     /// MPU_RBAR
     const MPU_RBAR_val = packed struct {
@@ -50850,7 +45530,7 @@ pub const MPU = struct {
         ADDR: u27 = 0,
     };
     /// MPU region base address
-    pub const MPU_RBAR = Register(MPU_RBAR_val).init(base_address + 0xc);
+    pub const MPU_RBAR = MMIO(MPU_RBAR_val).init(base_address + 0xc);
 
     /// MPU_RASR
     const MPU_RASR_val = packed struct {
@@ -50891,7 +45571,7 @@ pub const MPU = struct {
         _unused29: u3 = 0,
     };
     /// MPU region attribute and size
-    pub const MPU_RASR = Register(MPU_RASR_val).init(base_address + 0x10);
+    pub const MPU_RASR = MMIO(MPU_RASR_val).init(base_address + 0x10);
 };
 
 /// SysTick timer
@@ -50919,7 +45599,7 @@ pub const STK = struct {
         _unused24: u8 = 0,
     };
     /// SysTick control and status
-    pub const CTRL = Register(CTRL_val).init(base_address + 0x0);
+    pub const CTRL = MMIO(CTRL_val).init(base_address + 0x0);
 
     /// LOAD
     const LOAD_val = packed struct {
@@ -50930,7 +45610,7 @@ pub const STK = struct {
         _unused24: u8 = 0,
     };
     /// SysTick reload value register
-    pub const LOAD = Register(LOAD_val).init(base_address + 0x4);
+    pub const LOAD = MMIO(LOAD_val).init(base_address + 0x4);
 
     /// VAL
     const VAL_val = packed struct {
@@ -50941,7 +45621,7 @@ pub const STK = struct {
         _unused24: u8 = 0,
     };
     /// SysTick current value register
-    pub const VAL = Register(VAL_val).init(base_address + 0x8);
+    pub const VAL = MMIO(VAL_val).init(base_address + 0x8);
 
     /// CALIB
     const CALIB_val = packed struct {
@@ -50958,7 +45638,7 @@ pub const STK = struct {
         NOREF: u1 = 0,
     };
     /// SysTick calibration value
-    pub const CALIB = Register(CALIB_val).init(base_address + 0xc);
+    pub const CALIB = MMIO(CALIB_val).init(base_address + 0xc);
 };
 
 /// System control block
@@ -50983,7 +45663,7 @@ pub const SCB = struct {
         Implementer: u8 = 65,
     };
     /// CPUID base register
-    pub const CPUID = Register(CPUID_val).init(base_address + 0x0);
+    pub const CPUID = MMIO(CPUID_val).init(base_address + 0x0);
 
     /// ICSR
     const ICSR_val = packed struct {
@@ -51025,7 +45705,7 @@ pub const SCB = struct {
         NMIPENDSET: u1 = 0,
     };
     /// Interrupt control and state
-    pub const ICSR = Register(ICSR_val).init(base_address + 0x4);
+    pub const ICSR = MMIO(ICSR_val).init(base_address + 0x4);
 
     /// VTOR
     const VTOR_val = packed struct {
@@ -51039,7 +45719,7 @@ pub const SCB = struct {
         _unused30: u2 = 0,
     };
     /// Vector table offset register
-    pub const VTOR = Register(VTOR_val).init(base_address + 0x8);
+    pub const VTOR = MMIO(VTOR_val).init(base_address + 0x8);
 
     /// AIRCR
     const AIRCR_val = packed struct {
@@ -51067,7 +45747,7 @@ pub const SCB = struct {
         VECTKEYSTAT: u16 = 0,
     };
     /// Application interrupt and reset control
-    pub const AIRCR = Register(AIRCR_val).init(base_address + 0xc);
+    pub const AIRCR = MMIO(AIRCR_val).init(base_address + 0xc);
 
     /// SCR
     const SCR_val = packed struct {
@@ -51091,7 +45771,7 @@ pub const SCB = struct {
         _unused24: u8 = 0,
     };
     /// System control register
-    pub const SCR = Register(SCR_val).init(base_address + 0x10);
+    pub const SCR = MMIO(SCR_val).init(base_address + 0x10);
 
     /// CCR
     const CCR_val = packed struct {
@@ -51123,7 +45803,7 @@ pub const SCB = struct {
         _unused24: u8 = 0,
     };
     /// Configuration and control
-    pub const CCR = Register(CCR_val).init(base_address + 0x14);
+    pub const CCR = MMIO(CCR_val).init(base_address + 0x14);
 
     /// SHPR1
     const SHPR1_val = packed struct {
@@ -51140,7 +45820,7 @@ pub const SCB = struct {
         _unused24: u8 = 0,
     };
     /// System handler priority
-    pub const SHPR1 = Register(SHPR1_val).init(base_address + 0x18);
+    pub const SHPR1 = MMIO(SHPR1_val).init(base_address + 0x18);
 
     /// SHPR2
     const SHPR2_val = packed struct {
@@ -51153,7 +45833,7 @@ pub const SCB = struct {
         PRI_11: u8 = 0,
     };
     /// System handler priority
-    pub const SHPR2 = Register(SHPR2_val).init(base_address + 0x1c);
+    pub const SHPR2 = MMIO(SHPR2_val).init(base_address + 0x1c);
 
     /// SHPR3
     const SHPR3_val = packed struct {
@@ -51168,7 +45848,7 @@ pub const SCB = struct {
         PRI_15: u8 = 0,
     };
     /// System handler priority
-    pub const SHPR3 = Register(SHPR3_val).init(base_address + 0x20);
+    pub const SHPR3 = MMIO(SHPR3_val).init(base_address + 0x20);
 
     /// SHCRS
     const SHCRS_val = packed struct {
@@ -51225,7 +45905,7 @@ pub const SCB = struct {
         _unused24: u8 = 0,
     };
     /// System handler control and state
-    pub const SHCRS = Register(SHCRS_val).init(base_address + 0x24);
+    pub const SHCRS = MMIO(SHCRS_val).init(base_address + 0x24);
 
     /// CFSR_UFSR_BFSR_MMFSR
     const CFSR_UFSR_BFSR_MMFSR_val = packed struct {
@@ -51297,7 +45977,7 @@ pub const SCB = struct {
         _unused26: u6 = 0,
     };
     /// Configurable fault status
-    pub const CFSR_UFSR_BFSR_MMFSR = Register(CFSR_UFSR_BFSR_MMFSR_val).init(base_address + 0x28);
+    pub const CFSR_UFSR_BFSR_MMFSR = MMIO(CFSR_UFSR_BFSR_MMFSR_val).init(base_address + 0x28);
 
     /// HFSR
     const HFSR_val = packed struct {
@@ -51319,7 +45999,7 @@ pub const SCB = struct {
         DEBUG_VT: u1 = 0,
     };
     /// Hard fault status register
-    pub const HFSR = Register(HFSR_val).init(base_address + 0x2c);
+    pub const HFSR = MMIO(HFSR_val).init(base_address + 0x2c);
 
     /// MMFAR
     const MMFAR_val = packed struct {
@@ -51328,7 +46008,7 @@ pub const SCB = struct {
         MMFAR: u32 = 0,
     };
     /// Memory management fault address
-    pub const MMFAR = Register(MMFAR_val).init(base_address + 0x34);
+    pub const MMFAR = MMIO(MMFAR_val).init(base_address + 0x34);
 
     /// BFAR
     const BFAR_val = packed struct {
@@ -51337,7 +46017,7 @@ pub const SCB = struct {
         BFAR: u32 = 0,
     };
     /// Bus fault address register
-    pub const BFAR = Register(BFAR_val).init(base_address + 0x38);
+    pub const BFAR = MMIO(BFAR_val).init(base_address + 0x38);
 
     /// AFSR
     const AFSR_val = packed struct {
@@ -51346,7 +46026,7 @@ pub const SCB = struct {
         IMPDEF: u32 = 0,
     };
     /// Auxiliary fault status
-    pub const AFSR = Register(AFSR_val).init(base_address + 0x3c);
+    pub const AFSR = MMIO(AFSR_val).init(base_address + 0x3c);
 };
 
 /// Nested vectored interrupt
@@ -51363,7 +46043,7 @@ pub const NVIC_STIR = struct {
         _unused24: u8 = 0,
     };
     /// Software trigger interrupt
-    pub const STIR = Register(STIR_val).init(base_address + 0x0);
+    pub const STIR = MMIO(STIR_val).init(base_address + 0x0);
 };
 
 /// Floating point unit CPACR
@@ -51382,7 +46062,7 @@ pub const FPU_CPACR = struct {
         _unused24: u8 = 0,
     };
     /// Coprocessor access control
-    pub const CPACR = Register(CPACR_val).init(base_address + 0x0);
+    pub const CPACR = MMIO(CPACR_val).init(base_address + 0x0);
 };
 
 /// System control block ACTLR
@@ -51413,90 +46093,86 @@ pub const SCB_ACTRL = struct {
         _unused24: u8 = 0,
     };
     /// Auxiliary control register
-    pub const ACTRL = Register(ACTRL_val).init(base_address + 0x0);
+    pub const ACTRL = MMIO(ACTRL_val).init(base_address + 0x0);
 };
 pub const interrupts = struct {
-    pub const TIM1_TRG_COM_TIM11 = 26;
-    pub const TIM6_DAC = 54;
-    pub const DMA2_Stream4 = 60;
-    pub const OTG_HS_WKUP = 76;
-    pub const I2C3_ER = 73;
-    pub const ETH = 61;
-    pub const ETH_WKUP = 62;
-    pub const CAN1_SCE = 22;
-    pub const LCD_TFT_1 = 89;
-    pub const I2C2_ER = 34;
-    pub const DMA2_Stream0 = 56;
-    pub const SPI2 = 36;
-    pub const RTC_Alarm = 41;
-    pub const TIM5 = 50;
-    pub const DMA2_Stream7 = 70;
-    pub const USART2 = 38;
-    pub const I2C2_EV = 33;
-    pub const CAN2_RX0 = 64;
-    pub const TAMP_STAMP = 2;
-    pub const CAN1_RX1 = 21;
-    pub const CAN2_RX1 = 65;
-    pub const CAN2_SCE = 66;
-    pub const TIM8_BRK_TIM12 = 43;
-    pub const EXTI0 = 6;
-    pub const EXTI1 = 7;
     pub const EXTI3 = 9;
-    pub const TIM2 = 28;
-    pub const EXTI15_10 = 40;
-    pub const HASH_RNG = 80;
-    pub const RCC = 5;
-    pub const DMA2_Stream5 = 68;
-    pub const DMA2_Stream2 = 58;
-    pub const DMA1_Stream5 = 16;
-    pub const USART1 = 37;
+    pub const UART7 = 82;
     pub const I2C3_EV = 72;
-    pub const CAN1_RX0 = 20;
-    pub const OTG_HS_EP1_OUT = 74;
-    pub const TIM7 = 55;
-    pub const DMA2_Stream6 = 69;
-    pub const DCMI = 78;
-    pub const DMA1_Stream0 = 11;
-    pub const DMA1_Stream2 = 13;
-    pub const SDIO = 49;
-    pub const DMA1_Stream7 = 47;
-    pub const TIM1_BRK_TIM9 = 24;
-    pub const OTG_HS_EP1_IN = 75;
-    pub const OTG_HS = 77;
-    pub const DMA2_Stream3 = 59;
-    pub const RTC_WKUP = 3;
-    pub const LCD_TFT = 88;
-    pub const DMA1_Stream6 = 17;
-    pub const TIM8_TRG_COM_TIM14 = 45;
-    pub const SPI3 = 51;
-    pub const CAN2_TX = 63;
-    pub const USART6 = 71;
-    pub const EXTI9_5 = 23;
-    pub const TIM1_CC = 27;
-    pub const I2C1_EV = 31;
-    pub const TIM4 = 30;
-    pub const DMA1_Stream1 = 12;
-    pub const ADC = 18;
-    pub const DMA1_Stream3 = 14;
-    pub const WWDG = 0;
-    pub const UART4 = 52;
-    pub const TIM8_UP_TIM13 = 44;
-    pub const TIM8_CC = 46;
-    pub const TIM1_UP_TIM10 = 25;
-    pub const USART3 = 39;
+    pub const I2C2_EV = 33;
+    pub const TIM2 = 28;
     pub const OTG_FS_WKUP = 42;
-    pub const EXTI2 = 8;
-    pub const DMA2_Stream1 = 57;
-    pub const I2C1_ER = 32;
-    pub const OTG_FS = 67;
-    pub const PVD = 1;
+    pub const RCC = 5;
+    pub const DMA2_Stream6 = 69;
+    pub const LCD_TFT_1 = 89;
+    pub const DMA2_Stream7 = 70;
+    pub const USART1 = 37;
+    pub const TIM1_CC = 27;
+    pub const TIM7 = 55;
     pub const TIM3 = 29;
-    pub const CAN1_TX = 19;
-    pub const CRYP = 79;
-    pub const SPI1 = 35;
+    pub const USART6 = 71;
+    pub const ETH = 61;
     pub const DMA1_Stream4 = 15;
-    pub const UART5 = 53;
-    pub const FPU = 81;
-    pub const FSMC = 48;
+    pub const I2C3_ER = 73;
+    pub const SPI2 = 36;
+    pub const TIM8_CC = 46;
+    pub const TIM6_DAC = 54;
+    pub const DMA1_Stream6 = 17;
+    pub const ADC = 18;
+    pub const CAN1_RX0 = 20;
+    pub const CAN2_RX1 = 65;
+    pub const DMA1_Stream5 = 16;
+    pub const I2C1_ER = 32;
+    pub const DMA1_Stream3 = 14;
+    pub const EXTI1 = 7;
+    pub const SPI4 = 84;
+    pub const TIM8_UP_TIM13 = 44;
+    pub const DMA2_Stream3 = 59;
+    pub const TIM8_BRK_TIM12 = 43;
+    pub const DMA2_Stream4 = 60;
+    pub const TIM5 = 50;
+    pub const CAN2_TX = 63;
     pub const EXTI4 = 10;
+    pub const SPI1 = 35;
+    pub const UART4 = 52;
+    pub const RTC_WKUP = 3;
+    pub const TIM4 = 30;
+    pub const CAN1_SCE = 22;
+    pub const DMA1_Stream0 = 11;
+    pub const CAN2_RX0 = 64;
+    pub const CAN2_SCE = 66;
+    pub const LCD_TFT = 88;
+    pub const USART2 = 38;
+    pub const DMA1_Stream2 = 13;
+    pub const WWDG = 0;
+    pub const UART8 = 83;
+    pub const FMC = 48;
+    pub const DMA2_Stream1 = 57;
+    pub const TIM1_BRK_TIM9 = 24;
+    pub const ETH_WKUP = 62;
+    pub const EXTI0 = 6;
+    pub const CAN1_RX1 = 21;
+    pub const DMA2_Stream2 = 58;
+    pub const TIM8_TRG_COM_TIM14 = 45;
+    pub const EXTI15_10 = 40;
+    pub const I2C2_ER = 34;
+    pub const SPI3 = 51;
+    pub const OTG_FS = 67;
+    pub const I2C1_EV = 31;
+    pub const TIM1_TRG_COM_TIM11 = 26;
+    pub const DCMI = 78;
+    pub const RTC_Alarm = 41;
+    pub const DMA1_Stream7 = 47;
+    pub const USART3 = 39;
+    pub const CAN1_TX = 19;
+    pub const UART5 = 53;
+    pub const TIM1_UP_TIM10 = 25;
+    pub const TAMP_STAMP = 2;
+    pub const EXTI9_5 = 23;
+    pub const DMA1_Stream1 = 12;
+    pub const FLASH = 4;
+    pub const DMA2_Stream5 = 68;
+    pub const EXTI2 = 8;
+    pub const DMA2_Stream0 = 56;
+    pub const FPU = 81;
 };

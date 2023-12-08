@@ -8,6 +8,7 @@ pub const Task = @import("./task.zig").Task;
 pub const Chord = @import("./chord.zig").Chord;
 pub const Scheduling = @import("./scheduler.zig").Scheduling;
 pub const util = @import("util");
+pub const MemoryMappedIO = @import("mmio").MemoryMappedIO;
 
 var buffer: [chip.dynamic_allocation_size]u8 = undefined;
 var fba = std.heap.FixedBufferAllocator.init(&buffer);

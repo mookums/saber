@@ -40,10 +40,12 @@ pub fn addSaberExecutable(b: *std.Build.Builder, comptime options: SaberExecutab
     const cpu_path = options.saber_path.path ++ chipConfig.cpu_path;
     const chip_path = options.saber_path.path ++ chipConfig.chip_path;
 
-    // we use the saber path but that doesn't lead us to where we need to go...
-
     const saberUtil = b.addModule("saberUtil", .{
         .source_file = .{ .path = options.saber_path.path ++ "/src/util.zig" },
+    });
+
+    const saberMMIO = b.addModule("saberMMIO", .{
+        .source_file = .{ .path = options.saber_path.path ++ "/src/mmio.zig" },
     });
 
     // Comptime CPU Module.
@@ -54,13 +56,21 @@ pub fn addSaberExecutable(b: *std.Build.Builder, comptime options: SaberExecutab
     // Comptime Chip Module.
     const chip = b.addModule("chip", .{
         .source_file = .{ .path = chip_path ++ "chip.zig" },
-        .dependencies = &.{ .{ .name = "util", .module = saberUtil }, .{ .name = "cpu", .module = cpu } },
+        .dependencies = &.{
+            .{ .name = "cpu", .module = cpu },
+            .{ .name = "util", .module = saberUtil },
+            .{ .name = "mmio", .module = saberMMIO },
+        },
     });
 
     // Comptime Saber Module.
     const sm = b.addModule("saber", .{
         .source_file = .{ .path = options.saber_path.path ++ "/src/saber.zig" },
-        .dependencies = &.{ .{ .name = "chip", .module = chip }, .{ .name = "util", .module = saberUtil } },
+        .dependencies = &.{
+            .{ .name = "chip", .module = chip },
+            .{ .name = "util", .module = saberUtil },
+            .{ .name = "mmio", .module = saberMMIO },
+        },
     });
 
     // Manually import the config for the chip
