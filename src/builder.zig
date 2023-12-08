@@ -14,7 +14,7 @@ const ChipConfig = struct {
 
 const SaberExecutableOptions = struct {
     name: []const u8,
-    saber_path: std.Build.LazyPath,
+    saber_path: std.Build.LazyPath = .{ .path = Saber.saber_path },
     main_file: std.Build.LazyPath,
     chip: Chip,
     optimize: std.builtin.Mode,
