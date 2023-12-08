@@ -6,14 +6,14 @@ const Chip = enum {
 };
 
 const ChipConfig = struct {
-    name: [*]const u8,
+    name: []const u8,
     target: std.zig.CrossTarget,
-    chip_path: [*]const u8,
-    cpu_path: [*]const u8,
+    chip_path: []const u8,
+    cpu_path: []const u8,
 };
 
 const SaberExecutableOptions = struct {
-    name: [*]const u8,
+    name: []const u8,
     saber_path: std.Build.LazyPath,
     main_file: std.Build.LazyPath,
     chip: Chip,
@@ -30,8 +30,8 @@ inline fn chipToConfig(comptime chip: Chip) ChipConfig {
                 .os_tag = std.Target.Os.Tag.freestanding,
                 .abi = std.Target.Abi.eabi,
             },
-            .chip_path = "src/chip/st/stm32f446/",
-            .cpu_path = "src/cpu/arm/cortex-m/",
+            .chip_path = "/src/chip/st/stm32f446/",
+            .cpu_path = "/src/cpu/arm/cortex-m/",
         },
     };
 }
