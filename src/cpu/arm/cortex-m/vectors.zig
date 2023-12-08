@@ -21,6 +21,9 @@ extern fn saberSysTickHandler() void;
 // end user should be able to change the handler.
 // We can do this with weak function linking?
 //
+//
+// MAYBE, we have a vector table list that we just append to or can put into based on index
+// then we just export the items version of it.
 export const vector_table linksection(".vector_table") = [_]?*const fn () callconv(.C) void{
     stackEnd, // stack
     saberResetHandler, // Reset

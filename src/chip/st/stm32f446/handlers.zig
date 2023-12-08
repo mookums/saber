@@ -3,5 +3,3 @@ export fn blockingHandler() void {
 }
 
 export fn nullHandler() void {}
-
-pub const Handler = *const fn () callconv(.C) void;

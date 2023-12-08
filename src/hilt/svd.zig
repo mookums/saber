@@ -82,13 +82,28 @@ pub const Device = struct {
             try out_stream.print("{}\n", .{peripheral});
         }
         // now print interrupt table
-        try out_stream.writeAll("pub const interrupts = struct {\n");
+        //
+        const interrupt_struct =
+            \\
+            \\pub const Interrupt = struct {
+            \\  name:[]const u8,
+            \\  value:usize,
+            \\};
+            \\
+        ;
+
+        try out_stream.print("{s}", .{interrupt_struct});
+
+        // Use a ComptimeStringMap here.
+        //
+        // This will allow us to find values just by using the Interrupt Name :p
+        try out_stream.writeAll("pub const interrupts = [_]Interrupt {\n");
         var iter = self.interrupts.iterator();
         while (iter.next()) |entry| {
             const interrupt = entry.value_ptr.*;
             if (interrupt.value) |int_value| {
                 try out_stream.print(
-                    "pub const {s} = {};\n",
+                    "   .{{ .name = \"{s}\", .value = {} }},\n",
                     .{ interrupt.name.items, int_value },
                 );
             }
@@ -333,7 +348,7 @@ pub const Interrupt = struct {
         const description = if (self.description.items.len == 0) "No description" else self.description.items;
         try out_stream.print(
             \\/// {s}
-            \\pub const {s} = {s};
+            \\.{ .name = {s}, .value = {} };
             \\
         , .{ description, name, self.value.? });
     }
