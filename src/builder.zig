@@ -1,5 +1,4 @@
 const std = @import("std");
-const Saber = @import("saber");
 
 const Chip = enum {
     STM32F446,
@@ -14,7 +13,7 @@ const ChipConfig = struct {
 
 const SaberExecutableOptions = struct {
     name: []const u8,
-    saber_path: std.Build.LazyPath = .{ .path = Saber.saber_path },
+    saber_path: std.Build.LazyPath,
     main_file: std.Build.LazyPath,
     chip: Chip,
     optimize: std.builtin.Mode,
