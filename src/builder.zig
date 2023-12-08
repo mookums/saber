@@ -20,7 +20,7 @@ const SaberExecutableOptions = struct {
 };
 
 inline fn chipToConfig(comptime chip: Chip) ChipConfig {
-    return switch (chip) {
+    return comptime switch (chip) {
         Chip.STM32F446 => .{
             .name = "stm32f446",
             .target = .{
