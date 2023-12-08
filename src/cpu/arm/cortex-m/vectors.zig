@@ -24,21 +24,35 @@ extern fn saberSysTickHandler() void;
 //
 // MAYBE, we have a vector table list that we just append to or can put into based on index
 // then we just export the items version of it.
-export const vector_table linksection(".vector_table") = [_]?*const fn () callconv(.C) void{
-    stackEnd, // stack
-    saberResetHandler, // Reset
-    saberNmiHandler, // NMI
-    saberHardFaultHandler, // Hard fault
-    saberMemoryManagementFaultHandler, // Memory management fault
-    saberBusFaultHandler, // Bus fault
-    saberUsageFaultHandler, // Usage fault
-    null, // Reserved 1
-    null, // Reserved 2
-    null, // Reserved 3
-    null, // Reserved 4
-    saberSvCallHandler, // SVCall
-    saberDebugMonitorHandler, // Debug monitor
-    null, // Reserved 5
-    saberPendSVHandler, // PendSV
-    saberSysTickHandler, // SysTick
+const VectorEntry = ?*const fn () callconv(.C) void;
+
+const vectors = extern struct {
+    sp: VectorEntry = stackEnd,
+    reset: VectorEntry = saberResetHandler, // Reset
+    nmi: VectorEntry = saberNmiHandler, // NMI
+    hardFault: VectorEntry = saberHardFaultHandler, // Hard fault
+    memManage: VectorEntry = saberMemoryManagementFaultHandler, // Memory management fault
+    busFault: VectorEntry = saberBusFaultHandler, // Bus fault
+    usageFault: VectorEntry = saberUsageFaultHandler, // Usage fault
+    r1: VectorEntry = null, // Reserved 1
+    r2: VectorEntry = null, // Reserved 2
+    r3: VectorEntry = null, // Reserved 3
+    r4: VectorEntry = null, // Reserved 4
+    SVCall: VectorEntry = saberSvCallHandler, // SVCall
+    debugMon: VectorEntry = saberDebugMonitorHandler, // Debug monitor
+    r5: VectorEntry = null, // Reserved 5
+    pendSV: VectorEntry = saberPendSVHandler, // PendSV
+    sysTick: VectorEntry = saberSysTickHandler, // SysTick
 };
+
+// export a standard vector table from the CPU
+// then add on additional interrupt handlers from the chip.
+//
+// this way, the behavior is mostly predetermined!
+const vector_table = vectors{};
+
+const vectors2 = extern struct {
+    v: vectors = vector_table,
+};
+
+export const vector2_table linksection(".vector_table") = vectors2{};
