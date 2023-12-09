@@ -1,7 +1,10 @@
 const VectorEntry = @import("mmio").VectorEntry;
 
-extern fn blockingHandler() void;
-extern fn nullHandler() void;
+export fn blockingHandler() callconv(.C) void {
+    while (true) {}
+}
+
+export fn nullHandler() void {}
 
 extern fn stackEnd() void;
 extern fn saberResetHandler() void;
