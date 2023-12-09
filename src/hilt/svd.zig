@@ -96,14 +96,9 @@ pub const Device = struct {
 
         // now print interrupt table
         const interrupt_header =
-            \\// Provide these handlers here.
             \\
-            \\pub export fn blockingHandler() callconv(.C) void {
-            \\  while(true) {}
-            \\}
-            \\
-            \\pub export fn nullHandler() callconv(.C) void {}
-            \\
+            \\extern fn blockingHandler() void;
+            \\extern fn nullHandler() void;
             \\
         ;
 
@@ -120,9 +115,23 @@ pub const Device = struct {
             }
         }
 
+        // Weak Linking...
+        try out_stream.writeAll("// These are all of the chip specific weak-linking for memory.ld \n//\n");
+        var tempList = std.ArrayList(InterruptQueueEntry).init(allocator);
+        while (interruptQueue.removeOrNull()) |irq| {
+            try out_stream.print(
+                "// PROVIDE(saber{s}Handler = nullHandler); \n",
+                .{irq.name},
+            );
+
+            tempList.append(irq) catch @panic("OOM!");
+        }
+        try out_stream.writeAll("\n");
+        interruptQueue.addSlice(tempList.items) catch @panic("OOM!");
+        tempList.clearAndFree();
+
         // Write all of the extern functions
         try out_stream.writeAll("// Extern Interrupt Handlers\n");
-        var tempList = std.ArrayList(InterruptQueueEntry).init(allocator);
         while (interruptQueue.removeOrNull()) |irq| {
             try out_stream.print(
                 "extern fn saber{s}Handler() void; \n",
