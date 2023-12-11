@@ -7,6 +7,8 @@ pub const Builder = @import("./builder.zig");
 pub const Task = @import("./task.zig").Task;
 pub const Chord = @import("./chord.zig").Chord;
 pub const Scheduling = @import("./scheduler.zig").Scheduling;
+pub const PredicateLock = @import("./lock.zig").PredicateLock;
+pub const lib = @import("./lib/lib.zig");
 pub const util = @import("util");
 pub const mmio = @import("mmio");
 
