@@ -9,7 +9,7 @@ const Saber = @import("./saber.zig");
 fn taskPriorityCompare(_: void, a: *Saber.Task, b: *Saber.Task) std.math.Order {
     const order = std.math.order(b.priority, a.priority);
     if (order == std.math.Order.eq) {
-        return std.math.order(a.run_count, b.run_count);
+        return std.math.order(a.last_ran, b.last_ran);
     } else {
         return order;
     }
@@ -21,7 +21,7 @@ const SchedulingOptions = struct {
     /// This determines if our scheduler runs in `Predicate Mode`. This means that
     /// the scheduler will evaluate the predicate functon for each task before scheduling it.
     ///
-    /// Default: `true`
+    /// default: `true`
     predicate_mode: bool = true,
     /// This determines if our tasks are interruptable by the Chip.
     /// This means that our tasks can be preempted by interrupts like
@@ -29,7 +29,7 @@ const SchedulingOptions = struct {
     ///
     /// Setting this to `false` also disables the ability to use Saber.time.
     ///
-    /// Default: `true`
+    /// default: `true`
     tasks_interruptable: bool = true,
 };
 
@@ -43,7 +43,6 @@ inline fn run_and_queue(task: *Saber.Task, taskQueue: *std.PriorityQueue(*Saber.
     switch (schedulingOptions.tasks_interruptable) {
         true => {
             task.func();
-            task.run_count +%= 1;
             task.last_ran = Saber.time;
             taskQueue.add(task) catch @panic("Saber Panic: Unable to add Saber.Task to queue!");
         },
@@ -51,7 +50,6 @@ inline fn run_and_queue(task: *Saber.Task, taskQueue: *std.PriorityQueue(*Saber.
             Saber.chip.disable_interrupts();
             task.func();
             Saber.chip.enable_interrupts();
-            task.run_count +%= 1;
             task.last_ran = Saber.time;
             taskQueue.add(task) catch @panic("Saber Panic: Unable to add Saber.Task to queue!");
         },

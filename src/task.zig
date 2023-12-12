@@ -20,6 +20,5 @@ pub const Task = struct {
     // ~585 years to overflow.
     //
     // So at worst, Saber is deterministic for ~585 years :p
-    run_count: u64 = 0,
     last_ran: u64 = 0,
 };
