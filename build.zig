@@ -7,6 +7,34 @@ inline fn get_saber_root() []const u8 {
 
 pub const saber_root = get_saber_root();
 
+/// Needed to keep compiler happy.
+pub fn build(b: *std.build.Builder) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    // Hilt Build Commands
+    const hilt = b.addExecutable(.{
+        .name = "hilt",
+        .root_source_file = .{ .path = "./src/hilt/hilt.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const hilt_cmd = b.addRunArtifact(hilt);
+
+    if (b.args) |args| {
+        hilt_cmd.addArgs(args);
+    }
+
+    hilt_cmd.step.dependOn(&hilt.step);
+    const hilt_step = b.step("hilt", "Use the Hilt Parser to generate a registers file using a SVD");
+    hilt_step.dependOn(&hilt_cmd.step);
+
+    // Saber Library Tests
+    createTests(b, target, optimize);
+}
+
+// Tests!
 inline fn createCircularBufferTests(b: *std.Build, target: anytype, optimize: anytype, testList: *std.ArrayList(*std.Build.Step.Compile)) void {
     const circular_buffer_tests = b.addTest(.{ .root_source_file = .{ .path = "src/lib/circular_buffer.zig" }, .target = target, .optimize = optimize, .name = "CircularBuffer" });
     testList.append(circular_buffer_tests) catch {};
@@ -36,31 +64,4 @@ inline fn createTests(b: *std.Build, target: anytype, optimize: anytype) void {
     for (runList.items) |r| {
         test_step.dependOn(&r.step);
     }
-}
-
-/// Needed to keep compiler happy.
-pub fn build(b: *std.build.Builder) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-
-    // Hilt Build Commands
-    const hilt = b.addExecutable(.{
-        .name = "hilt",
-        .root_source_file = .{ .path = "./src/hilt/hilt.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const hilt_cmd = b.addRunArtifact(hilt);
-
-    if (b.args) |args| {
-        hilt_cmd.addArgs(args);
-    }
-
-    hilt_cmd.step.dependOn(&hilt.step);
-    const hilt_step = b.step("hilt", "Use the Hilt Parser to generate a registers file using a SVD");
-    hilt_step.dependOn(&hilt_cmd.step);
-
-    // Saber Library Tests
-    createTests(b, target, optimize);
 }

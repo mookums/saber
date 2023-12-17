@@ -5,4 +5,4 @@ const util = @import("util");
 
 // Temporary but this is the reset frequency!
 pub const frequency = 16 * util.mHz;
-pub const dynamic_allocation_size = util.KiB * 50;
+pub const dynamic_allocation_size = 15 * util.KiB;
