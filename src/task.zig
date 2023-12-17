@@ -12,7 +12,7 @@ fn true_predicate(_: *Task) bool {
 /// Func: the Task function.
 pub const Task = struct {
     name: []const u8,
-    priority: u8 = std.math.minInt(u8),
+    priority: u8 = std.math.maxInt(u8),
     // At some point, there could be a benefit to inlining our predicate...
     predicate: *const fn (*Task) bool = true_predicate,
     func: *const fn () void,
