@@ -1,0 +1,26 @@
+FPPC -> Fixed Priority Predicate Cooperative
+
+Guarantees that the highest priority task will run IFF:
+    -> The task has a predicate that evaluates to true.
+    -> It is the least recently run task in the priority group.
+
+This does give us some guarantees about when a task will be SCHEDULED, not about when a task will run.
+
+You can witness this by using a Time Clause with a delay of 1 second (1 * Saber.util.Second). This will cause your task to be eligble to run after a task, but there is noguarantee that it will run on this 1 second interval.
+
+This is similar to how FreeRTOS operates.
+
+EDFPC -> Earliest Deadline First Predicate Cooperative
+
+Guarantees that the task with the lowest priority will run IFF:
+    -> The task has a predicate that evaluates to true.
+
+This would probably be a nice solution when you have real deadlines that you need to hit reliably.
+
+The one issue with this methodology is the use of predicates. You only get the EDF guarantee on your deadline in certain cases.
+
+Assume that x is a task with a deadline d, run time r, predicate of p, and where t is Saber Time. If t >= d - r and our p is false, we will definitively miss our deadline. If p was true, we would hit our deadline.
+
+We might be able to get away with this by grouping tasks and their dependencies.
+
+Imagine we have a Task, A, that has a deadline of 300 ms. A's predicate depends on a a buffer to be filled. This means that A depends on B, the task who is designated to filling the buffer.

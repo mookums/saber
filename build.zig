@@ -1,5 +1,5 @@
 const std = @import("std");
-pub const Saber = @import("./src/saber.zig");
+pub const saber = @import("./src/saber.zig");
 
 inline fn get_saber_root() []const u8 {
     return comptime (std.fs.path.dirname(@src().file) orelse ".");
