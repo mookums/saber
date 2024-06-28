@@ -6,17 +6,16 @@ const Chip = enum {
 
 const ChipConfig = struct {
     name: []const u8,
-    target: std.zig.CrossTarget,
+    target: std.Target.Query,
     chip_path: []const u8,
     cpu_path: []const u8,
 };
 
 const SaberExecutableOptions = struct {
     name: []const u8,
-    saber_path: std.Build.LazyPath,
     main_file: std.Build.LazyPath,
     chip: Chip,
-    optimize: std.builtin.Mode,
+    optimize: std.builtin.OptimizeMode,
 };
 
 inline fn chipToConfig(comptime chip: Chip) ChipConfig {
@@ -29,86 +28,85 @@ inline fn chipToConfig(comptime chip: Chip) ChipConfig {
                 .os_tag = std.Target.Os.Tag.freestanding,
                 .abi = std.Target.Abi.eabi,
             },
-            .chip_path = "/src/chip/st/stm32f446/",
-            .cpu_path = "/src/cpu/arm/cortex-m/",
+            .chip_path = "/chip/st/stm32f446/",
+            .cpu_path = "/cpu/arm/cortex-m/",
         },
     };
 }
 
-pub fn addSaberExecutable(b: *std.Build.Builder, comptime options: SaberExecutableOptions) void {
+pub fn addSaberExecutable(b: *std.Build, comptime options: SaberExecutableOptions) void {
     const chipConfig = comptime chipToConfig(options.chip);
-    const cpu_path = options.saber_path.path ++ chipConfig.cpu_path;
-    const chip_path = options.saber_path.path ++ chipConfig.chip_path;
+    const root_dir = comptime (std.fs.path.dirname(@src().file) orelse ".");
+    const cpu_path = root_dir ++ chipConfig.cpu_path;
+    const chip_path = root_dir ++ chipConfig.chip_path;
 
-    const saberUtil = b.addModule("saberUtil", .{
-        .source_file = .{ .path = options.saber_path.path ++ "/src/util.zig" },
+    const util = b.addModule("util", .{
+        .root_source_file = .{ .cwd_relative = root_dir ++ "/util.zig" },
     });
 
-    const saberMMIO = b.addModule("saberMMIO", .{
-        .source_file = .{ .path = options.saber_path.path ++ "/src/mmio.zig" },
+    const mmio = b.addModule("mmio", .{
+        .root_source_file = .{ .cwd_relative = root_dir ++ "/mmio.zig" },
     });
 
     // Comptime CPU Module.
     const cpu = b.addModule("cpu", .{
-        .source_file = .{ .path = cpu_path ++ "cpu.zig" },
-        .dependencies = &.{
-            .{ .name = "mmio", .module = saberMMIO },
+        .root_source_file = .{ .cwd_relative = cpu_path ++ "cpu.zig" },
+        .imports = &.{
+            .{ .name = "mmio", .module = mmio },
         },
     });
 
     // Comptime Chip Module.
     const chip = b.addModule("chip", .{
-        .source_file = .{ .path = chip_path ++ "chip.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .cwd_relative = chip_path ++ "chip.zig" },
+        .imports = &.{
             .{ .name = "cpu", .module = cpu },
-            .{ .name = "util", .module = saberUtil },
-            .{ .name = "mmio", .module = saberMMIO },
+            .{ .name = "util", .module = util },
+            .{ .name = "mmio", .module = mmio },
         },
     });
 
     // Comptime Saber Module.
     const sm = b.addModule("saber", .{
-        .source_file = .{ .path = options.saber_path.path ++ "/src/saber.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .cwd_relative = root_dir ++ "/saber.zig" },
+        .imports = &.{
             .{ .name = "chip", .module = chip },
-            .{ .name = "util", .module = saberUtil },
-            .{ .name = "mmio", .module = saberMMIO },
+            .{ .name = "util", .module = util },
+            .{ .name = "mmio", .module = mmio },
         },
     });
 
     // Manually import the config for the chip
     const config = chipConfig;
-    const target = config.target;
+    const target = b.resolveTargetQuery(config.target);
     const optimize = options.optimize;
 
     const elf = b.addExecutable(.{
         .name = options.name ++ ".elf",
-        .root_source_file = .{ .path = cpu_path ++ "handler.zig" },
+        .root_source_file = .{ .cwd_relative = cpu_path ++ "handler.zig" },
         .target = target,
         .optimize = optimize,
     });
-
-    elf.addModule("saber", sm);
 
     // Add Main as object
     const main = b.addObject(.{
         .name = "main",
-        .root_source_file = .{ .path = options.main_file.path },
+        .root_source_file = .{ .cwd_relative = options.main_file.cwd_relative },
         .target = target,
         .optimize = optimize,
     });
-    main.addModule("saber", sm);
+    main.root_module.addImport("saber", sm);
     elf.addObject(main);
 
     // Add Chip Vectors
     const chip_vectors = b.addObject(.{
         .name = "chip_vectors",
-        .root_source_file = .{ .path = chip_path ++ "vectors.zig" },
+        .root_source_file = .{ .cwd_relative = chip_path ++ "vectors.zig" },
         .target = target,
         .optimize = optimize,
     });
-    chip_vectors.addModule("cpu", cpu);
-    chip_vectors.addModule("mmio", saberMMIO);
+    chip_vectors.root_module.addImport("cpu", cpu);
+    chip_vectors.root_module.addImport("mmio", mmio);
     elf.addObject(chip_vectors);
 
     // Source Base Linker Script
@@ -116,7 +114,7 @@ pub fn addSaberExecutable(b: *std.Build.Builder, comptime options: SaberExecutab
     // We should also write in a new dynamic header,
     // this way we can use the same base linker script for multiple
     // chips!
-    elf.setLinkerScript(.{ .path = chip_path ++ "memory.ld" });
+    elf.setLinkerScript(.{ .cwd_relative = chip_path ++ "memory.ld" });
 
     // Copy the elf to the output directory.
     const save_elf = b.addInstallArtifact(elf, .{});

@@ -8,6 +8,11 @@ extern fn main() noreturn;
 extern fn premain() void;
 extern var time: u64;
 
+extern fn saberResetHandler() noreturn;
+export fn _start() callconv(.C) noreturn {
+    saberResetHandler();
+}
+
 /// Default Saber Reset Handler
 export fn chipResetHandler() noreturn {
     // copy data from flash into RAM

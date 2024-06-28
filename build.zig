@@ -1,21 +1,15 @@
 const std = @import("std");
 pub const saber = @import("./src/saber.zig");
 
-inline fn get_saber_root() []const u8 {
-    return comptime (std.fs.path.dirname(@src().file) orelse ".");
-}
-
-pub const saber_root = get_saber_root();
-
 /// Needed to keep compiler happy.
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     // Hilt Build Commands
     const hilt = b.addExecutable(.{
         .name = "hilt",
-        .root_source_file = .{ .path = "./src/hilt/hilt.zig" },
+        .root_source_file = b.path("src/hilt/hilt.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -36,7 +30,12 @@ pub fn build(b: *std.build.Builder) void {
 
 // Tests!
 inline fn createCircularBufferTests(b: *std.Build, target: anytype, optimize: anytype, testList: *std.ArrayList(*std.Build.Step.Compile)) void {
-    const circular_buffer_tests = b.addTest(.{ .root_source_file = .{ .path = "src/lib/circular_buffer.zig" }, .target = target, .optimize = optimize, .name = "CircularBuffer" });
+    const circular_buffer_tests = b.addTest(.{
+        .root_source_file = b.path("src/lib/circular_buffer.zig"),
+        .target = target,
+        .optimize = optimize,
+        .name = "CircularBuffer",
+    });
     testList.append(circular_buffer_tests) catch {};
 }
 
