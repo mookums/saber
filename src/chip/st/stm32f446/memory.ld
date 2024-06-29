@@ -99,8 +99,7 @@ PROVIDE(saberSPI4Handler = nullHandler);
 PROVIDE(saberLCD_TFTHandler = nullHandler); 
 PROVIDE(saberLCD_TFT_1Handler = nullHandler); 
 
-/* Weak Handler for main and premain */
-PROVIDE(premain = nullHandler);
+/* Weak Handler for main */
 PROVIDE(main = blockingHandler);
 
 /* Will auto match any unmatched handlers with nullHandler. */

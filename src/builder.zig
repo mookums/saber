@@ -20,13 +20,13 @@ const SaberExecutableOptions = struct {
 
 inline fn chipToConfig(comptime chip: Chip) ChipConfig {
     return comptime switch (chip) {
-        Chip.STM32F446 => .{
+        Chip.STM32F446 => ChipConfig{
             .name = "stm32f446",
             .target = .{
-                .cpu_arch = std.Target.Cpu.Arch.thumb,
+                .cpu_arch = .thumb,
                 .cpu_model = .{ .explicit = &std.Target.arm.cpu.cortex_m4 },
-                .os_tag = std.Target.Os.Tag.freestanding,
-                .abi = std.Target.Abi.eabi,
+                .os_tag = .freestanding,
+                .abi = .eabi,
             },
             .chip_path = "/chip/st/stm32f446/",
             .cpu_path = "/cpu/arm/cortex-m/",
@@ -40,16 +40,16 @@ pub fn addSaberExecutable(b: *std.Build, comptime options: SaberExecutableOption
     const cpu_path = root_dir ++ chipConfig.cpu_path;
     const chip_path = root_dir ++ chipConfig.chip_path;
 
-    const util = b.addModule("util", .{
+    const util = b.createModule(.{
         .root_source_file = .{ .cwd_relative = root_dir ++ "/util.zig" },
     });
 
-    const mmio = b.addModule("mmio", .{
+    const mmio = b.createModule(.{
         .root_source_file = .{ .cwd_relative = root_dir ++ "/mmio.zig" },
     });
 
     // Comptime CPU Module.
-    const cpu = b.addModule("cpu", .{
+    const cpu = b.createModule(.{
         .root_source_file = .{ .cwd_relative = cpu_path ++ "cpu.zig" },
         .imports = &.{
             .{ .name = "mmio", .module = mmio },
@@ -57,7 +57,7 @@ pub fn addSaberExecutable(b: *std.Build, comptime options: SaberExecutableOption
     });
 
     // Comptime Chip Module.
-    const chip = b.addModule("chip", .{
+    const chip = b.createModule(.{
         .root_source_file = .{ .cwd_relative = chip_path ++ "chip.zig" },
         .imports = &.{
             .{ .name = "cpu", .module = cpu },
@@ -67,7 +67,7 @@ pub fn addSaberExecutable(b: *std.Build, comptime options: SaberExecutableOption
     });
 
     // Comptime Saber Module.
-    const sm = b.addModule("saber", .{
+    const sm = b.createModule(.{
         .root_source_file = .{ .cwd_relative = root_dir ++ "/saber.zig" },
         .imports = &.{
             .{ .name = "chip", .module = chip },

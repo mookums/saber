@@ -5,7 +5,6 @@ extern var __saber_bss_start: usize;
 extern var __saber_bss_end: usize;
 
 extern fn main() noreturn;
-extern fn premain() void;
 extern var time: u64;
 
 extern fn saberResetHandler() noreturn;
@@ -31,7 +30,6 @@ export fn chipResetHandler() noreturn {
     for (bss_start[0..bss_size]) |*b| b.* = 0;
 
     // start
-    premain();
     main();
     unreachable;
 }
